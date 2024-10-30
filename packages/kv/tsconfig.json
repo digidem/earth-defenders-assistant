@@ -1,0 +1,5 @@
+{
+  "extends": "@eda/typescript/base.json",
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

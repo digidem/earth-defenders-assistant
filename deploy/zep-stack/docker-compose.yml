@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  zep:
+    image: ghcr.io/getzep/zep:latest
+    restart: ${RESTART_POLICY:-unless-stopped}
+    environment:
+      - ZEP_ADMIN_KEY=${ZEP_ADMIN_KEY}
+      - ZEP_OPENAI_API_KEY=${ZEP_OPENAI_API_KEY}
+      - ZEP_ANTHROPIC_API_KEY=${ZEP_ANTHROPIC_API_KEY}
+      - ZEP_STORE_POSTGRES_DSN=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@supabase-db:${POSTGRES_PORT}/zep?sslmode=disable
+      - ZEP_MEMORY_STORE_TYPE=postgres
+    ports:
+      - "${DOCKER_PUBLISH_IP:-127.0.0.1}:3006:8000"
+    networks:
+      - eda-network
+
+networks:
+  eda-network:
+    name: eda-network
+    external: true

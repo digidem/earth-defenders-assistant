@@ -1,0 +1,32 @@
+{
+  "name": "@eda/supabase",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@eda/logger": "workspace:*",
+    "@eda/types": "workspace:*",
+    "@supabase/ssr": "^0.5.1",
+    "react": "^18.3.1",
+    "server-only": "^0.0.1",
+    "supabase": "^1.207.9"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "typescript": "^5.6.3"
+  },
+  "exports": {
+    "./trigger": "./src/clients/trigger.ts",
+    "./server": "./src/clients/server.ts",
+    "./client": "./src/clients/client.ts",
+    "./mutations": "./src/mutations/index.ts",
+    "./middleware": "./src/clients/middleware.ts",
+    "./queries": "./src/queries/index.ts",
+    "./types": "./src/types/index.ts"
+  }
+}

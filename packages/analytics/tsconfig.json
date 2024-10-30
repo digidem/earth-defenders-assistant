@@ -1,0 +1,12 @@
+{
+  "extends": "@eda/typescript/react-library.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@eda/ui/*": ["../ui/src/*"]
+    }
+  },
+  "include": ["."],
+  "exclude": ["node_modules"]
+}

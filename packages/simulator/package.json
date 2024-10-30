@@ -1,0 +1,27 @@
+{
+  "name": "@eda/simulator",
+  "type": "module",
+  "module": "index.ts",
+  "scripts": {
+    "build": "bun build index.ts --outdir ./dist",
+    "clean": "git clean -xdf .next .turbo node_modules .wwebjs_*",
+    "dev": "bun --watch .",
+    "lint": "biome lint",
+    "start": "bun run index.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@cerebras/cerebras_cloud_sdk": "^1.8.0",
+    "@eda/logger": "workspace:*",
+    "@eda/types": "workspace:*",
+    "@trigger.dev/sdk": "3.1.0",
+    "dotenv": "^16.4.5",
+    "groq-sdk": "^0.7.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

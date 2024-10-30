@@ -1,0 +1,21 @@
+{
+  "name": "@eda/jobs",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome lint ./trigger ./lib",
+    "dev": "bunx trigger.dev dev",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@eda/supabase": "workspace:*",
+    "@eda/types": "workspace:*",
+    "@getzep/zep-cloud": "^2.0.0",
+    "@trigger.dev/sdk": "3.1.0"
+  },
+  "devDependencies": {
+    "@trigger.dev/build": "3.1.0"
+  }
+}

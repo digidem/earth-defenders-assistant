@@ -1,0 +1,22 @@
+{
+  "name": "@eda/analytics",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "sideEffects": false,
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome check .",
+    "format": "biome --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@eda/logger": "workspace:*",
+    "@openpanel/nextjs": "^1.0.0",
+    "@vercel/functions": "^1.4.1"
+  },
+  "exports": {
+    "./server": "./src/server.ts",
+    "./client": "./src/client.tsx",
+    "./events": "./src/events.ts"
+  }
+}

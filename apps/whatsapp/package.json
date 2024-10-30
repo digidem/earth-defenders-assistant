@@ -1,0 +1,29 @@
+{
+  "name": "@eda/whatsapp",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch .",
+    "start": "bun run index.ts",
+    "build": "bun build index.ts --outdir ./dist",
+    "lint": "biome lint",
+    "clean": "git clean -xdf .next .turbo node_modules .wwebjs_*",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/qrcode-terminal": "^0.12.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@trigger.dev/sdk": "3.1.0",
+    "dotenv": "^16.4.5",
+    "mkdirp": "^3.0.1",
+    "mongoose": "^8.7.1",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0",
+    "wwebjs-mongo": "^1.1.0"
+  }
+}

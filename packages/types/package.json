@@ -1,0 +1,12 @@
+{
+  "name": "@eda/types",
+  "type": "module",
+  "exports": {
+    ".": "./types.ts",
+    "./mocks": "./mocks.ts"
+  },
+  "scripts": {
+    "lint": "biome lint",
+    "check-types": "tsc --noEmit"
+  }
+}

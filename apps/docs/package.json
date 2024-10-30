@@ -1,0 +1,23 @@
+{
+  "name": "@eda/docs",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev --port 8082",
+    "start": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "clean": "git clean -xdf .next .turbo node_modules",
+    "lint": "biome lint src",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/starlight": "^0.28.2",
+    "astro": "^4.15.3",
+    "sharp": "^0.32.5",
+    "typescript": "^5.6.3"
+  }
+}

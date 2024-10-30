@@ -1,0 +1,67 @@
+services:
+  langtrace-app:
+    container_name: langtrace
+    image: scale3labs/langtrace-client:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    working_dir: /app
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    # Uncomment this for development
+    # command: npm run dev
+    # volumes:
+    #   - .:/app
+    restart: on-failure:5
+    depends_on:
+      postgres-db:
+        condition: service_started
+        required: true
+      clickhouse-db:
+        condition: service_healthy
+        required: true
+
+  postgres-db:
+    container_name: langtrace-postgres
+    image: postgres:${POSTGRES_IMAGE_TAG:-16}
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  clickhouse-db:
+    container_name: langtrace-clickhouse
+    image: clickhouse/clickhouse-server:24.5.1.1763-alpine
+    environment:
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+      - CLICKHOUSE_PASSWORD=${CLICK_HOUSE_PASSWORD}
+      - CLICKHOUSE_USER=${CLICK_HOUSE_USER}
+      - CLICKHOUSE_DB=${CLICK_HOUSE_DATABASE_NAME}
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://langtrace-clickhouse:8123/ping || exit 1
+      retries: 3
+      start_period: 30s
+      start_interval: 5s
+      interval: 30s
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+
+  langtrace-app-prod:
+    extends:
+      service: langtrace-app
+    build:
+      target: production
+    profiles:
+      - production
+
+volumes:
+  postgres-data:
+  clickhouse-data:
