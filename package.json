@@ -22,6 +22,7 @@
     "dev:jobs": "turbo dev --filter=@eda/jobs",
     "dev:email": "turbo dev --filter=@eda/email",
     "dev:docs": "turbo dev --filter=@eda/docs",
+    "build:landingpage": "turbo build --filter=@eda/landingpage",
     "deploy:trigger": "docker compose -f deploy/trigger-stack/docker-compose.yml up -d",
     "deploy:langtrace": "docker compose -f deploy/langtrace-stack/docker-compose.yml up -d",
     "status": "bun status",
