@@ -21,6 +21,7 @@
 - **Docker** (optional, for containerized deployment)
 
 **Installing**
+
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash # install Node Version Manager
 curl -fsSL https://bun.sh/install | bash # Install Bun NodeJS package manager and runtime
@@ -66,7 +67,7 @@ cp deploy/trigger-stack/.env.example deploy/trigger-stack/.env
 cp deploy/langtrace-stack/.env.example deploy/langtrace-stack/.env
 ```
 
-4. Start the development server from either bun or turbo:
+3. Start the development server from either bun or turbo:
 
 ```ts
 bun dev // starts simulator, Supabase api and Trigger.dev jobs
@@ -88,7 +89,7 @@ bun seed // run seed
 
 If using local Trigger instance for development run `bun dev:deploy` before running `bun dev`. For using local Langtrace deploy with `bun deploy:langtrace`.
 
-5. **Access the Applications:**
+4. **Access the Applications:**
 
 - Supabase Studio: Access the Supabase interface at [http://localhost:54323](http://localhost:54323) to manage your database, view API documentation, and perform other backend tasks.
 - Trigger.dev Dashboard: Access the Trigger.dev dashboard at [http://localhost:3001](http://localhost:3001) to manage jobs.
@@ -97,7 +98,7 @@ If using local Trigger instance for development run `bun dev:deploy` before runn
 - Landing Page: Navigate to [http://localhost:8081](http://localhost:8081) to view the landing page.
 - Documentation: Browse the documentation at [http://localhost:8082](http://localhost:8082).
 
-6. **Add environmental variables for different APIs**
+5. **Add environmental variables for different APIs**
 
 - Connect to Trigger instance by setting the correct `TRIGGER_PROJECT_ID` and `TRIGGER_API_URL` variables in the `packages/jobs/.env` file from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev)
 - Add the correct `TRIGGER_SECRET_KEY` to `apps/whatsapp/.env` and `packages/simulator/.env` from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev) apikeys section ([docs](https://trigger.dev/docs/apikeys))

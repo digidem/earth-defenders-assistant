@@ -15,6 +15,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Create Docker network
+      run: docker network create eda-network || true
+
     - name: Find and process deploy directories
       run: |
         for dir in deploy/*/; do
