@@ -108,7 +108,7 @@ cp deploy/langtrace-stack/.env.example deploy/langtrace-stack/.env
 
 ```ts
 // Basic development
-bun prepare // prepares database and pre-commit hooks
+bun prepare:db // prepares database and pre-commit hooks
 bun dev // starts simulator, Supabase api and Trigger.dev jobs
 // Other available commands
 bun dev:all // starts all services in development mode

@@ -2,7 +2,7 @@
   "name": "earth-denfeders-assistant",
   "workspaces": ["packages/*", "apps/*", "tooling/*"],
   "scripts": {
-    "prepare": "lefthook install && turbo run migrate && turbo run seed",
+    "prepare:db": "lefthook install && turbo run migrate && turbo run seed",
     "dev": "turbo dev --filter=@eda/jobs --filter=@eda/simulator --filter=@eda/ai-api",
     "build": "turbo build",
     "clean": "git clean -xdf node_modules",
