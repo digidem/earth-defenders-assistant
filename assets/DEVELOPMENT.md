@@ -91,7 +91,7 @@ If using local Trigger instance for development run `bun dev:deploy` before runn
 5. **Access the Applications:**
 
 - Supabase Studio: Access the Supabase interface at [http://localhost:54323](http://localhost:54323) to manage your database, view API documentation, and perform other backend tasks.
-- Trigger.dev Dashboard: Access the Trigger.dev dashboard at [http://localhost:3040](http://localhost:3040) to manage jobs.
+- Trigger.dev Dashboard: Access the Trigger.dev dashboard at [http://localhost:3001](http://localhost:3001) to manage jobs.
 - AI API: Visit [http://localhost:8000/docs](http://localhost:8000/docs) in your browser to access the documentation for the API.
 - Dashboard: Visit [http://localhost:8080](http://localhost:8080) in your browser to access the main dashboard.
 - Landing Page: Navigate to [http://localhost:8081](http://localhost:8081) to view the landing page.
@@ -99,8 +99,8 @@ If using local Trigger instance for development run `bun dev:deploy` before runn
 
 6. **Add environmental variables for different APIs**
 
-- Connect to Trigger instance by setting the correct `TRIGGER_PROJECT_ID` and `TRIGGER_API_URL` variables in the `packages/jobs/.env` file from [Local Trigger](http://localhost:3040/) or [Cloud Trigger](https://cloud.trigger.dev)
-- Add the correct `TRIGGER_SECRET_KEY` to `apps/whatsapp/.env` and `packages/simulator/.env` from [Local Trigger](http://localhost:3040/) or [Cloud Trigger](https://cloud.trigger.dev) apikeys section ([docs](https://trigger.dev/docs/apikeys))
+- Connect to Trigger instance by setting the correct `TRIGGER_PROJECT_ID` and `TRIGGER_API_URL` variables in the `packages/jobs/.env` file from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev)
+- Add the correct `TRIGGER_SECRET_KEY` to `apps/whatsapp/.env` and `packages/simulator/.env` from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev) apikeys section ([docs](https://trigger.dev/docs/apikeys))
 - Add the correct `SUPABASE_SERVICE_ROLE_KEY` to the `packages/jobs/.env` from [Local Supabase](http://localhost:54323/project/default/settings/api) or [Cloud Supabase](https://supabase.com/dashboard/)
 - Add the correct `LANGTRACE_API_KEY` to the `.env` in `apps/ai_api/.env` and `packages/simulator/.env`
 - Add valid `CEREBRAS_API_KEY` or `OPENAI_API_KEY` to `apps/ai_api/.env` from [Cerebras](https://cloud.cerebras.ai/platform) or [OpenAI](https://platform.openai.com/api-keys)

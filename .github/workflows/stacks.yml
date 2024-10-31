@@ -1,0 +1,81 @@
+name: Deploy Stacks
+
+on:
+  push:
+    paths:
+      - 'deploy/**'
+  pull_request:
+    paths:
+      - 'deploy/**'
+
+jobs:
+  deploy-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Find and process deploy directories
+      run: |
+        for dir in deploy/*/; do
+          if [ -d "$dir" ]; then
+            echo "Processing $dir"
+            cd "$dir"
+            
+            # Copy environment file
+            cp .env.example .env
+            
+            # Start containers
+            docker compose up -d
+            
+            # Store the directory name for later use
+            echo "${dir%/}" >> $GITHUB_WORKSPACE/deploy_dirs.txt
+            
+            cd $GITHUB_WORKSPACE
+          fi
+        done
+
+    - name: Wait for services to be ready
+      run: sleep 50
+
+    - name: Test endpoints
+      run: |
+        while IFS= read -r dir; do
+          echo "Testing endpoints for $dir"
+          
+          # Extract the service name from directory path
+          service_name=$(basename "$dir")
+          
+          # First check for HEALTHCHECK URL in .env file
+          if [ -f "$dir/.env" ]; then
+            healthcheck_url=$(grep '^HEALTHCHECK=' "$dir/.env" | cut -d '=' -f2)
+            if [ -n "$healthcheck_url" ]; then
+              test_url="$healthcheck_url"
+            else
+              # If no HEALTHCHECK, fall back to PORT
+              port=$(grep '^PORT=' "$dir/.env" | cut -d '=' -f2)
+              if [ -z "$port" ]; then
+                echo "No PORT found in .env for $service_name, using default 3000"
+                port=3000
+              fi
+              test_url="http://localhost:${port}/"
+            fi
+          else
+            echo "No .env file found for $service_name, using default 3000"
+            test_url="http://localhost:3000/"
+          fi
+          
+          # Test the endpoint
+          curl --fail "$test_url" || {
+            echo "Failed to reach $test_url for $service_name"
+            exit 1
+          }
+        done < $GITHUB_WORKSPACE/deploy_dirs.txt
+    - name: Cleanup
+      if: always()
+      run: |
+        while IFS= read -r dir; do
+          cd "$dir"
+          docker compose down
+          cd $GITHUB_WORKSPACE
+        done < $GITHUB_WORKSPACE/deploy_dirs.txt

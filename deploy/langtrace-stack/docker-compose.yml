@@ -10,7 +10,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3000:3000"
+      - "${PORT}:${PORT}"
     # Uncomment this for development
     # command: npm run dev
     # volumes:
