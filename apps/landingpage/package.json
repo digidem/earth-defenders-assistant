@@ -10,8 +10,7 @@
     "clean": "git clean -xdf .turbo node_modules",
     "lint": "biome lint --config-path=../../biome.json --skip=suspicious/noArrayIndexKey ./src",
     "format": "biome format --write .",
-    "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "start": "next start"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
