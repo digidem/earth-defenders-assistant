@@ -12,6 +12,15 @@
     <a href="https://discord.gg/Bkrmqbedvu">
       <img alt="Discord" src="https://img.shields.io/badge/chat-Discord-8A2BE2?style=flat">
     </a>
+    <a href="https://github.com/digidem/earth-defenders-assistant/actions/workflows/ci.yml">
+      <img alt="CI" src="https://github.com/digidem/earth-defenders-assistant/actions/workflows/ci.yml/badge.svg">
+    </a>
+    <a href="https://github.com/digidem/earth-defenders-assistant/actions/workflows/stacks.yml">
+      <img alt="Deploy Stacks" src="https://github.com/digidem/earth-defenders-assistant/actions/workflows/stacks.yml/badge.svg">
+    </a>
+    <a href="https://github.com/digidem/earth-defenders-assistant/actions/workflows/check.yml">
+      <img alt="Check" src="https://github.com/digidem/earth-defenders-assistant/actions/workflows/check.yml/badge.svg">
+    </a>
     <br />
     <br />
     <a href="#overview"><strong>Overview</strong></a> · 

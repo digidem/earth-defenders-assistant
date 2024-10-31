@@ -55,6 +55,14 @@
     "typecheck": {
       "dependsOn": ["^topo"],
       "outputs": ["node_modules/.cache/tsbuildinfo.json"]
+    },
+    "migrate": {
+      "cache": false,
+      "dependsOn": ["^topo"]
+    },
+    "seed": {
+      "cache": false,
+      "dependsOn": ["migrate"]
     }
   }
 }

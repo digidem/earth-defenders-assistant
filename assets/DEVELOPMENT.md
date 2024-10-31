@@ -12,15 +12,19 @@
 
 ## Getting Started
 
+This project uses [Turborepo](https://turbo.build/repo/docs) as a monorepo architecture to manage multiple packages and applications. The codebase is split between TypeScript (for core processing, database interactions, and frontend applications) and Python (for AI/ML services and natural language processing).
 ### Prerequisites
 
-- **Node.js** (v14 or later)
-- **[Bun](https://bun.sh/)** (v1.1.30)
-- **[uv](https://docs.astral.sh/uv/)**
+- **Node.js** (v20 or later)
+- **[Bun](https://bun.sh/)** (v1.1.33) - NodeJS manager
+- **Python** (v3.11)
+- **[uv](https://docs.astral.sh/uv/)** - Python manager
 - **Git**
 - **Docker** (optional, for containerized deployment)
 
 **Installing**
+
+Make sure you have the necessary dependencies. The following commands will install the required development tools:
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash # install Node Version Manager
@@ -28,12 +32,34 @@ curl -fsSL https://bun.sh/install | bash # Install Bun NodeJS package manager an
 curl -LsSf https://astral.sh/uv/install.sh | sh # Install uv Python package manager
 ```
 
+Install Node.js v20 and pin it using nvm:
+
+```
+nvm install 20
+nvm use 20
+nvm alias default 20
+```
+
+And Python 3.11 and pin it using uv:
+```
+uv python install 3.11
+uv python pin 3.11
+```
+
 ### External Services
+
+The platform's core services can be run either locally or accessed via cloud providers during development. While local setup instructions are available in the deployment section, running all services locally can be resource-intensive. Each service provider offers a free tier that you can use by creating an account, making cloud-based development a viable alternative for resource-constrained environments.
+
+| Service                             | Purpose                                | Required   |
+| ----------------------------------- | -------------------------------------- | ---------- |
+| [Supabase](https://supabase.com/)   | Backend-as-a-Service (BaaS) platform   | Yes        |
+| [Trigger.dev](https://trigger.dev/) | Workflow automation and job scheduling | Yes        |
+| [Langtrace](https://langtrace.ai/)  | LLM observability and monitoring       | For AI Dev |
+
+### Optional Monitoring Services
 
 | Service                             | Purpose                                   |
 | ----------------------------------- | ----------------------------------------- |
-| [Supabase](https://supabase.com/)   | Backend-as-a-Service (BaaS) platform      |
-| [Trigger.dev](https://trigger.dev/) | Workflow automation and job scheduling    |
 | [OpenPanel](https://openpanel.dev/) | Analytics and data visualization          |
 | [Upstash](https://upstash.com/)     | Redis-compatible database and caching     |
 | [Sentry](https://sentry.io/)        | Error tracking and performance monitoring |
@@ -60,6 +86,7 @@ bun i
 cp packages/simulator/.env.example packages/simulator/.env
 cp packages/jobs/.env.example packages/jobs/.env
 cp apps/api/.env.example apps/api/.env
+cp apps/ai_api/.env.example apps/ai_api/.env
 cp apps/dashboard/.env.example apps/dashboard/.env
 cp apps/landingpage/.env.example apps/landingpage/.env
 cp apps/whatsapp/.env.example apps/whatsapp/.env
@@ -67,46 +94,59 @@ cp deploy/trigger-stack/.env.example deploy/trigger-stack/.env
 cp deploy/langtrace-stack/.env.example deploy/langtrace-stack/.env
 ```
 
-3. Start the development server from either bun or turbo:
+3. Before starting the development server, ensure you have the required environmental variables in place:
+
+- Connect to Trigger instance by setting the correct `TRIGGER_PROJECT_ID` and `TRIGGER_API_URL` variables in the `packages/jobs/.env` file from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev)
+- Add the correct `TRIGGER_SECRET_KEY` to `apps/whatsapp/.env` and `packages/simulator/.env` from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev) ([docs](https://trigger.dev/docs/apikeys))
+- Add the correct `SUPABASE_SERVICE_ROLE_KEY` to the `packages/jobs/.env` from [Local Supabase](http://localhost:54323/project/default/settings/api) or [Cloud Supabase](https://supabase.com/dashboard/)
+- Add valid `CEREBRAS_API_KEY` or `OPENAI_API_KEY` to `apps/ai_api/.env` from [Cerebras](https://cloud.cerebras.ai/platform) or [OpenAI](https://platform.openai.com/api-keys)
+- (optional) Add the correct `LANGTRACE_API_KEY` to the `.env` in `apps/ai_api/.env` and `packages/simulator/.env`
+- Add a valid `GROQ_API_KEY` to `packages/simulator/.env` from [Groq Console](https://console.groq.com/keys)
+- Add the correct `SERPER_API_KEY` to the `apps/ai_api/.env`
+
+4. Finally start the development server from either bun or turbo:
 
 ```ts
+// Basic development
+bun prepare // prepares database and pre-commit hooks
 bun dev // starts simulator, Supabase api and Trigger.dev jobs
-bun dev:deploy // 
+// Other available commands
 bun dev:all // starts all services in development mode
+bun dev:simulator // starts a user simulation using a LLM
+bun dev:api // starts the Supabase API service in development mode
 bun dev:jobs // starts the Trigger.dev service in development mode
+bun dev:ai // starts the AI API service in development mode (uses Python uv)
 bun dev:whatsapp // starts the WhatsApp service in development mode
 bun dev:dashboard // starts the dashboard in development mode
-bun dev:api // starts the API service in development mode
-bun dev:ai // starts the AI API service in development mode (uses Python uv)
 bun dev:landingpage // starts the landing page in development mode
 bun dev:email // starts the email service in development mode
 bun dev:docs // starts the documentation service in development mode
-
+bun deploy:trigger // deploys local Trigger.dev instance using Docker
+bun deploy:langtrace // deploys local LangTrace instance using Docker
 // Database
-bun migrate // run migrations
-bun seed // run seed
+bun migrate // run Supabase migrations
+bun seed // run Supabase seed
 ```
 
-If using local Trigger instance for development run `bun dev:deploy` before running `bun dev`. For using local Langtrace deploy with `bun deploy:langtrace`.
+5. Running `bun dev` starts three key development services in parallel:
 
-4. **Access the Applications:**
+- The simulator (@eda/simulator) which simulates a community member interacting with the system
+- The API service (@eda/api) which handles core backend functionality using Supabase (will run a local Supabase instance using Docker)
+- The jobs service (@eda/jobs) which processes background tasks using Trigger.dev
+- The AI API service (@eda/ai-api) which handles AI-related functionality exposing plugins through a [FastAPI](https://fastapi.tiangolo.com/) server.
 
-- Supabase Studio: Access the Supabase interface at [http://localhost:54323](http://localhost:54323) to manage your database, view API documentation, and perform other backend tasks.
-- Trigger.dev Dashboard: Access the Trigger.dev dashboard at [http://localhost:3001](http://localhost:3001) to manage jobs.
-- AI API: Visit [http://localhost:8000/docs](http://localhost:8000/docs) in your browser to access the documentation for the API.
-- Dashboard: Visit [http://localhost:8080](http://localhost:8080) in your browser to access the main dashboard.
-- Landing Page: Navigate to [http://localhost:8081](http://localhost:8081) to view the landing page.
-- Documentation: Browse the documentation at [http://localhost:8082](http://localhost:8082).
+**Access the Applications:**
 
-5. **Add environmental variables for different APIs**
+- **Dashboard**: Visit [http://localhost:8080](http://localhost:8080) to access the main dashboard interface.
+- **Landing Page**: Visit [http://localhost:8081](http://localhost:8081) to view the landing page.
+- **Documentation**: Visit [http://localhost:8082](http://localhost:8082) to browse the documentation.
+- **AI API**: Visit [http://localhost:8083/docs](http://localhost:8083/docs) to access the API documentation.
+- **Supabase Studio**: Visit [http://localhost:54323](http://localhost:54323) to manage your database, view API documentation, and perform backend tasks.
+- **Trigger.dev Dashboard**: Visit [http://localhost:3001](http://localhost:3001) to manage jobs. Use `docker logs -f trigger-webapp` to view the magic link in the logs.
 
-- Connect to Trigger instance by setting the correct `TRIGGER_PROJECT_ID` and `TRIGGER_API_URL` variables in the `packages/jobs/.env` file from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev)
-- Add the correct `TRIGGER_SECRET_KEY` to `apps/whatsapp/.env` and `packages/simulator/.env` from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev) apikeys section ([docs](https://trigger.dev/docs/apikeys))
-- Add the correct `SUPABASE_SERVICE_ROLE_KEY` to the `packages/jobs/.env` from [Local Supabase](http://localhost:54323/project/default/settings/api) or [Cloud Supabase](https://supabase.com/dashboard/)
-- Add the correct `LANGTRACE_API_KEY` to the `.env` in `apps/ai_api/.env` and `packages/simulator/.env`
-- Add valid `CEREBRAS_API_KEY` or `OPENAI_API_KEY` to `apps/ai_api/.env` from [Cerebras](https://cloud.cerebras.ai/platform) or [OpenAI](https://platform.openai.com/api-keys)
-- Add a valid `GROQ_API_KEY` to `packages/simulator/.env` from [Groq Console](https://console.groq.com/keys)
-- Add the correct `SERPER_API_KEY` to the `apps/ai_api/.env`
+Development should be done primarily through the simulator, which creates realistic scenarios of community members interacting with the system. The simulator enables testing conversations between two AI agents - one representing a community member and another representing the assistant.
+
+If using a local Trigger.dev instance for job processing, first run `bun deploy:trigger` before `bun dev`. For local LangTrace observability, deploy with `bun deploy:langtrace`.
 
 ## Architecture
 
@@ -122,12 +162,14 @@ This project follows a modular architecture, organized as a Turborepo monorepo. 
 [Turborepo](https://turbo.build) - Build system<br>
 [Biome](https://biomejs.dev) - Linter, formatter<br>
 [Supabase](https://supabase.com/) - Authentication, database, storage<br>
+[Trigger.dev](https://trigger.dev/) - Background jobs<br>
+[FastAPI](https://fastapi.tiangolo.com/) - Python web framework<br>
+[Langtrace](https://www.langtrace.ai/) - LLM monitoring and evaluation<br>
+[Starlight](https://starlight.astro.build/) - Documentation<br>
 [Upstash](https://upstash.com/) - Cache and rate limiting<br>
 [React Email](https://react.email/) - Email templates<br>
 [Sentry](https://sentry.io/) - Error handling/monitoring<br>
-[Trigger.dev](https://trigger.dev/) - Background jobs<br>
 [OpenPanel](https://openpanel.dev/) - Analytics<br>
-[Starlight](https://starlight.astro.build/) - Documentation<br>
 
 ### Directory Structure
 
