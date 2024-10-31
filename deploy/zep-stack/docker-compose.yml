@@ -3,29 +3,26 @@ name: zep-ce
 services:
   zep:
     image: zepai/zep:latest
+    container_name: zep-ce
     ports:
       - ${PORT}:8000
     volumes:
       - ./zep.yaml:/app/zep.yaml
     environment:
       - ZEP_CONFIG_FILE=zep.yaml
-    networks:
-      - eda-network
     depends_on:
       graphiti:
         condition: service_healthy
       db:
         condition: service_healthy
   db:
-    image: ankane/pgvector:v0.5.1
+    image: pgvector/pgvector:pg17
     container_name: zep-ce-postgres
     restart: on-failure
     shm_size: "128mb" # Increase this if vacuuming fails with a "no space left on device" error
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    networks:
-      - eda-network
     healthcheck:
       test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
       interval: 5s
@@ -34,15 +31,14 @@ services:
     volumes:
       - zep-db:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "5434:5432"
   graphiti:
     image: zepai/graphiti:0.3
+    container_name: zep-ce-graphiti
     ports:
       - "8003:8003"
     env_file:
       - .env
-    networks:
-      - eda-network
     healthcheck:
       test:
         [
@@ -66,8 +62,7 @@ services:
       - PORT=8003
   neo4j:
     image: neo4j:5.22.0
-    networks:
-      - eda-network
+    container_name: zep-ce-neo4j
     healthcheck:
       test: wget http://localhost:7687 || exit 1
       interval: 1s
@@ -84,8 +79,3 @@ services:
 volumes:
   neo4j_data:
   zep-db:
-
-networks:
-  eda-network:
-    name: eda-network
-    external: true

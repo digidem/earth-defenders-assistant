@@ -2,10 +2,6 @@ services:
   langtrace-app:
     container_name: langtrace
     image: scale3labs/langtrace-client:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
     working_dir: /app
     env_file:
       - .env
