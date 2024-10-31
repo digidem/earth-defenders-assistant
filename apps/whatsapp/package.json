@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "bun run --watch .",
     "start": "bun run index.ts",
-    "build": "bun build index.ts --outdir ./dist",
     "lint": "biome lint",
     "clean": "git clean -xdf .next .turbo node_modules .wwebjs_*",
     "test": "bun test"
