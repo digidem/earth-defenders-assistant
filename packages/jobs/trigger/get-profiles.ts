@@ -1,48 +1,18 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import type { z } from "zod";
 import { supabase } from "../lib/supabase";
-import type { querySchema } from "../schemas/profiles.schema";
 
 export const getProfilesTask = task({
   id: "get-profiles",
-  run: async (payload: z.infer<typeof querySchema>, { ctx }) => {
-    logger.info("Fetching profiles", { filters: payload });
+  run: async ({ userId }: { userId?: string }, { ctx }) => {
+    logger.info("Fetching profiles", { userId });
 
     try {
       let query = supabase
         .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
 
-      if (payload.userId) {
-        query = query.eq("user_id", payload.userId);
-      }
-
-      if (payload.biome) {
-        query = query.eq("biome", payload.biome);
-      }
-
-      if (payload.ethnicGroup) {
-        query = query.eq("ethnic_group", payload.ethnicGroup);
-      }
-
-      if (payload.territory) {
-        query = query.eq("territory", payload.territory);
-      }
-
-      if (payload.community) {
-        query = query.eq("community", payload.community);
-      }
-
-      if (payload.limit) {
-        query = query.limit(payload.limit);
-      }
-
-      if (payload.offset) {
-        query = query.range(
-          payload.offset,
-          payload.offset + (payload.limit || 50) - 1,
-        );
+      if (userId) {
+        query = query.eq("user_id", userId);
       }
 
       const { data, error } = await query;
@@ -52,7 +22,7 @@ export const getProfilesTask = task({
         return { success: false, error: error.message };
       }
 
-      logger.info("Profiles fetched successfully", { count: data.length });
+      logger.info("Profiles fetched successfully");
       return { success: true, profiles: data };
     } catch (error) {
       const errorMessage =

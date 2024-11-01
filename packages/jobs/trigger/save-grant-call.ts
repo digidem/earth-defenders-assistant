@@ -1,45 +1,37 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
 import type { z } from "zod";
 import { supabase } from "../lib/supabase";
-import type {
-  GrantCallResult,
-  saveGrantCallSchema,
-} from "../schemas/grant-calls.schema";
+
+const grantCallSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  deadline: z.string(),
+  fundingAmount: z.number(),
+  eligibility: z.string(),
+  meta: z.record(z.any()).optional(),
+});
 
 export const saveGrantCallTask = task({
   id: "save-grant-call",
-  run: async (payload: z.infer<typeof saveGrantCallSchema>, { ctx }) => {
-    logger.info("Processing grant call");
+  run: async (payload: z.infer<typeof grantCallSchema>, { ctx }) => {
+    logger.info("Saving grant call", { id: payload.id });
 
     try {
-      const { id, ...grantCallData } = payload;
-      let result: GrantCallResult;
+      const { error } = await supabase
+        .from("grant_calls")
+        .insert({
+          ...payload,
+          created_at: new Date().toISOString(),
+        });
 
-      if (id) {
-        // Update existing grant call
-        const { data, error } = await supabase
-          .from("grant_calls")
-          .update(grantCallData)
-          .eq("id", id)
-          .select()
-          .single();
-
-        if (error) throw error;
-        result = data;
-      } else {
-        // Insert new grant call
-        const { data, error } = await supabase
-          .from("grant_calls")
-          .insert(grantCallData)
-          .select()
-          .single();
-
-        if (error) throw error;
-        result = data;
+      if (error) {
+        logger.error("Failed to save grant call", { error });
+        return { success: false, error: error.message };
       }
 
-      logger.info("Grant call saved successfully", { id: result.id });
-      return { success: true, grantCall: result };
+      logger.info("Grant call saved successfully", { id: payload.id });
+      return { success: true, grantCallId: payload.id };
     } catch (error) {
       logger.error("Error saving grant call", { error, payload });
       return {

@@ -1,12 +1,10 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import type { z } from "zod";
 import { supabase } from "../lib/supabase";
-import type { querySchema } from "../schemas/grant-calls.schema";
 
 export const getGrantCallsTask = task({
   id: "get-grant-calls",
-  run: async (payload: z.infer<typeof querySchema>, { ctx }) => {
-    logger.info("Fetching grant calls", { filters: payload });
+  run: async ({ status }: { status?: string }, { ctx }) => {
+    logger.info("Fetching grant calls", { status });
 
     try {
       let query = supabase
@@ -14,31 +12,8 @@ export const getGrantCallsTask = task({
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (payload.status) {
-        query = query.eq("status", payload.status);
-      }
-
-      if (payload.focusArea) {
-        query = query.contains("focus_areas", [payload.focusArea]);
-      }
-
-      if (payload.minAmount) {
-        query = query.gte("funding_amount", payload.minAmount);
-      }
-
-      if (payload.maxAmount) {
-        query = query.lte("funding_amount", payload.maxAmount);
-      }
-
-      if (payload.limit) {
-        query = query.limit(payload.limit);
-      }
-
-      if (payload.offset) {
-        query = query.range(
-          payload.offset,
-          payload.offset + (payload.limit || 50) - 1,
-        );
+      if (status) {
+        query = query.eq("status", status);
       }
 
       const { data, error } = await query;
@@ -48,13 +23,11 @@ export const getGrantCallsTask = task({
         return { success: false, error: error.message };
       }
 
-      logger.info("Grant calls fetched successfully", { count: data.length });
+      logger.info("Grant calls fetched successfully");
       return { success: true, grantCalls: data };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      logger.error("Error fetching grant calls", { error: errorMessage });
-      return { success: false, error: errorMessage };
+      logger.error("Error fetching grant calls", { error });
+      return { success: false, error: (error as Error).message };
     }
   },
 });

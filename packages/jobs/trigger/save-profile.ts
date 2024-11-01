@@ -1,53 +1,41 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
 import type { z } from "zod";
 import { supabase } from "../lib/supabase";
-import type {
-  ProfileResult,
-  saveProfileSchema,
-} from "../schemas/profiles.schema";
+
+const profileSchema = z.object({
+  userId: z.string(),
+  fullName: z.string(),
+  email: z.string().email(),
+  organization: z.string().optional(),
+  role: z.string().optional(),
+  preferences: z.record(z.any()).optional(),
+});
 
 export const saveProfileTask = task({
   id: "save-profile",
-  run: async (payload: z.infer<typeof saveProfileSchema>, { ctx }) => {
-    logger.info("Processing profile", { userId: payload.userId });
+  run: async (payload: z.infer<typeof profileSchema>, { ctx }) => {
+    logger.info("Saving profile", { userId: payload.userId });
 
     try {
-      const profileData = {
-        user_id: payload.userId,
-        biome: payload.biome,
-        ethnic_group: payload.ethnicGroup,
-        territory: payload.territory,
-        community: payload.community,
-        meta: payload.meta || {},
-      };
+      const { error } = await supabase
+        .from("profiles")
+        .upsert({
+          user_id: payload.userId,
+          full_name: payload.fullName,
+          email: payload.email,
+          organization: payload.organization,
+          role: payload.role,
+          preferences: payload.preferences,
+          updated_at: new Date().toISOString(),
+        });
 
-      let result: ProfileResult;
-
-      if (payload.id) {
-        // Update existing profile
-        const { data, error } = await supabase
-          .from("profiles")
-          .update(profileData)
-          .eq("id", payload.id)
-          .select()
-          .single();
-
-        if (error) throw error;
-        result = data;
-      } else {
-        // Insert new profile
-        const { data, error } = await supabase
-          .from("profiles")
-          .insert(profileData)
-          .select()
-          .single();
-
-        if (error) throw error;
-        result = data;
+      if (error) {
+        logger.error("Failed to save profile", { error });
+        return { success: false, error: error.message };
       }
 
-      logger.info("Profile saved successfully", { id: result.id });
-      return { success: true, profile: result };
+      logger.info("Profile saved successfully", { userId: payload.userId });
+      return { success: true };
     } catch (error) {
       logger.error("Error saving profile", { error, payload });
       return {
