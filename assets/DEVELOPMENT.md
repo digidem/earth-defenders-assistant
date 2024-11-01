@@ -96,8 +96,8 @@ cp deploy/langtrace-stack/.env.example deploy/langtrace-stack/.env
 
 3. Before starting the development server, ensure you have the required environmental variables in place:
 
-- Connect to Trigger instance by setting the correct `TRIGGER_PROJECT_ID` and `TRIGGER_API_URL` variables in the `packages/jobs/.env` file from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev)
-- Add the correct `TRIGGER_SECRET_KEY` to `apps/whatsapp/.env` and `packages/simulator/.env` from [Local Trigger](http://localhost:3001/) or [Cloud Trigger](https://cloud.trigger.dev) ([docs](https://trigger.dev/docs/apikeys))
+- Connect to Trigger instance by setting the correct `TRIGGER_PROJECT_ID` and `TRIGGER_API_URL` variables in the `packages/jobs/.env` file from [Local Trigger](http://localhost:3040/) or [Cloud Trigger](https://cloud.trigger.dev)
+- Add the correct `TRIGGER_SECRET_KEY` to `apps/whatsapp/.env` and `packages/simulator/.env` from [Local Trigger](http://localhost:3040/) or [Cloud Trigger](https://cloud.trigger.dev) ([docs](https://trigger.dev/docs/apikeys))
 - Add the correct `SUPABASE_SERVICE_ROLE_KEY` to the `packages/jobs/.env` from [Local Supabase](http://localhost:54323/project/default/settings/api) or [Cloud Supabase](https://supabase.com/dashboard/)
 - Add valid `CEREBRAS_API_KEY` or `OPENAI_API_KEY` to `apps/ai_api/.env` from [Cerebras](https://cloud.cerebras.ai/platform) or [OpenAI](https://platform.openai.com/api-keys)
 - (optional) Add the correct `LANGTRACE_API_KEY` to the `.env` in `apps/ai_api/.env` and `packages/simulator/.env`
@@ -142,7 +142,7 @@ bun seed // run Supabase seed
 - **Documentation**: Visit [http://localhost:8082](http://localhost:8082) to browse the documentation.
 - **AI API**: Visit [http://localhost:8083/docs](http://localhost:8083/docs) to access the API documentation.
 - **Supabase Studio**: Visit [http://localhost:54323](http://localhost:54323) to manage your database, view API documentation, and perform backend tasks.
-- **Trigger.dev Dashboard**: Visit [http://localhost:3001](http://localhost:3001) to manage jobs. Use `docker logs -f trigger-webapp` to view the magic link in the logs.
+- **Trigger.dev Dashboard**: Visit [http://localhost:3040](http://localhost:3040) to manage jobs. Use `docker logs -f trigger-webapp` to view the magic link in the logs.
 
 Development should be done primarily through the simulator, which creates realistic scenarios of community members interacting with the system. The simulator enables testing conversations between two AI agents - one representing a community member and another representing the assistant.
 
