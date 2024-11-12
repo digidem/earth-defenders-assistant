@@ -1,0 +1,17 @@
+[project]
+name = "supervisor"
+version = "0.1.0"
+description = "Supervisor crew using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<=3.13"
+dependencies = [
+    "crewai[agentops,tools]>=0.76.2,<1.0.0",
+]
+
+[project.scripts]
+supervisor = "supervisor.main:run"
+run_crew = "supervisor.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

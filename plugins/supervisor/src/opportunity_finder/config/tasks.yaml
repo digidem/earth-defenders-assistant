@@ -1,0 +1,9 @@
+route_decision_task:
+  description: >
+    Analyze the user message and determine the appropriate service to handle the request.
+    Consider the context and requirements to route between:
+    1. discovery - For finding grant opportunities
+    2. heartbeat - For checking system health
+  expected_output: >
+    A single word response: either "discovery" or "heartbeat"
+  agent: decision_maker
