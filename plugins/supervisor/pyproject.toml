@@ -12,6 +12,9 @@ dependencies = [
 supervisor = "supervisor.main:run"
 run_crew = "supervisor.main:run"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/supervisor"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
