@@ -8,7 +8,19 @@ router = APIRouter()
 
 @router.post("/supervisor", response_model=SupervisorResponse)
 async def supervisor_route(request: SupervisorRequest) -> SupervisorResponse:
-    decision = SupervisorCrew().crew().kickoff(inputs={"message": request.message})
+    decision = (
+        SupervisorCrew().create_crew().kickoff(inputs={"message": request.message})
+    )
+
+    # Print input message
+    print("\n==================================================")
+    print(f"           INPUT MESSAGE: { request.message}       ")
+    print("==================================================")
+
+    # Print supervisor decision
+    print("\n==================================================")
+    print(f"               DECISION: {decision}                 ")
+    print("==================================================\n")
 
     if decision.lower() == "discovery":
         topics = ["AI", "Technology"]  # Extract topics from message

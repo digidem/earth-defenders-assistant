@@ -7,9 +7,8 @@ from langchain_openai import ChatOpenAI
 search_tool = SerperDevTool()
 scrape_tool = ScrapeWebsiteTool()
 cerebras_llm = LLM(
-    model="cerebras/llama3.1-70b", # Replace with your chosen Cerebras model name, e.g., "cerebras/llama3.1-8b"
-    api_key=os.environ.get("CEREBRAS_API_KEY"), # Your Cerebras API key
-    base_url="https://api.cerebras.ai/v1",
+    model="sambanova/Meta-Llama-3.1-70B-Instruct", # Replace with your chosen Cerebras model name, e.g., "cerebras/llama3.1-8b"
+    api_key=os.environ.get("SAMBANOVA_API_KEY"), # Your Cerebras API key
     temperature=0.5,
     # Optional parameters:
     # top_p=1,
