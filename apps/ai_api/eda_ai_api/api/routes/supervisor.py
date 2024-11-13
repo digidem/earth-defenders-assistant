@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from eda_ai_api.models.supervisor import SupervisorRequest, SupervisorResponse
+from supervisor.crew import SupervisorCrew
 from opportunity_finder.crew import OpportunityFinderCrew
-from plugins.supervisor.crew import SupervisorCrew
 
 router = APIRouter()
 

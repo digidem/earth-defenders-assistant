@@ -1,19 +1,19 @@
 [project]
 name = "supervisor"
 version = "0.1.0"
-description = "Supervisor crew using crewAI"
+description = "supervisor using crewAI"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<=3.13"
 dependencies = [
-    "crewai[agentops,tools]>=0.76.2,<1.0.0",
+    "crewai[tools]>=0.79.4,<1.0.0"
 ]
 
 [project.scripts]
 supervisor = "supervisor.main:run"
 run_crew = "supervisor.main:run"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/supervisor"]
+train = "supervisor.main:train"
+replay = "supervisor.main:replay"
+test = "supervisor.main:test"
 
 [build-system]
 requires = ["hatchling"]
