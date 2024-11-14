@@ -22,7 +22,8 @@ async def supervisor_route(request: SupervisorRequest) -> SupervisorResponse:
     print(f"               DECISION: {decision}                 ")
     print("==================================================\n")
 
-    if decision.lower() == "discovery":
+    # Convert CrewOutput to string and then compare
+    if str(decision).lower() == "discovery":
         topics = ["AI", "Technology"]  # Extract topics from message
         result = (
             OpportunityFinderCrew().crew().kickoff(inputs={"topics": ", ".join(topics)})
