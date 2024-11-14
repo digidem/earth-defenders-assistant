@@ -13,10 +13,10 @@
     "@eda/supabase": "workspace:*",
     "@eda/types": "workspace:*",
     "@getzep/zep-cloud": "^2.0.0",
-    "@trigger.dev/sdk": "3.1.2"
+    "@trigger.dev/sdk": "3.1.0"
   },
   "devDependencies": {
-    "@trigger.dev/build": "3.1.2",
+    "@trigger.dev/build": "3.1.0",
     "vitest": "^2.1.5"
   }
 }
