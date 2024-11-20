@@ -3,7 +3,6 @@ import datetime
 from crewai import Agent, Crew, Process, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
 from crewai_tools import ScrapeWebsiteTool, SerperDevTool
-from langchain_openai import ChatOpenAI
 
 search_tool = SerperDevTool()
 scrape_tool = ScrapeWebsiteTool()

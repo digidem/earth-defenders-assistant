@@ -1,11 +1,13 @@
 import os
+
 from fastapi import APIRouter
+from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq
-from langchain.chains import LLMChain
-from eda_ai_api.models.supervisor import SupervisorRequest, SupervisorResponse
 from opportunity_finder.crew import OpportunityFinderCrew
 from proposal_writer.crew import ProposalWriterCrew
+
+from eda_ai_api.models.supervisor import SupervisorRequest, SupervisorResponse
 
 router = APIRouter()
 
@@ -16,7 +18,8 @@ llm = ChatGroq(
     temperature=0.5,
 )
 
-ROUTER_TEMPLATE = """Given a user message, determine the appropriate service to handle the request.
+ROUTER_TEMPLATE = """
+Given a user message, determine the appropriate service to handle the request.
 Choose between:
 - discovery: For finding grant opportunities
 - proposal: For writing grant proposals
@@ -26,14 +29,16 @@ User message: {message}
 
 Return only one word (discovery/proposal/heartbeat):"""
 
-TOPIC_EXTRACTOR_TEMPLATE = """Extract up to 5 most relevant topics for grant opportunity research from the user message.
+TOPIC_EXTRACTOR_TEMPLATE = """
+Extract up to 5 most relevant topics for grant opportunity research from the user message.
 Return only a comma-separated list of topics (maximum 5), no other text.
 
 User message: {message}
 
 Topics:"""
 
-PROPOSAL_EXTRACTOR_TEMPLATE = """Extract the community project name and grant program name from the user message.
+PROPOSAL_EXTRACTOR_TEMPLATE = """
+Extract the community project name and grant program name from the user message.
 Return in format: project_name|grant_name
 If either cannot be determined, use "unknown" as placeholder.
 
