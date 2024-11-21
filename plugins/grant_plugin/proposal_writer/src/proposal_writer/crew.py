@@ -5,10 +5,10 @@ from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
 # Initialize LLM
-cerebras_llm = LLM(
-    model="sambanova/Meta-Llama-3.1-70B-Instruct",
-    api_key=os.environ.get("SAMBANOVA_API_KEY"),
-    temperature=0.7,
+llm = LLM(
+    model="groq/llama3-groq-70b-8192-tool-use-preview",  # Replace with your chosen Cerebras model name, e.g., "cerebras/llama3.1-8b"
+    api_key=os.environ.get("GROQ_API_KEY"),  # Your Cerebras API key
+    temperature=0.5,
 )
 
 
@@ -27,7 +27,7 @@ class ProposalWriterCrew:
             config=self.agents_config["manager"],
             verbose=True,
             allow_delegation=True,
-            llm=cerebras_llm,
+            llm=llm,
         )
 
     @agent
@@ -36,7 +36,7 @@ class ProposalWriterCrew:
             config=self.agents_config["outliner"],
             verbose=True,
             allow_delegation=True,
-            llm=cerebras_llm,
+            llm=llm,
         )
 
     @agent
@@ -46,7 +46,7 @@ class ProposalWriterCrew:
             verbose=True,
             allow_delegation=True,
             human_input_mode="ALWAYS",
-            llm=cerebras_llm,
+            llm=llm,
         )
 
     @agent
@@ -56,7 +56,7 @@ class ProposalWriterCrew:
             verbose=True,
             allow_delegation=True,
             human_input_mode="ALWAYS",
-            llm=cerebras_llm,
+            llm=llm,
         )
 
     @task
@@ -105,5 +105,5 @@ class ProposalWriterCrew:
             process=Process.hierarchical,
             verbose=True,
             memory=True,
-            manager_llm=cerebras_llm,
+            manager_llm=llm,
         )

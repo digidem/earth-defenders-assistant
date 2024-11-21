@@ -6,9 +6,9 @@ from crewai_tools import ScrapeWebsiteTool, SerperDevTool
 
 search_tool = SerperDevTool()
 scrape_tool = ScrapeWebsiteTool()
-cerebras_llm = LLM(
-    model="sambanova/Meta-Llama-3.1-70B-Instruct",  # Replace with your chosen Cerebras model name, e.g., "cerebras/llama3.1-8b"
-    api_key=os.environ.get("SAMBANOVA_API_KEY"),  # Your Cerebras API key
+llm = LLM(
+    model="groq/llama3-groq-70b-8192-tool-use-preview",  # Replace with your chosen Cerebras model name, e.g., "cerebras/llama3.1-8b"
+    api_key=os.environ.get("GROQ_API_KEY"),  # Your Cerebras API key
     temperature=0.5,
 )
 
@@ -24,7 +24,7 @@ class OpportunityFinderCrew:
             verbose=True,
             allow_delegation=True,
             tools=[search_tool, scrape_tool],
-            llm=cerebras_llm,
+            llm=llm,
         )
 
     @agent
@@ -34,7 +34,7 @@ class OpportunityFinderCrew:
             tools=[search_tool, scrape_tool],
             verbose=True,
             allow_delegation=True,
-            llm=cerebras_llm,
+            llm=llm,
         )
 
     @agent
@@ -43,7 +43,7 @@ class OpportunityFinderCrew:
             config=self.agents_config["reporting_analyst"],
             tools=[search_tool, scrape_tool],
             verbose=True,
-            llm=cerebras_llm,
+            llm=llm,
         )
 
     @task
@@ -73,7 +73,7 @@ class OpportunityFinderCrew:
             agents=self.agents,
             tasks=self.tasks,
             process=Process.hierarchical,
-            manager_llm=cerebras_llm,
+            manager_llm=llm,
             verbose=True,
             output_log_file=f'OpportunityFinderCrew_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.log',
         )
