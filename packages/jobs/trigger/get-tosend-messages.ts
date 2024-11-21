@@ -1,20 +1,12 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import { z } from "zod";
+import type { z } from "zod";
 import { supabase } from "../lib/supabase";
-
-const querySchema = z.object({
-  userId: z.string().optional(),
-  limit: z.number().optional(),
-  offset: z.number().optional(),
-  fromTimestamp: z.number().optional(),
-  toTimestamp: z.number().optional(),
-  processed: z.boolean().optional(),
-});
+import type { querySchema } from "../schemas/tosend-messages.schema";
 
 export const getTosendMessagesTask = task({
   id: "get-tosend-messages",
   run: async (payload: z.infer<typeof querySchema>, { ctx }) => {
-    logger.info("Fetching tosend messages", { userId: payload.userId });
+    logger.info("Fetching tosend messages", { filters: payload });
 
     try {
       let query = supabase
@@ -43,6 +35,10 @@ export const getTosendMessagesTask = task({
           payload.offset,
           payload.offset + (payload.limit || 50) - 1,
         );
+      }
+
+      if (payload.processed !== undefined) {
+        query = query.eq("processed", payload.processed);
       }
 
       const { data, error } = await query;
