@@ -1,13 +1,7 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import { z } from "zod";
+import type { z } from "zod";
 import { supabase } from "../lib/supabase";
-
-const messageSchema = z.object({
-  userId: z.string(),
-  text: z.string(),
-  timestamp: z.number(),
-  meta: z.record(z.any()),
-});
+import type { messageSchema } from "../schemas/tosend-messages.schema";
 
 export const saveTosendMessageTask = task({
   id: "save-tosend-message",
@@ -31,7 +25,11 @@ export const saveTosendMessageTask = task({
       return { success: true };
     } catch (error) {
       logger.error("Error saving tosend message", { error, payload });
-      return { success: false, error: (error as Error).message };
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      };
     }
   },
 });

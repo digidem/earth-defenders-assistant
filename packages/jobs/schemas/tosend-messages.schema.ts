@@ -16,3 +16,32 @@ export const querySchema = z
       data.toTimestamp >= data.fromTimestamp,
     { message: "toTimestamp must be greater than or equal to fromTimestamp" },
   );
+
+const metaValueSchema = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.null(),
+  z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+  z.record(
+    z.string(),
+    z.union([z.string(), z.number(), z.boolean(), z.null()]),
+  ),
+]);
+
+const messageSchema = z.object({
+  userId: z.string().min(1),
+  text: z.string().min(1),
+  timestamp: z.number(),
+  meta: z.record(z.string(), metaValueSchema).optional(),
+});
+
+export type MetaValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<string | number | boolean | null>
+  | Record<string, string | number | boolean | null>;
+
+export { messageSchema };
