@@ -1,16 +1,7 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import { z } from "zod";
+import type { z } from "zod";
 import { supabase } from "../lib/supabase";
-
-const querySchema = z.object({
-  userId: z.string().optional(),
-  biome: z.string().optional(),
-  ethnicGroup: z.string().optional(),
-  territory: z.string().optional(),
-  community: z.string().optional(),
-  limit: z.number().optional(),
-  offset: z.number().optional(),
-});
+import type { querySchema } from "../schemas/profiles.schema";
 
 export const getProfilesTask = task({
   id: "get-profiles",
@@ -64,8 +55,10 @@ export const getProfilesTask = task({
       logger.info("Profiles fetched successfully", { count: data.length });
       return { success: true, profiles: data };
     } catch (error) {
-      logger.error("Error fetching profiles", { error });
-      return { success: false, error: (error as Error).message };
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      logger.error("Error fetching profiles", { error: errorMessage });
+      return { success: false, error: errorMessage };
     }
   },
 });

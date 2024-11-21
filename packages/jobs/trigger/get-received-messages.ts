@@ -1,19 +1,12 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import { z } from "zod";
+import type { z } from "zod";
 import { supabase } from "../lib/supabase";
-
-const querySchema = z.object({
-  userId: z.string().optional(),
-  limit: z.number().optional(),
-  offset: z.number().optional(),
-  fromTimestamp: z.number().optional(),
-  toTimestamp: z.number().optional(),
-});
+import type { querySchema } from "../schemas/received-messages.schema";
 
 export const getReceivedMessagesTask = task({
   id: "get-received-messages",
   run: async (payload: z.infer<typeof querySchema>, { ctx }) => {
-    logger.info("Fetching messages", { userId: payload.userId });
+    logger.info("Fetching messages", { filters: payload });
 
     try {
       let query = supabase
@@ -54,8 +47,10 @@ export const getReceivedMessagesTask = task({
       logger.info("Messages fetched successfully", { count: data.length });
       return { success: true, messages: data };
     } catch (error) {
-      logger.error("Error fetching messages", { error });
-      return { success: false, error: (error as Error).message };
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      logger.error("Error fetching messages", { error: errorMessage });
+      return { success: false, error: errorMessage };
     }
   },
 });
