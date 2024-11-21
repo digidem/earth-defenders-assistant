@@ -1,16 +1,7 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import { z } from "zod";
+import type { z } from "zod";
 import { supabase } from "../lib/supabase";
-
-const querySchema = z.object({
-  userId: z.string().optional(),
-  limit: z.number().optional(),
-  offset: z.number().optional(),
-  status: z.enum(["open", "closed", "draft"]).optional(),
-  focusArea: z.string().optional(),
-  minAmount: z.number().optional(),
-  maxAmount: z.number().optional(),
-});
+import type { querySchema } from "../schemas/grant-calls.schema";
 
 export const getGrantCallsTask = task({
   id: "get-grant-calls",
