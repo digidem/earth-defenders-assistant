@@ -43,10 +43,10 @@
    - **Local Data Ownership:** The whole infrastructure can run locally, ensuring data is processed and stored locally, respecting community autonomy and privacy.
    - **Resilience in Connectivity-Challenged Areas:** Operates effectively without constant internet connectivity, providing reliable access to tools and information in resource-limited settings.
 
-3. **🤖 Customized AI Models and Knowledge Bases:**
-   - **Teach It Your Language:** Facilitates the training of Speech-to-Text (STT) and Text-to-Speech (TTS) models in Indigenous languages, preserving and revitalizing linguistic heritage.
-   - **Culturally-Aligned Machines:** Helps developing Large Language Models (LLMs) that reflect and respect Indigenous cosmologies and worldviews.
-   - **Tailored Knowledge Integration:**  Incorporates community-specific knowledge bases, enabling the AI to provide accurate and meaningful information aligned with local contexts.
+3. **🤖 Customized Assistants:**
+    - **Flexible Plugin System:** Create and deploy custom plugins to extend bot functionality for specific community needs - from environmental monitoring to cultural preservation
+    - **Knowledge Integration:** Import community-specific knowledge bases and cultural content to ensure the bot provides locally relevant and culturally appropriate responses
+    - **Offline-First Design:** Plugins work seamlessly in low-connectivity environments, with local processing and storage capabilities
 
 **Earth Defenders Assistant** bridges AI technology with community empowerment by integrating advanced AI solutions with intuitive interfaces. This ensures accessibility for all individuals, regardless of literacy or technological familiarity. The platform is dedicated to preserving cultural integrity by adapting AI technologies to reflect and uphold the unique values, languages, and knowledge of Indigenous communities.
 
@@ -70,13 +70,14 @@ Check [PLUGINS](./assets/PLUGINS.md) documentation for more details on ideas for
 
 ## 📝 Roadmap
 
-We have an exciting vision for the future of Earth Defenders Assistant. Our roadmap outlines the key phases of development, including:
+The roadmap outlines the key phases of development:
 
+### MVP (March 2025)
 - Initial setup and simulator creation
 - Refinement of the prototype with offline and data sovereignty features
-- Core features development and MVP
+- Core features development and MVP (see [Github Project](https://github.com/orgs/digidem/projects/38))
 
-For a detailed breakdown of our planned milestones and objectives, please refer to our [ROADMAP](./assets/ROADMAP.md) document.
+For a detailed breakdown of our planned milestones and objectives, please refer to our [ROADMAP](./assets/ROADMAP.md) document and our [Project page](https://github.com/orgs/digidem/projects/38).
 
 ## 🤝 Contributing
 
