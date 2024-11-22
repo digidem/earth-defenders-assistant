@@ -1,5 +1,5 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import type { z } from "zod";
+import { z } from "zod";
 import { supabase } from "../lib/supabase";
 
 const profileSchema = z.object({
@@ -17,17 +17,15 @@ export const saveProfileTask = task({
     logger.info("Saving profile", { userId: payload.userId });
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({
-          user_id: payload.userId,
-          full_name: payload.fullName,
-          email: payload.email,
-          organization: payload.organization,
-          role: payload.role,
-          preferences: payload.preferences,
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from("profiles").upsert({
+        user_id: payload.userId,
+        full_name: payload.fullName,
+        email: payload.email,
+        organization: payload.organization,
+        role: payload.role,
+        preferences: payload.preferences,
+        updated_at: new Date().toISOString(),
+      });
 
       if (error) {
         logger.error("Failed to save profile", { error });

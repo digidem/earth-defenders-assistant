@@ -1,5 +1,5 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import type { z } from "zod";
+import { z } from "zod";
 import { supabase } from "../lib/supabase";
 
 export const getTosendMessagesTask = task({

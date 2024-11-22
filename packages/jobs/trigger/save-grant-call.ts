@@ -1,5 +1,5 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import type { z } from "zod";
+import { z } from "zod";
 import { supabase } from "../lib/supabase";
 
 const grantCallSchema = z.object({
@@ -18,12 +18,10 @@ export const saveGrantCallTask = task({
     logger.info("Saving grant call", { id: payload.id });
 
     try {
-      const { error } = await supabase
-        .from("grant_calls")
-        .insert({
-          ...payload,
-          created_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from("grant_calls").insert({
+        ...payload,
+        created_at: new Date().toISOString(),
+      });
 
       if (error) {
         logger.error("Failed to save grant call", { error });
