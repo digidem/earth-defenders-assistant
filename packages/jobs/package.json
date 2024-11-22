@@ -7,7 +7,7 @@
     "lint": "biome lint ./trigger ./lib",
     "dev": "bunx trigger.dev dev",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc-files --noEmit",
     "test": "vitest"
   },
   "dependencies": {

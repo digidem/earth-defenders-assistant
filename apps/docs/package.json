@@ -11,7 +11,7 @@
     "clean": "git clean -xdf .next .turbo node_modules",
     "lint": "biome lint src",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc-files --noEmit"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
