@@ -12,7 +12,10 @@ dependencies = [
     "joblib>=1.3.2",
     "loguru>=0.7.2",
     "pydantic>=2.5.3",
+    "langchain-groq>=0.2.1",
     "opportunity-finder",
+    "proposal_writer",
+    "onboarding"
 ]
 
 [project.optional-dependencies]
@@ -67,6 +70,8 @@ ignore_missing_imports = true
 
 [tool.uv.sources]
 opportunity-finder = { path = "../../plugins/grant_plugin/opportunity_finder" }
+proposal_writer = { path = "../../plugins/grant_plugin/proposal_writer" }
+onboarding = { path = "../../plugins/onboarding" }
 
 [build-system]
 requires = ["hatchling"]
