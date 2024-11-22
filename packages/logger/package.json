@@ -7,7 +7,7 @@
     "clean": "rm -rf .turbo node_modules",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc-files --noEmit"
   },
   "dependencies": {
     "pino": "^9.3.2"

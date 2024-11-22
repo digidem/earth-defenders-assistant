@@ -2,16 +2,12 @@
   "name": "@eda/ui",
   "version": "0.1.0",
   "sideEffects": false,
-  "files": [
-    "tailwind.config.ts",
-    "postcss.config.js",
-    "globals.css"
-  ],
+  "files": ["tailwind.config.ts", "postcss.config.js", "globals.css"],
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "lint": "biome lint",
     "format": "biome --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc-files --noEmit"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",

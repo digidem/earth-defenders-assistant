@@ -13,7 +13,7 @@
     "@cerebras/cerebras_cloud_sdk": "^1.8.0",
     "@eda/logger": "workspace:*",
     "@eda/types": "workspace:*",
-    "@trigger.dev/sdk": "3.1.0",
+    "@trigger.dev/sdk": "3.2.1",
     "dotenv": "^16.4.5",
     "groq-sdk": "^0.7.0"
   },

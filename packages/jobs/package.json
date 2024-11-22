@@ -7,15 +7,17 @@
     "lint": "biome lint ./trigger ./lib",
     "dev": "bunx trigger.dev dev",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc-files --noEmit",
+    "test": "vitest"
   },
   "dependencies": {
     "@eda/supabase": "workspace:*",
     "@eda/types": "workspace:*",
-    "@getzep/zep-cloud": "^2.0.0",
-    "@trigger.dev/sdk": "3.1.0"
+    "@getzep/zep-cloud": "^2.1.1",
+    "@trigger.dev/sdk": "3.2.1"
   },
   "devDependencies": {
-    "@trigger.dev/build": "3.1.0"
+    "@trigger.dev/build": "3.2.1",
+    "vitest": "^2.1.5"
   }
 }
