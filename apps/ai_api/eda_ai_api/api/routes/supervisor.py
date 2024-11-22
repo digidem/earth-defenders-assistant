@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq
+from onboarding.crew import OnboardingCrew
 from opportunity_finder.crew import OpportunityFinderCrew
 from proposal_writer.crew import ProposalWriterCrew
 
@@ -23,11 +24,13 @@ Given a user message, determine the appropriate service to handle the request.
 Choose between:
 - discovery: For finding grant opportunities
 - proposal: For writing grant proposals
+- onboarding: For getting help using the system
 - heartbeat: For checking system health
 
 User message: {message}
 
-Return only one word (discovery/proposal/heartbeat):"""
+Return only one word (discovery/proposal/onboarding/heartbeat):"""
+
 
 TOPIC_EXTRACTOR_TEMPLATE = """
 Extract up to 5 most relevant topics for grant opportunity research from the user message.
@@ -117,6 +120,10 @@ async def supervisor_route(request: SupervisorRequest) -> SupervisorResponse:
 
         elif decision == "heartbeat":
             result = {"is_alive": True}
+
+        elif decision == "onboarding":
+            # Generate guide using OnboardingCrew
+            result = OnboardingCrew().crew().kickoff()
 
         else:
             result = {"error": f"Unknown decision type: {decision}"}
