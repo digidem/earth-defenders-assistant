@@ -1,6 +1,7 @@
 import os
 
-from fastapi import APIRouter
+from fastapi import APIRouter, File, UploadFile, Form
+from typing import Optional
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq
@@ -65,70 +66,86 @@ proposal_chain = LLMChain(llm=llm, prompt=proposal_prompt)
 
 
 @router.post("/supervisor", response_model=SupervisorResponse)
-async def supervisor_route(request: SupervisorRequest) -> SupervisorResponse:
+async def supervisor_route(
+    message: Optional[str] = Form(None), audio: Optional[UploadFile] = File(None)
+) -> SupervisorResponse:
     try:
-        # Get routing decision from LLM
-        decision = router_chain.run(message=request.message).strip().lower()
-
-        # Print input message and decision for debugging
-        print("\n==================================================")
-        print(f"           INPUT MESSAGE: {request.message}")
-        print("==================================================")
-        print(f"               DECISION: {decision}")
-        print("==================================================\n")
-
-        # Handle different decision paths
-        if decision == "discovery":
-            # Extract topics using LLM (limited to 5 in prompt)
-            topics_raw = topic_chain.run(message=request.message)
-            topics = [t.strip() for t in topics_raw.split(",") if t.strip()][
-                :5
-            ]  # Safety check
-            if not topics:
-                topics = ["AI", "Technology"]  # Fallback topics
-
-            print("==================================================")
-            print(f"           EXTRACTED TOPICS: {topics}")
-            print("==================================================\n")
-
-            result = (
-                OpportunityFinderCrew()
-                .crew()
-                .kickoff(inputs={"topics": ", ".join(topics)})
-            )
-
-        elif decision == "proposal":
-            # Extract project and grant details using LLM
-            extracted = proposal_chain.run(message=request.message).split("|")
-            community_project = (
-                extracted[0].strip() if len(extracted) > 0 else "unknown"
-            )
-            grant_call = extracted[1].strip() if len(extracted) > 1 else "unknown"
-
-            print("==================================================")
-            print(f"     PROJECT NAME: {community_project}")
-            print(f"     GRANT PROGRAM: {grant_call}")
-            print("==================================================\n")
-
-            result = (
-                ProposalWriterCrew(
-                    community_project=community_project, grant_call=grant_call
+        if audio:
+            if audio.content_type != "audio/ogg":
+                return SupervisorResponse(
+                    result="Error: Only .ogg audio files are supported"
                 )
-                .crew()
-                .kickoff()
-            )
 
-        elif decision == "heartbeat":
-            result = {"is_alive": True}
+            # Here you would add whisper transcription later
+            # For now just acknowledge we received the audio
+            return SupervisorResponse(result=f"Received audio file: {audio.filename}")
 
-        elif decision == "onboarding":
-            # Generate guide using OnboardingCrew
-            result = OnboardingCrew().crew().kickoff()
+        elif message:
+            # Existing message handling logic
+            decision = router_chain.run(message=message).strip().lower()
+
+            # Print input message and decision for debugging
+            print("\n==================================================")
+            print(f"           INPUT MESSAGE: {message}")
+            print("==================================================")
+            print(f"               DECISION: {decision}")
+            print("==================================================\n")
+
+            # Handle different decision paths
+            if decision == "discovery":
+                # Extract topics using LLM (limited to 5 in prompt)
+                topics_raw = topic_chain.run(message=message)
+                topics = [t.strip() for t in topics_raw.split(",") if t.strip()][
+                    :5
+                ]  # Safety check
+                if not topics:
+                    topics = ["AI", "Technology"]  # Fallback topics
+
+                print("==================================================")
+                print(f"           EXTRACTED TOPICS: {topics}")
+                print("==================================================\n")
+
+                result = (
+                    OpportunityFinderCrew()
+                    .crew()
+                    .kickoff(inputs={"topics": ", ".join(topics)})
+                )
+
+            elif decision == "proposal":
+                # Extract project and grant details using LLM
+                extracted = proposal_chain.run(message=message).split("|")
+                community_project = (
+                    extracted[0].strip() if len(extracted) > 0 else "unknown"
+                )
+                grant_call = extracted[1].strip() if len(extracted) > 1 else "unknown"
+
+                print("==================================================")
+                print(f"     PROJECT NAME: {community_project}")
+                print(f"     GRANT PROGRAM: {grant_call}")
+                print("==================================================\n")
+
+                result = (
+                    ProposalWriterCrew(
+                        community_project=community_project, grant_call=grant_call
+                    )
+                    .crew()
+                    .kickoff()
+                )
+
+            elif decision == "heartbeat":
+                result = {"is_alive": True}
+
+            elif decision == "onboarding":
+                # Generate guide using OnboardingCrew
+                result = OnboardingCrew().crew().kickoff()
+
+            else:
+                result = {"error": f"Unknown decision type: {decision}"}
 
         else:
-            result = {"error": f"Unknown decision type: {decision}"}
+            return SupervisorResponse(
+                result="Error: Neither message nor audio provided"
+            )
 
     except Exception as e:
-        result = {"error": f"Error processing request: {str(e)}"}
-
-    return SupervisorResponse(result=str(result))
+        return SupervisorResponse(result=f"Error processing request: {str(e)}")
