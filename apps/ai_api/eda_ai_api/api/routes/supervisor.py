@@ -171,7 +171,7 @@ def process_decision(decision: str, message: str) -> Dict[str, Any]:
 
 @router.post("/supervisor", response_model=SupervisorResponse)
 async def supervisor_route(
-    message: Optional[str] = Form(None), audio: Optional[UploadFile] = File(None)
+    message: Optional[str] = Form(default=None), audio: Optional[UploadFile] = File(default=None)
 ) -> SupervisorResponse:
     """Main route handler for supervisor API"""
     try:
