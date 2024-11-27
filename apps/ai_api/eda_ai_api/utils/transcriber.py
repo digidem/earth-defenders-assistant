@@ -1,4 +1,3 @@
-import os
 from groq import Groq
 from loguru import logger
 
