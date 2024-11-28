@@ -15,7 +15,9 @@ dependencies = [
     "langchain-groq>=0.2.1",
     "opportunity-finder",
     "proposal_writer",
-    "onboarding"
+    "onboarding",
+    "ffmpeg>=1.4",
+    "python-multipart>=0.0.17",
 ]
 
 [project.optional-dependencies]
