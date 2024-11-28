@@ -169,7 +169,7 @@ def process_decision(decision: str, message: str) -> Dict[str, Any]:
         return {"error": f"Unknown decision type: {decision}"}
 
 
-@router.post("/classifier", response_model=ClassifierResponse)
+@router.post("/classify", response_model=ClassifierResponse)
 async def classifier_route(
     message: Optional[str] = Form(default=None),
     audio: Optional[UploadFile] = File(default=None),
