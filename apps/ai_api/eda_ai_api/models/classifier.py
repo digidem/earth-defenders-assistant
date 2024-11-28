@@ -4,7 +4,7 @@ from fastapi import UploadFile
 from pydantic import BaseModel
 
 
-class SupervisorRequest(BaseModel):
+class ClassifierRequest(BaseModel):
     message: Optional[str] = None
     audio: Optional[UploadFile] = None
 
@@ -12,5 +12,5 @@ class SupervisorRequest(BaseModel):
         arbitrary_types_allowed = True
 
 
-class SupervisorResponse(BaseModel):
+class ClassifierResponse(BaseModel):
     result: str

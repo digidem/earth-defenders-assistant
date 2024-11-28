@@ -10,7 +10,7 @@ from onboarding.crew import OnboardingCrew
 from opportunity_finder.crew import OpportunityFinderCrew
 from proposal_writer.crew import ProposalWriterCrew
 
-from eda_ai_api.models.supervisor import SupervisorResponse
+from eda_ai_api.models.classifier import ClassifierResponse
 from eda_ai_api.utils.audio_converter import convert_ogg
 from eda_ai_api.utils.transcriber import transcribe_audio
 
@@ -169,11 +169,11 @@ def process_decision(decision: str, message: str) -> Dict[str, Any]:
         return {"error": f"Unknown decision type: {decision}"}
 
 
-@router.post("/supervisor", response_model=SupervisorResponse)
-async def supervisor_route(
+@router.post("/classifier", response_model=ClassifierResponse)
+async def classifier_route(
     message: Optional[str] = Form(None), audio: Optional[UploadFile] = File(None)
-) -> SupervisorResponse:
-    """Main route handler for supervisor API"""
+) -> ClassifierResponse:
+    """Main route handler for classifier API"""
     try:
         if audio:
             transcription = await process_audio(audio)
@@ -189,11 +189,11 @@ async def supervisor_route(
             decision = router_chain.run(message=message).strip().lower()
             result = process_decision(decision, message)
         else:
-            return SupervisorResponse(
+            return ClassifierResponse(
                 result="Error: Neither message nor audio provided"
             )
 
-        return SupervisorResponse(result=str(result))
+        return ClassifierResponse(result=str(result))
 
     except Exception as e:
-        return SupervisorResponse(result=f"Error processing request: {str(e)}")
+        return ClassifierResponse(result=f"Error processing request: {str(e)}")
