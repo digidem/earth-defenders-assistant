@@ -176,23 +176,24 @@ async def classifier_route(
 ) -> ClassifierResponse:
     """Main route handler for classifier API"""
     try:
-        # Check if audio is provided and not empty
-        audio_content = await audio.read() if audio else None
-        has_valid_audio = audio_content and len(audio_content) > 0
-
-        # Reset file pointer if audio will be used
-        if has_valid_audio:
-            await audio.seek(0)
-
         combined_parts = []
+        has_valid_audio = False
 
-        # Process audio if valid
-        if has_valid_audio:
-            transcription = await process_audio(audio)
-            print("==================================================")
-            print(f"           TRANSCRIPTION: {transcription}")
-            print("==================================================")
-            combined_parts.append(f'Transcription of attached audio: "{transcription}"')
+        # Process audio if provided
+        if audio is not None:
+            # Check if audio is not empty
+            audio_content = await audio.read()
+            has_valid_audio = len(audio_content) > 0
+
+            if has_valid_audio:
+                await audio.seek(0)
+                transcription = await process_audio(audio)
+                print("==================================================")
+                print(f"           TRANSCRIPTION: {transcription}")
+                print("==================================================")
+                combined_parts.append(
+                    f'Transcription of attached audio: "{transcription}"'
+                )
 
         # Add message if provided
         if message:
