@@ -16,7 +16,7 @@ dependencies = [
     "opportunity-finder",
     "proposal_writer",
     "onboarding",
-    "ffmpeg>=1.4",
+    "ffmpeg-python>=0.2.0",
     "python-multipart>=0.0.17",
 ]
 
