@@ -176,23 +176,45 @@ async def classifier_route(
 ) -> ClassifierResponse:
     """Main route handler for classifier API"""
     try:
-        if audio:
+        # Check if audio is provided and not empty
+        audio_content = await audio.read() if audio else None
+        has_valid_audio = audio_content and len(audio_content) > 0
+
+        # Reset file pointer if audio will be used
+        if has_valid_audio:
+            await audio.seek(0)
+
+        combined_parts = []
+
+        # Process audio if valid
+        if has_valid_audio:
             transcription = await process_audio(audio)
-            print("==================================================\n")
+            print("==================================================")
             print(f"           TRANSCRIPTION: {transcription}")
-            print("==================================================\n")
-            decision = router_chain.run(message=transcription).strip().lower()
-            result = process_decision(decision, transcription)
-        elif message:
-            print("==================================================\n")
-            print(f"           INPUT MESSAGE: {message}")
-            print("==================================================\n")
-            decision = router_chain.run(message=message).strip().lower()
-            result = process_decision(decision, message)
-        else:
+            print("==================================================")
+            combined_parts.append(f'Transcription of attached audio: "{transcription}"')
+
+        # Add message if provided
+        if message:
+            combined_parts.append(f'Message: "{message}"')
+
+        # Combine parts with newlines
+        combined_message = "\n".join(combined_parts)
+
+        if combined_message:
+            print("==================================================")
+            print(f"           COMBINED MESSAGE:\n{combined_message}")
+            print("==================================================")
+
+        # Ensure we have some input to process
+        if not combined_message:
             return ClassifierResponse(
-                result="Error: Neither message nor audio provided"
+                result="Error: Neither valid message nor valid audio provided"
             )
+
+        # Process the combined input
+        decision = router_chain.run(message=combined_message).strip().lower()
+        result = process_decision(decision, combined_message)
 
         return ClassifierResponse(result=str(result))
 
