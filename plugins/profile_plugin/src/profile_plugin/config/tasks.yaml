@@ -1,49 +1,27 @@
-analyze_profile:
+# tasks.yaml
+explain_bot_features:
   description: >
-    Analyze the user profile data:
-    {profile_data}
-    Identify missing or incomplete information and prioritize what needs to be collected next.
+    Create a user-friendly guide explaining:
+    1. How to search for funding opportunities using keywords and topics
+    2. How to request help writing a new proposal
+    3. How to get an existing proposal reviewed
+    Use simple language and provide clear examples for each feature.
   expected_output: >
-    A structured analysis of missing fields and their priority levels,
-    with recommendations for which information to collect next.
-  agent: profile_analyzer
+    A clear guide covering:
+    - Overview of the bot's purpose
+    - Step-by-step instructions for finding funding opportunities
+    - How to get help with proposal writing
+    - How to submit proposals for review
+    Format as markdown with examples of user messages.
+  agent: guide
 
-manage_conversation:
+translate_guide:
   description: >
-    Based on the profile analysis and current context:
-    {context}
-    Generate appropriate questions or responses to collect needed information.
+    Translate the provided guide into Brazilian Portuguese.
+    Ensure proper terminology and natural language flow.
+    Maintain markdown formatting.
   expected_output: >
-    Natural language messages ready to be sent to the user,
-    with clear questions or prompts for needed information.
-  agent: conversation_manager
-
-validate_data:
-  description: >
-    Validate the following user-provided information:
-    {user_data}
-    Check for consistency and completeness.
-  expected_output: >
-    Validation report indicating which fields are valid,
-    which need verification, and what research is needed.
-  agent: data_quality
-
-research_information:
-  description: >
-    Research the following details about the community/territory:
-    {research_query}
-    Use reliable sources and databases to verify information.
-  expected_output: >
-    Structured research results with verified information
-    and source citations.
-  agent: researcher
-
-build_profile:
-  description: >
-    Format and store the following validated information:
-    {validated_data}
-    Update the user profile in the database.
-  expected_output: >
-    Confirmation of profile updates with details of what
-    was stored and any remaining gaps.
-  agent: profile_builder
+    A clear Brazilian Portuguese version of the guide,
+    with proper regional terminology and natural language flow.
+    All markdown formatting preserved.
+  agent: translator
