@@ -3,13 +3,12 @@ import tempfile
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain_groq import ChatGroq
+from llama_index.llms.groq import Groq
 from onboarding.crew import OnboardingCrew
 from opportunity_finder.crew import OpportunityFinderCrew
 from proposal_writer.crew import ProposalWriterCrew
 
+from llama_index.core import PromptTemplate
 from eda_ai_api.models.classifier import ClassifierResponse
 from eda_ai_api.utils.audio_converter import convert_ogg
 from eda_ai_api.utils.transcriber import transcribe_audio
@@ -25,54 +24,70 @@ ALLOWED_FORMATS = {
     "audio/ogg": "ogg",
 }
 
-# Setup LLM and prompt
-llm = ChatGroq(
-    model_name="llama3-groq-70b-8192-tool-use-preview",
+# Setup LLM
+llm = Groq(
+    model="llama3-groq-70b-8192-tool-use-preview",
     api_key=os.environ.get("GROQ_API_KEY"),
     temperature=0.5,
 )
 
-ROUTER_TEMPLATE = """
-Given a user message, determine the appropriate service to handle the request.
-Choose between:
-- discovery: For finding grant opportunities
-- proposal: For writing grant proposals
-- onboarding: For getting help using the system
-- heartbeat: For checking system health
+# Define prompts
+ROUTER_TEMPLATE = PromptTemplate(
+    """Given a user message, determine the appropriate service to handle the request.
+    Choose between:
+    - discovery: For finding grant opportunities
+    - proposal: For writing grant proposals
+    - onboarding: For getting help using the system
+    - heartbeat: For checking system health
 
-User message: {message}
+    User message: {message}
 
-Return only one word (discovery/proposal/onboarding/heartbeat):"""
-
-TOPIC_EXTRACTOR_TEMPLATE = """
-Extract up to 5 most relevant topics for grant opportunity research from the user message.
-Return only a comma-separated list of topics (maximum 5), no other text.
-
-User message: {message}
-
-Topics:"""
-
-PROPOSAL_EXTRACTOR_TEMPLATE = """
-Extract the community project name and grant program name from the user message.
-Return in format: project_name|grant_name
-If either cannot be determined, use "unknown" as placeholder.
-
-User message: {message}
-
-Output:"""
-
-# Create prompt templates and chains
-router_prompt = PromptTemplate(input_variables=["message"], template=ROUTER_TEMPLATE)
-topic_prompt = PromptTemplate(
-    input_variables=["message"], template=TOPIC_EXTRACTOR_TEMPLATE
-)
-proposal_prompt = PromptTemplate(
-    input_variables=["message"], template=PROPOSAL_EXTRACTOR_TEMPLATE
+    Return only one word (discovery/proposal/onboarding/heartbeat):"""
 )
 
-router_chain = LLMChain(llm=llm, prompt=router_prompt)
-topic_chain = LLMChain(llm=llm, prompt=topic_prompt)
-proposal_chain = LLMChain(llm=llm, prompt=proposal_prompt)
+TOPIC_TEMPLATE = PromptTemplate(
+    """Extract up to 5 most relevant topics for grant opportunity research from the user message.
+    Return only a comma-separated list of topics (maximum 5), no other text.
+
+    User message: {message}
+
+    Topics:"""
+)
+
+PROPOSAL_TEMPLATE = PromptTemplate(
+    """Extract the community project name and grant program name from the user message.
+    Return in format: project_name|grant_name
+    If either cannot be determined, use "unknown" as placeholder.
+
+    User message: {message}
+
+    Output:"""
+)
+
+INSUFFICIENT_PROPOSAL_TEMPLATE = PromptTemplate(
+    """The user wants to write a proposal but hasn't provided enough information.
+    Generate a friendly response in the same language as the user's message asking for:
+    1. The project name and brief description
+    2. The specific grant program they're applying to (if any)
+    3. The main objectives of their project
+    4. The target community or region
+    
+    User message: {message}
+    
+    Response:"""
+)
+
+INSUFFICIENT_DISCOVERY_TEMPLATE = PromptTemplate(
+    """The user wants to find grant opportunities but hasn't provided enough information.
+    Generate a friendly response in the same language as the user's message asking for:
+    1. The main topics or areas of their project
+    2. The target region or community
+    3. Any specific funding requirements or preferences
+    
+    User message: {message}
+    
+    Response:"""
+)
 
 
 def detect_content_type(file: UploadFile) -> Optional[str]:
@@ -123,14 +138,15 @@ async def process_audio(audio: UploadFile) -> str:
 
 def extract_topics(message: str) -> List[str]:
     """Extract topics from message"""
-    topics_raw = topic_chain.run(message=message)
-    topics = [t.strip() for t in topics_raw.split(",") if t.strip()][:5]
+    response = llm.complete(TOPIC_TEMPLATE.format(message=message))
+    topics = [t.strip() for t in response.text.split(",") if t.strip()][:5]
     return topics if topics else ["AI", "Technology"]
 
 
 def extract_proposal_details(message: str) -> tuple[str, str]:
     """Extract project and grant details"""
-    extracted = proposal_chain.run(message=message).split("|")
+    response = llm.complete(PROPOSAL_TEMPLATE.format(message=message))
+    extracted = response.text.split("|")
     community_project = extracted[0].strip() if len(extracted) > 0 else "unknown"
     grant_call = extracted[1].strip() if len(extracted) > 1 else "unknown"
     return community_project, grant_call
@@ -147,13 +163,30 @@ def process_decision(decision: str, message: str) -> Dict[str, Any]:
         print("\n==================================================")
         print(f"           EXTRACTED TOPICS: {topics}")
         print("==================================================\n")
+
+        # If no specific topics found, ask for more information
+        if topics == ["AI", "Technology"]:
+            response = llm.complete(
+                INSUFFICIENT_DISCOVERY_TEMPLATE.format(message=message)
+            )
+            return {"response": response.text}
+
         return (
             OpportunityFinderCrew().crew().kickoff(inputs={"topics": ", ".join(topics)})
         )
+
     elif decision == "proposal":
         community_project, grant_call = extract_proposal_details(message)
         print(f"     PROJECT NAME: {community_project}")
         print(f"     GRANT PROGRAM: {grant_call}")
+
+        # If either project or grant is unknown, ask for more information
+        if community_project == "unknown" or grant_call == "unknown":
+            response = llm.complete(
+                INSUFFICIENT_PROPOSAL_TEMPLATE.format(message=message)
+            )
+            return {"response": response.text}
+
         return (
             ProposalWriterCrew(
                 community_project=community_project, grant_call=grant_call
@@ -161,10 +194,13 @@ def process_decision(decision: str, message: str) -> Dict[str, Any]:
             .crew()
             .kickoff()
         )
+
     elif decision == "heartbeat":
         return {"is_alive": True}
+
     elif decision == "onboarding":
         return OnboardingCrew().crew().kickoff()
+
     else:
         return {"error": f"Unknown decision type: {decision}"}
 
@@ -214,7 +250,8 @@ async def classifier_route(
             )
 
         # Process the combined input
-        decision = router_chain.run(message=combined_message).strip().lower()
+        response = llm.complete(ROUTER_TEMPLATE.format(message=combined_message))
+        decision = response.text.strip().lower()
         result = process_decision(decision, combined_message)
 
         return ClassifierResponse(result=str(result))
