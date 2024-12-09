@@ -1,5 +1,6 @@
 import os
 from typing import Any, Dict, Optional
+import uuid
 
 from fastapi import APIRouter, File, Form, UploadFile
 from llama_index.core import PromptTemplate
@@ -97,15 +98,16 @@ async def classifier_route(
     message: Optional[str] = Form(default=None),
     audio: Optional[UploadFile] = File(default=None),
     session_id: Optional[str] = Form(default=None),
-    user_id: Optional[str] = Form(default=None),
 ) -> ClassifierResponse:
     """Main route handler with conversation memory"""
     try:
-        logger.info(f"New request - Session: {session_id}, User: {user_id}")
+        logger.info(
+            f"New request - Session: {session_id}, User: {session_id + uuid.uuid4().hex}"
+        )
 
         zep = ZepConversationManager()
         session_id = await zep.get_or_create_session(
-            user_id=user_id, session_id=session_id
+            user_id=session_id + uuid.uuid4().hex, session_id=session_id
         )
 
         # Process inputs
