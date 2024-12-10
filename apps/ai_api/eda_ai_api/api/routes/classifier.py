@@ -31,57 +31,57 @@ llm = Groq(
 )
 
 
-def extract_topics(message: str) -> list[str]:
-    """Extract topics from message"""
-    response = llm.complete(TOPIC_TEMPLATE.format(message=message))
+async def extract_topics(message: str, history: list) -> list[str]:
+    """Extract topics with conversation context"""
+    context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+    response = llm.complete(TOPIC_TEMPLATE.format(context=context, message=message))
+    if response.text.strip() == "INSUFFICIENT_CONTEXT":
+        return ["INSUFFICIENT_CONTEXT"]
     topics = [t.strip() for t in response.text.split(",") if t.strip()][:5]
-    return topics if topics else ["AI", "Technology"]
+    return topics if topics else ["INSUFFICIENT_CONTEXT"]
 
 
-def extract_proposal_details(message: str) -> tuple[str, str]:
-    """Extract project and grant details"""
-    response = llm.complete(PROPOSAL_TEMPLATE.format(message=message))
+async def extract_proposal_details(message: str, history: list) -> tuple[str, str]:
+    """Extract project and grant details with conversation context"""
+    context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+    response = llm.complete(PROPOSAL_TEMPLATE.format(context=context, message=message))
     extracted = response.text.split("|")
     community_project = extracted[0].strip() if len(extracted) > 0 else "unknown"
     grant_call = extracted[1].strip() if len(extracted) > 1 else "unknown"
     return community_project, grant_call
 
 
-def process_decision(decision: str, message: str) -> Dict[str, Any]:
-    """Process routing decision and return result"""
+async def process_decision(
+    decision: str, message: str, history: list
+) -> Dict[str, Any]:
+    """Process routing decision with conversation context"""
     logger.info(f"Processing decision: {decision} for message: {message}")
 
     if decision == "discovery":
-        topics = extract_topics(message)
+        topics = await extract_topics(message, history)
         logger.info(f"Extracted topics: {topics}")
 
-        if topics == ["AI", "Technology"]:
+        if topics == ["INSUFFICIENT_CONTEXT"]:
+            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
             response = llm.complete(
-                INSUFFICIENT_TEMPLATES["discovery"].format(message=message)
+                INSUFFICIENT_TEMPLATES["discovery"].format(
+                    context=context, message=message
+                )
             )
             return {"response": response.text}
 
-        return (
-            OpportunityFinderCrew().crew().kickoff(inputs={"topics": ", ".join(topics)})
-        )
-
     elif decision == "proposal":
-        community_project, grant_call = extract_proposal_details(message)
+        community_project, grant_call = await extract_proposal_details(message, history)
         logger.info(f"Project: {community_project}, Grant: {grant_call}")
 
         if community_project == "unknown" or grant_call == "unknown":
+            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
             response = llm.complete(
-                INSUFFICIENT_TEMPLATES["proposal"].format(message=message)
+                INSUFFICIENT_TEMPLATES["proposal"].format(
+                    context=context, message=message
+                )
             )
             return {"response": response.text}
-
-        return (
-            ProposalWriterCrew(
-                community_project=community_project, grant_call=grant_call
-            )
-            .crew()
-            .kickoff()
-        )
 
     elif decision == "heartbeat":
         return {"is_alive": True}
@@ -140,7 +140,7 @@ async def classifier_route(
         decision = response.text.strip().lower()
 
         # Process decision and store conversation
-        result = process_decision(decision, combined_message)
+        result = await process_decision(decision, combined_message, history)
         await zep.add_conversation(session_id, combined_message, str(result))
 
         return ClassifierResponse(result=str(result), session_id=session_id)

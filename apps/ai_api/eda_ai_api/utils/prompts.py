@@ -14,46 +14,59 @@ ROUTER_TEMPLATE = PromptTemplate(
 )
 
 TOPIC_TEMPLATE = PromptTemplate(
-    """Extract up to 5 most relevant topics for grant opportunity research from the user message.
-    Return only a comma-separated list of topics (maximum 5), no other text.
+    """Previous conversation:
+{context}
 
-    User message: {message}
+Extract up to 5 most relevant topics for grant opportunity research from the user message.
+If there isn't enough context to determine specific topics, return "INSUFFICIENT_CONTEXT".
+Otherwise, return only a comma-separated list of topics (maximum 5), no other text.
 
-    Topics:"""
+User message: {message}
+
+Output:"""
 )
 
 PROPOSAL_TEMPLATE = PromptTemplate(
-    """Extract the community project name and grant program name from the user message.
-    Return in format: project_name|grant_name
-    If either cannot be determined, use "unknown" as placeholder.
+    """Previous conversation:
+{context}
 
-    User message: {message}
+Extract the community project name and grant program name from the user message.
+Return in format: project_name|grant_name
+If either cannot be determined, use "unknown" as placeholder.
 
-    Output:"""
+User message: {message}
+
+Output:"""
 )
 
 INSUFFICIENT_TEMPLATES = {
     "proposal": PromptTemplate(
-        """The user wants to write a proposal but hasn't provided enough information.
-        Generate a friendly response in the same language as the user's message asking for:
-        1. The project name and brief description
-        2. The specific grant program they're applying to (if any)
-        3. The main objectives of their project
-        4. The target community or region
-        
-        User message: {message}
-        
-        Response:"""
+        """Previous conversation:
+{context}
+
+The user wants to write a proposal but hasn't provided enough information.
+Generate a friendly response in the same language as the user's message asking for:
+1. The project name and brief description
+2. The specific grant program they're applying to (if any)
+3. The main objectives of their project
+4. The target community or region
+
+User message: {message}
+
+Response:"""
     ),
     "discovery": PromptTemplate(
-        """The user wants to find grant opportunities but hasn't provided enough information.
-        Generate a friendly response in the same language as the user's message asking for:
-        1. The main topics or areas of their project
-        2. The target region or community
-        3. Any specific funding requirements or preferences
-        
-        User message: {message}
-        
-        Response:"""
+        """Previous conversation:
+{context}
+
+The user wants to find grant opportunities but hasn't provided enough information.
+Generate a friendly response in the same language as the user's message asking for:
+1. The main topics or areas of their project
+2. The target region or community
+3. Any specific funding requirements or preferences
+
+User message: {message}
+
+Response:"""
     ),
 }
