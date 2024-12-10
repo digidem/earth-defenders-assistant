@@ -15,14 +15,6 @@ explain_bot_features:
     Format as markdown with examples of user messages.
   agent: guide
 
-check_if_understood:
-  description: >
-    Check if the user has understood the guide.
-  expected_output: >
-    A boolean indicating if the user has understood the guide.
-  agent: guide
-  human_feedback: true
-
 translate_guide:
   description: >
     Translate the provided guide into Brazilian Portuguese.
