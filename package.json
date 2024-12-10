@@ -10,6 +10,7 @@
     "dev:all": "turbo dev --parallel",
     "dev:api": "turbo dev --filter=@eda/api",
     "dev:ai": "turbo dev --filter=@eda/ai-api",
+    "dev:message": "turbo dev --filter=@eda/messaging",
     "dev:simulator": "turbo dev --filter=@eda/simulator",
     "dev:dashboard": "turbo dev --filter=@eda/dashboard",
     "dev:landingpage": "turbo dev --filter=@eda/landingpage",
