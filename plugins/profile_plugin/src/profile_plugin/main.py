@@ -7,48 +7,29 @@ from profile_plugin.crew import ProfilePluginCrew
 # Replace with inputs you want to test with, it will automatically
 # interpolate any tasks and agents information
 
+# Single mock profile for testing
+MOCK_PROFILE = {
+    "userId": "user123",
+    "biome": "amazon",
+    "ethnicGroup": "yanomami",
+    "territory": "raposa-serra-do-sol",
+    "community": "surumu",
+    "meta": {
+        "languages": ["portuguese", "yanomami"],
+        "preferences": {
+            "notifications": True,
+            "language": "pt",
+            "timezone": "America/Manaus"
+        }
+    }
+}
 
 def run():
     """
-    Run the crew to generate bot usage guide.
+    Run the crew to analyze the mock profile.
     """
-    ProfilePluginCrew().crew().kickoff()
+    crew = ProfilePluginCrew(mock_profile=MOCK_PROFILE)
+    crew.crew().kickoff()
 
-
-def train():
-    """
-    Train the crew for a given number of iterations.
-    """
-    inputs = {"topic": "AI LLMs"}
-    try:
-        ProfilePluginCrew().crew().train(
-            n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs
-        )
-
-    except Exception as e:
-        raise Exception(f"An error occurred while training the crew: {e}")
-
-
-def replay():
-    """
-    Replay the crew execution from a specific task.
-    """
-    try:
-        ProfilePluginCrew().crew().replay(task_id=sys.argv[1])
-
-    except Exception as e:
-        raise Exception(f"An error occurred while replaying the crew: {e}")
-
-
-def test():
-    """
-    Test the crew execution and returns the results.
-    """
-    inputs = {"topic": "AI LLMs"}
-    try:
-        ProfilePluginCrew().crew().test(
-            n_iterations=int(sys.argv[1]), openai_model_name=sys.argv[2], inputs=inputs
-        )
-
-    except Exception as e:
-        raise Exception(f"An error occurred while replaying the crew: {e}")
+if __name__ == "__main__":
+    run()

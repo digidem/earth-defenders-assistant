@@ -1,27 +1,27 @@
 # tasks.yaml
-explain_bot_features:
+analyze_profile:
   description: >
-    Create a user-friendly guide explaining:
-    1. How to search for funding opportunities using keywords and topics
-    2. How to request help writing a new proposal
-    3. How to get an existing proposal reviewed
-    Use simple language and provide clear examples for each feature.
+    Analyze a user profile to identify missing or incomplete information.
+    
+    Check for required fields:
+    - userId
+    - biome
+    - ethnicGroup
+    - territory
+    - community
+    And optional fields:
+    - meta (preferences, languages, etc.)
+    
+    Compare the provided profile against these requirements.
+    Prioritize which missing information should be requested first based on importance.
+    Use simple language and clear examples when requesting information.
   expected_output: >
-    A clear guide covering:
-    - Overview of the bot's purpose
-    - Step-by-step instructions for finding funding opportunities
-    - How to get help with proposal writing
-    - How to submit proposals for review
-    Format as markdown with examples of user messages.
-  agent: guide
-
-translate_guide:
-  description: >
-    Translate the provided guide into Brazilian Portuguese.
-    Ensure proper terminology and natural language flow.
-    Maintain markdown formatting.
-  expected_output: >
-    A clear Brazilian Portuguese version of the guide,
-    with proper regional terminology and natural language flow.
-    All markdown formatting preserved.
-  agent: translator
+    A structured analysis containing:
+    - Summary of the provided profile
+    - List of missing required fields
+    - List of recommended optional fields to complete
+    - Prioritized order for requesting information
+    - Suggested prompts/questions to gather the missing information
+    - Any data quality issues in existing fields
+    Format as markdown with clear sections and examples.
+  agent: profile_analyzer

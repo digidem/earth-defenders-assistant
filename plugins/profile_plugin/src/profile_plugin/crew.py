@@ -9,34 +9,36 @@ llm = LLM(
     temperature=0.5,
 )
 
-
 @CrewBase
 class ProfilePluginCrew:
     """Profile plugin crew"""
+    
+    def __init__(self, mock_profile: dict = None):
+        self.mock_profile = mock_profile
+        super().__init__()
 
     @agent
-    def guide(self) -> Agent:
-        return Agent(config=self.agents_config["guide"], verbose=True, llm=llm)
-
-    @agent
-    def translator(self) -> Agent:
-        return Agent(config=self.agents_config["translator"], verbose=True, llm=llm)
+    def profile_analyzer(self) -> Agent:
+        return Agent(config=self.agents_config["profile_analyzer"], verbose=True, llm=llm)
 
     @task
-    def explain_bot_features(self) -> Task:
-        return Task(config=self.tasks_config["explain_bot_features"])
-
-    @task
-    def translate_guide(self) -> Task:
-        return Task(config=self.tasks_config["translate_guide"])
+    def analyze_profile(self) -> Task:
+        task_config = self.tasks_config["analyze_profile"]
+        task_config["description"] = (
+            f"Analyze this specific profile:\n{self.mock_profile}\n\n" 
+            + task_config["description"]
+        )
+        return Task(
+            config=task_config,
+            input={"profile": self.mock_profile}
+        )
 
     @crew
     def crew(self) -> Crew:
-        """Creates the Onboarding crew"""
         return Crew(
             agents=self.agents,
             tasks=self.tasks,
-            process=Process.sequential,  # Ensures translation happens after guide creation
+            process=Process.sequential,
             verbose=True,
             manager_llm=llm,
         )
