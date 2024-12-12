@@ -9,19 +9,11 @@ from profile_plugin.crew import ProfilePluginCrew
 
 # Single mock profile for testing
 MOCK_PROFILE = {
-    "userId": "user123",
-    "biome": "amazon",
-    "ethnicGroup": "yanomami",
-    "territory": "raposa-serra-do-sol",
-    "community": "surumu",
-    "meta": {
-        "languages": ["portuguese", "yanomami"],
-        "preferences": {
-            "notifications": True,
-            "language": "pt",
-            "timezone": "America/Manaus"
-        }
-    }
+    "userId": "051991233224",
+    "biome": "Tropical Rainforest",
+    "ethnicGroup": "",
+    "territory": "Amazonas, Brazil",
+    "community": "",
 }
 
 def run():

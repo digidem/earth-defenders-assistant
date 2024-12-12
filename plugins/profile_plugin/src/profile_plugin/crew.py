@@ -20,6 +20,10 @@ class ProfilePluginCrew:
     @agent
     def profile_analyzer(self) -> Agent:
         return Agent(config=self.agents_config["profile_analyzer"], verbose=True, llm=llm)
+    
+    @agent
+    def conversation_flow(self) -> Agent:
+        return Agent(config=self.agents_config["conversation_flow"], verbose=True, llm=llm)
 
     @task
     def analyze_profile(self) -> Task:
@@ -32,6 +36,17 @@ class ProfilePluginCrew:
             config=task_config,
             input={"profile": self.mock_profile}
         )
+    
+    @task
+    def start_conversation_flow(self) -> Task:
+        task_config = self.tasks_config["start_conversation_flow"]
+
+        return Task(
+            config=task_config,
+            human_input=True,
+        )
+
+
 
     @crew
     def crew(self) -> Crew:

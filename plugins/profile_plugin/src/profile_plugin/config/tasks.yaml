@@ -1,27 +1,28 @@
-# tasks.yaml
 analyze_profile:
   description: >
-    Analyze a user profile to identify missing or incomplete information.
-    
-    Check for required fields:
+    Analyze a user profile to identify missing or incomplete information. The fields are only:
     - userId
     - biome
     - ethnicGroup
     - territory
     - community
-    And optional fields:
-    - meta (preferences, languages, etc.)
-    
-    Compare the provided profile against these requirements.
-    Prioritize which missing information should be requested first based on importance.
-    Use simple language and clear examples when requesting information.
   expected_output: >
-    A structured analysis containing:
-    - Summary of the provided profile
-    - List of missing required fields
-    - List of recommended optional fields to complete
-    - Prioritized order for requesting information
-    - Suggested prompts/questions to gather the missing information
-    - Any data quality issues in existing fields
-    Format as markdown with clear sections and examples.
+    A structured JSON object with fields:
+    - summary
+    - missing_required (list)
+    - optional_suggestions (list)
+    - priority_order (list)
+    - suggested_prompts (dict with field-specific prompts)
   agent: profile_analyzer
+
+start_conversation_flow:
+  description: >
+    Ask the user to fill in the missing profile fields based on the analysis results.
+    Start a conversation flow to fill the missing profile fields using the provided analysis.
+    Use the analysis_results from the previous task's output.
+    Ask the user for the missing fields step-by-step in a conversational tone.
+    Wait for user input (human-in-the-loop) to complete these fields.
+  expected_output: >
+    A series of conversational messages and user queries that guide the user to fill in missing fields.
+    Short messages are preferred.
+  agent: conversation_flow
