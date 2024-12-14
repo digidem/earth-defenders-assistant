@@ -1,7 +1,9 @@
 import os
 import tempfile
-from typing import Optional, Dict
+from typing import Dict, Optional
+
 from fastapi import UploadFile
+
 from .audio_converter import convert_ogg
 from .transcriber import transcribe_audio
 

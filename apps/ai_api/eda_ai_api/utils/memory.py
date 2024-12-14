@@ -1,8 +1,9 @@
 import uuid
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
+
+from loguru import logger
 from zep_python.client import AsyncZep
 from zep_python.types import Message
-from loguru import logger
 
 
 class ZepConversationManager:

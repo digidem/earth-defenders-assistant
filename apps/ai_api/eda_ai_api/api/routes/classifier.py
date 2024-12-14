@@ -1,25 +1,21 @@
 import os
-from typing import Any, Dict, Optional
 import uuid
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
 from llama_index.core import PromptTemplate
 from llama_index.llms.groq import Groq
 from loguru import logger
+from onboarding.crew import OnboardingCrew
+from opportunity_finder.crew import OpportunityFinderCrew
+from proposal_writer.crew import ProposalWriterCrew
 
 from eda_ai_api.models.classifier import ClassifierResponse
 from eda_ai_api.utils.audio_utils import process_audio_file
 from eda_ai_api.utils.memory import ZepConversationManager
-from eda_ai_api.utils.prompts import (
-    ROUTER_TEMPLATE,
-    TOPIC_TEMPLATE,
-    PROPOSAL_TEMPLATE,
-    INSUFFICIENT_TEMPLATES,
-)
-
-from onboarding.crew import OnboardingCrew
-from opportunity_finder.crew import OpportunityFinderCrew
-from proposal_writer.crew import ProposalWriterCrew
+from eda_ai_api.utils.prompts import (INSUFFICIENT_TEMPLATES,
+                                      PROPOSAL_TEMPLATE, ROUTER_TEMPLATE,
+                                      TOPIC_TEMPLATE)
 
 router = APIRouter()
 
