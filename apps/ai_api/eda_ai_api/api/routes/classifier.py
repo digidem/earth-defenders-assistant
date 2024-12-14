@@ -13,9 +13,13 @@ from proposal_writer.crew import ProposalWriterCrew
 from eda_ai_api.models.classifier import ClassifierResponse
 from eda_ai_api.utils.audio_utils import process_audio_file
 from eda_ai_api.utils.memory import ZepConversationManager
-from eda_ai_api.utils.prompts import (INSUFFICIENT_TEMPLATES,
-                                      PROPOSAL_TEMPLATE, ROUTER_TEMPLATE,
-                                      TOPIC_TEMPLATE)
+from eda_ai_api.utils.prompts import (
+    INSUFFICIENT_TEMPLATES,
+    PROPOSAL_TEMPLATE,
+    ROUTER_TEMPLATE,
+    TOPIC_TEMPLATE,
+    RESPONSE_PROCESSOR_TEMPLATE,
+)
 
 router = APIRouter()
 
@@ -47,6 +51,13 @@ async def extract_proposal_details(message: str, history: list) -> tuple[str, st
     return community_project, grant_call
 
 
+async def process_llm_response(message: str, response: str) -> str:
+    processed = llm.complete(
+        RESPONSE_PROCESSOR_TEMPLATE.format(original_message=message, response=response)
+    )
+    return processed.text
+
+
 async def process_decision(
     decision: str, message: str, history: list
 ) -> Dict[str, Any]:
@@ -64,7 +75,15 @@ async def process_decision(
                     context=context, message=message
                 )
             )
-            return {"response": response.text}
+            processed_response = await process_llm_response(message, response.text)
+            return {"response": processed_response}
+
+        # Add return for successful discovery
+        crew_result = (
+            OpportunityFinderCrew().crew().kickoff(inputs={"topics": ", ".join(topics)})
+        )
+        processed_response = await process_llm_response(message, str(crew_result))
+        return {"response": processed_response}
 
     elif decision == "proposal":
         community_project, grant_call = await extract_proposal_details(message, history)
@@ -77,13 +96,20 @@ async def process_decision(
                     context=context, message=message
                 )
             )
-            return {"response": response.text}
+            processed_response = await process_llm_response(message, response.text)
+            return {"response": processed_response}
 
     elif decision == "heartbeat":
-        return {"is_alive": True}
+        processed_response = await process_llm_response(
+            message, str({"is_alive": True})
+        )
+        return {"response": processed_response}
 
     elif decision == "onboarding":
-        return OnboardingCrew().crew().kickoff()
+        result = OnboardingCrew().crew().kickoff()
+        processed_response = await process_llm_response(message, str(result))
+        logger.info(f"Processed onboarding response: {processed_response}")
+        return {"response": processed_response}
 
     else:
         return {"error": f"Unknown decision type: {decision}"}
@@ -137,10 +163,17 @@ async def classifier_route(
 
         # Process decision and store conversation
         result = await process_decision(decision, combined_message, history)
-        await zep.add_conversation(session_id, combined_message, str(result))
 
-        return ClassifierResponse(result=str(result), session_id=session_id)
+        # Process final result if it's not already processed
+        if isinstance(result.get("response"), str):
+            final_result = await process_llm_response(combined_message, str(result))
+        else:
+            final_result = str(result)
+
+        await zep.add_conversation(session_id, combined_message, final_result)
+        return ClassifierResponse(result=final_result, session_id=session_id)
 
     except Exception as e:
         logger.error(f"Error in classifier route: {str(e)}")
-        return ClassifierResponse(result=f"Error: {str(e)}")
+        error_msg = await process_llm_response(combined_message, f"Error: {str(e)}")
+        return ClassifierResponse(result=error_msg)

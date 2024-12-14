@@ -68,6 +68,9 @@ export async function handleMessage(message: WAMessage) {
     }
 
     // Make API request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout (10 * 60 * 1000 ms)
+
     const response = await fetch(
       "http://127.0.0.1:8083/api/classifier/classify",
       {
@@ -76,8 +79,11 @@ export async function handleMessage(message: WAMessage) {
           accept: "application/json",
         },
         body: formData,
+        signal: controller.signal,
       },
     );
+
+    clearTimeout(timeoutId); // Clear timeout if request completes
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

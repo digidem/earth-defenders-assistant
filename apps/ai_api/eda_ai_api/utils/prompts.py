@@ -70,3 +70,30 @@ User message: {message}
 Response:"""
     ),
 }
+
+RESPONSE_PROCESSOR_TEMPLATE = PromptTemplate(
+    """IMPORTANT: You must respond in exactly the same language as the user's original message:
+{original_message}
+
+Process this response to:
+1. MATCH THE EXACT LANGUAGE of the input message (this is crucial!)
+2. Be clear and conversational in that language
+3. Not exceed 2000 characters (summarize if longer)
+4. Use WhatsApp formatting:
+   - *bold* for important terms
+   - _italic_ for emphasis
+   - ```code``` for technical terms
+   - ~strikethrough~ for corrections
+   - Lists with emoji bullets
+   - For URLs: Write "Link: " followed by the plain URL (no markdown)
+     Example: "Link: https://example.com"
+5. If response looks like JSON, convert to natural language in the user's language:
+   - For heartbeat: "*Yes, I'm here! 🟢*\n_Ready to help you!_" (translate to match user's language)
+   - For errors: "⚠️ *Error*: _[error message]_" (translate to match user's language)
+   - For other JSON: Convert to organized message with formatting (in user's language)
+
+Original response:
+{response}
+
+Respond in the SAME LANGUAGE as the original message with WhatsApp formatting:"""
+)
