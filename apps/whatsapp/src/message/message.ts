@@ -1,7 +1,7 @@
 import type { WAMessage } from "@whiskeysockets/baileys";
 import { sock } from "../client";
 import { BOT_PREFIX } from "../constants";
-import { react } from "../utils/whatsapp";
+import { getPhoneNumber, react } from "../utils/whatsapp";
 
 export async function handleMessage(message: WAMessage) {
   await react(message, "working");
@@ -11,7 +11,6 @@ export async function handleMessage(message: WAMessage) {
     return console.error("Invalid chat ID");
   }
 
-  const isGroup = chatId.endsWith("@g.us");
   const streamingReply = await sock.sendMessage(
     chatId,
     { text: "..." },
@@ -20,16 +19,44 @@ export async function handleMessage(message: WAMessage) {
 
   if (!streamingReply) return console.error("No streaming reply");
 
-  let response: string;
-
-  response = "Hello World!";
-
   try {
-    if (!response) return "No response found";
+    // Extract message content and phone number
+    const messageContent =
+      message.message?.conversation ||
+      message.message?.extendedTextMessage?.text ||
+      "";
+    const phoneNumber = getPhoneNumber(message);
+
+    // Create FormData
+    const formData = new FormData();
+    formData.append("message", messageContent);
+    formData.append("session_id", phoneNumber);
+
+    // Make API request
+    const response = await fetch(
+      "http://127.0.0.1:8083/api/classifier/classify",
+      {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+        },
+        body: formData,
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.result) return "No response found";
+
+    console.log(data.result);
 
     await sock.sendMessage(
       chatId,
-      { text: response, edit: streamingReply.key },
+      { text: data.result, edit: streamingReply.key },
       { quoted: message },
     );
 
@@ -37,8 +64,10 @@ export async function handleMessage(message: WAMessage) {
   } catch (error) {
     console.error(error);
 
-    const errorReply = await sock.sendMessage(chatId, {
-      text: BOT_PREFIX + (error as Error).message,
+    const errorMessage =
+      error instanceof Error ? error.message : "An error occurred";
+    await sock.sendMessage(chatId, {
+      text: BOT_PREFIX + errorMessage,
     });
 
     await react(message, "error");
