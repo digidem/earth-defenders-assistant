@@ -24,22 +24,22 @@ export async function handleHelp(message: proto.IWebMessageInfo, args: string) {
   return reply;
 }
 
-const helpMessage = stripIndents`${BOT_PREFIX}Available commands:
+const helpMessage = stripIndents`${BOT_PREFIX}Comandos disponíveis:
 
-🆘 *${CMD_PREFIX}help _<command>_*
-Displays the available commands, their functionalities and how to use them.
-- Run *${CMD_PREFIX}help _<command>_* for more information about a specific command.
+🆘 *${CMD_PREFIX}help _<comando>_*
+Mostra os comandos disponíveis e como usá-los.
+- Digite *${CMD_PREFIX}help _<comando>_* para mais informações sobre um comando específico.
 
 🏓 *${CMD_PREFIX}ping*
-Checks if the bot is alive by responding with '*_pong!_*'.
+Verifica se o bot está funcionando respondendo com '*_pong!_*'.
 `;
 
-const helpHelpMessage = stripIndents`I see what you did there.
+const helpHelpMessage = stripIndents`Olha só, que esperto!
 
-That's pretty meta, but I'm not gonna help you with that.
+Não vou te ajudar com isso não, você já sabe o que está fazendo.
 
-Smart ass.
+Espertinho(a) 😏
 `;
 
 const pingHelpMessage = stripIndents`🏓 *${CMD_PREFIX}ping*
-Checks if the bot is alive by responding with '*_pong!_*'.`;
+Verifica se o bot está funcionando respondendo com '*_pong!_*'.`;

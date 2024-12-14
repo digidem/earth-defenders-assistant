@@ -4,7 +4,17 @@ import { BOT_PREFIX } from "../constants";
 import { getPhoneNumber, react } from "../utils";
 
 const IMAGE_ERROR_MSG =
-  "Desculpe, ainda não tenho suporte para processar imagens. Por favor, envie apenas mensagens de texto ou áudio.";
+  "Não consigo processar imagens no momento. Por favor, me envie apenas mensagens de texto ou áudio.";
+
+const WAITING_MSG =
+  "Estou analisando sua mensagem... Como preciso pensar com cuidado, pode demorar alguns minutos.";
+
+const ERROR_MESSAGES = {
+  NO_RESPONSE: "Desculpe, não consegui gerar uma resposta. Tente novamente.",
+  HTTP_ERROR: "Ops, tive um problema técnico. Pode tentar novamente?",
+  TIMEOUT: "Desculpe, demorei muito para responder. Pode tentar novamente?",
+  UNKNOWN: "Ocorreu um erro inesperado. Pode tentar novamente?",
+};
 
 export async function handleMessage(message: WAMessage) {
   await react(message, "working");
@@ -16,7 +26,7 @@ export async function handleMessage(message: WAMessage) {
 
   const streamingReply = await sock.sendMessage(
     chatId,
-    { text: "..." },
+    { text: WAITING_MSG },
     { quoted: message },
   );
 
@@ -91,7 +101,7 @@ export async function handleMessage(message: WAMessage) {
 
     const data = await response.json();
 
-    if (!data.result) return "No response found";
+    if (!data.result) return ERROR_MESSAGES.NO_RESPONSE;
 
     console.log(data.result);
 
@@ -104,12 +114,20 @@ export async function handleMessage(message: WAMessage) {
     await react(message, "done");
   } catch (error) {
     console.error(error);
-
     const errorMessage =
-      error instanceof Error ? error.message : "An error occurred";
-    await sock.sendMessage(chatId, {
-      text: BOT_PREFIX + errorMessage,
-    });
+      error instanceof Error
+        ? error.message.includes("timeout")
+          ? ERROR_MESSAGES.TIMEOUT
+          : error.message.includes("HTTP")
+            ? ERROR_MESSAGES.HTTP_ERROR
+            : ERROR_MESSAGES.UNKNOWN
+        : ERROR_MESSAGES.UNKNOWN;
+
+    await sock.sendMessage(
+      chatId,
+      { text: errorMessage, edit: streamingReply.key },
+      { quoted: message },
+    );
 
     await react(message, "error");
   }

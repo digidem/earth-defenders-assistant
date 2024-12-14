@@ -53,7 +53,7 @@ export async function handleCommand(message: proto.IWebMessageInfo) {
       break;
     default:
       reply = stripIndents`
-        ${BOT_PREFIX}Unknown command _"${CMD_PREFIX + command}"_
+        ${BOT_PREFIX}Comando desconhecido: _"${CMD_PREFIX + command}"_
 
         ${helpStatement}`;
       break;
