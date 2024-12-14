@@ -1,7 +1,10 @@
-import type { WAMessage } from "@whiskeysockets/baileys";
+import { type WAMessage, downloadMediaMessage } from "@whiskeysockets/baileys";
 import { sock } from "../client";
 import { BOT_PREFIX } from "../constants";
-import { getPhoneNumber, react } from "../utils/whatsapp";
+import { getPhoneNumber, react } from "../utils";
+
+const IMAGE_ERROR_MSG =
+  "Desculpe, ainda não tenho suporte para processar imagens. Por favor, envie apenas mensagens de texto ou áudio.";
 
 export async function handleMessage(message: WAMessage) {
   await react(message, "working");
@@ -27,10 +30,42 @@ export async function handleMessage(message: WAMessage) {
       "";
     const phoneNumber = getPhoneNumber(message);
 
+    let audioBlob: Blob | undefined;
+
+    if (message.message?.imageMessage || message.message?.audioMessage) {
+      const media = await downloadMediaMessage(message, "buffer", {});
+      const mimetype =
+        message.message?.imageMessage?.mimetype ||
+        message.message?.audioMessage?.mimetype;
+
+      const isImage = mimetype?.includes("image");
+      const isAudio = mimetype?.includes("audio");
+
+      // Early return if image is detected
+      if (isImage) {
+        await sock.sendMessage(
+          chatId,
+          { text: IMAGE_ERROR_MSG, edit: streamingReply.key },
+          { quoted: message },
+        );
+        await react(message, "done");
+        return;
+      }
+
+      if (isAudio && mimetype) {
+        audioBlob = new Blob([media], { type: mimetype });
+      }
+    }
+
     // Create FormData
     const formData = new FormData();
     formData.append("message", messageContent);
     formData.append("session_id", phoneNumber);
+
+    // Add audio if present
+    if (audioBlob) {
+      formData.append("audio", audioBlob, "audio.ogg");
+    }
 
     // Make API request
     const response = await fetch(

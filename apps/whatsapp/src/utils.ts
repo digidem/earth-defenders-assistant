@@ -1,7 +1,7 @@
 import type { proto } from "@whiskeysockets/baileys";
 import { stripIndents } from "common-tags";
-import { sock } from "../client";
-import { helpStatement } from "../commands/commands_index";
+import { sock } from "./client";
+import { helpStatement } from "./commands/commands_index";
 import {
   ALLOWED_USERS,
   BLOCKED_USERS,
@@ -9,7 +9,7 @@ import {
   CMD_PREFIX,
   ENABLE_REACTIONS,
   IGNORE_MESSAGES_WARNING,
-} from "../constants";
+} from "./constants";
 
 export function isGroupMessage(message: proto.IWebMessageInfo) {
   return message.key.remoteJid?.endsWith("@g.us") ?? false;

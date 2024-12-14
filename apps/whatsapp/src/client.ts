@@ -17,7 +17,7 @@ import {
   shouldIgnore,
   shouldIgnoreUnread,
   shouldReply,
-} from "./utils/whatsapp";
+} from "./utils";
 
 const messageQueue: { [key: string]: proto.IWebMessageInfo[] } = {};
 let isProcessingMessage = false;

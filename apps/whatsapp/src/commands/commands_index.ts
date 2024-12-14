@@ -2,11 +2,7 @@ import type { WASocket, proto } from "@whiskeysockets/baileys";
 import { stripIndents } from "common-tags";
 import { sock } from "../client";
 import { BOT_PREFIX, CMD_PREFIX } from "../constants";
-import {
-  isGroupMessage,
-  react,
-  unauthorizedCommandFor,
-} from "../utils/whatsapp";
+import { isGroupMessage, react, unauthorizedCommandFor } from "../utils";
 import { handleHelp } from "./help";
 
 const adminCommands = ["jailbreak", "reset", "change"];
