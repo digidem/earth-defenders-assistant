@@ -174,3 +174,5 @@ dist
 # Finder (MacOS) folder config
 .DS_Store
 message_db.json
+
+wa_auth
