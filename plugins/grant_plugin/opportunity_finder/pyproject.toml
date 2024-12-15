@@ -6,6 +6,7 @@ authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<=3.13"
 dependencies = [
     "crewai[agentops,tools]>=0.76.2,<1.0.0",
+    "langtrace-python-sdk>=3.3.13",
 ]
 
 [project.scripts]
