@@ -27,7 +27,7 @@ def run():
 def main(topics: str):
     """
     Run the crew with specified topics.
-    
+
     Args:
         topics: Comma-separated string of topics to search for opportunities
     """
@@ -36,6 +36,12 @@ def main(topics: str):
         'topics': topics
     }
     return OpportunityFinderCrew().crew().kickoff(inputs=inputs)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: uv run src/opportunity_finder/main.py 'topic1, topic2, topic3'")
+        sys.exit(1)
+    main(sys.argv[1])
 
 def train():
     """
