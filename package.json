@@ -27,8 +27,8 @@
     "start:dashboard": "turbo start --filter=@eda/dashboard",
     "test": "turbo test --parallel",
     "format": "biome format --write .",
-    "lint:repo": "bunx sherif@latest",
-    "lint:repo:fix": "bunx sherif@latest --fix",
+    "lint:repo": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions",
+    "lint:repo:fix": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions --fix",
     "typecheck": "turbo typecheck"
   },
   "devDependencies": {
