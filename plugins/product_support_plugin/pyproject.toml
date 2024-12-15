@@ -1,0 +1,13 @@
+[project]
+name = "awana-rag-plugin"
+version = "0.1.0"
+description = "A RAG plugin for analyzing Mapeo documentation to identify key features, user interactions, data collection methods, and how different components of the platform work together"
+readme = "README.md"
+requires-python = ">=3.10.1,<4.0.0"
+dependencies = [
+    "fast-graphrag",
+    "python-dotenv", 
+    "python-telegram-bot>=21.7",
+]
+[project.scripts]
+product-support-cli = "cli:main"
