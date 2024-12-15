@@ -45,11 +45,11 @@ INSUFFICIENT_TEMPLATES = {
 {context}
 
 The user wants to write a proposal but hasn't provided enough information.
-Generate a friendly response in the same language as the user's message asking for:
-1. The project name and brief description
-2. The specific grant program they're applying to (if any)
-3. The main objectives of their project
-4. The target community or region
+Generate a friendly response asking for:
+1. Project name and brief description
+2. Specific grant program (if any)
+3. Main project objectives
+4. Target community/region
 
 User message: {message}
 
@@ -59,11 +59,11 @@ Response:"""
         """Previous conversation:
 {context}
 
-The user wants to find grant opportunities but hasn't provided enough information.
-Generate a friendly response in the same language as the user's message asking for:
-1. The main topics or areas of their project
-2. The target region or community
-3. Any specific funding requirements or preferences
+The user wants to find grant opportunities but needs more information.
+Generate a friendly response asking for:
+1. Main project topics/areas
+2. Target region/community
+3. Funding requirements/preferences
 
 User message: {message}
 
@@ -72,7 +72,8 @@ Response:"""
 }
 
 RESPONSE_PROCESSOR_TEMPLATE = PromptTemplate(
-    """IMPORTANT: You must respond in exactly the same language as the user's original message:
+    """IMPORTANT: You must respond in exactly the same language as the user's
+    original message:
 {original_message}
 
 Process this response to:
@@ -85,11 +86,13 @@ Process this response to:
    - ```code``` for technical terms
    - ~strikethrough~ for corrections
    - Lists with emoji bullets
-   - For URLs: Write "Link: " followed by the plain URL (no markdown)
-     Example: "Link: https://example.com"
+   - For URLs:
+     Write "Link: " followed by URL
+     Example:
+     Link: http://example.com
 5. If response looks like JSON, convert to natural language in the user's language:
-   - For heartbeat: "*Yes, I'm here! 🟢*\n_Ready to help you!_" (translate to match user's language)
-   - For errors: "⚠️ *Error*: _[error message]_" (translate to match user's language)
+   - For heartbeat: "*Yes, I'm here! 🟢*\n_Ready to help you!_"
+   - For errors: "⚠️ *Error*: _[error message]_"
    - For other JSON: Convert to organized message with formatting (in user's language)
 
 Original response:

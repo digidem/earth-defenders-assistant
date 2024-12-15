@@ -16,9 +16,8 @@ from eda_ai_api.utils.memory import ZepConversationManager
 from eda_ai_api.utils.prompts import (
     INSUFFICIENT_TEMPLATES,
     PROPOSAL_TEMPLATE,
-    ROUTER_TEMPLATE,
-    TOPIC_TEMPLATE,
     RESPONSE_PROCESSOR_TEMPLATE,
+    TOPIC_TEMPLATE,
 )
 
 router = APIRouter()
@@ -99,6 +98,15 @@ async def process_decision(
             processed_response = await process_llm_response(message, response.text)
             return {"response": processed_response}
 
+        # Add crew result and return
+        crew_result = (
+            ProposalWriterCrew()
+            .crew()
+            .kickoff(inputs={"project": community_project, "grant": grant_call})
+        )
+        processed_response = await process_llm_response(message, str(crew_result))
+        return {"response": processed_response}
+
     elif decision == "heartbeat":
         processed_response = await process_llm_response(
             message, str({"is_alive": True})
@@ -123,13 +131,15 @@ async def classifier_route(
 ) -> ClassifierResponse:
     """Main route handler with conversation memory"""
     try:
-        logger.info(
-            f"New request - Session: {session_id}, User: {session_id + uuid.uuid4().hex}"
-        )
+        # Generate a default session_id if none provided
+        current_session_id = session_id or str(uuid.uuid4())
+        user_id = f"{current_session_id}_{uuid.uuid4().hex}"
+
+        logger.info(f"New request - Session: {current_session_id}, User: {user_id}")
 
         zep = ZepConversationManager()
         session_id = await zep.get_or_create_session(
-            user_id=session_id + uuid.uuid4().hex, session_id=session_id
+            user_id=user_id, session_id=current_session_id
         )
 
         # Process inputs
@@ -153,7 +163,10 @@ async def classifier_route(
         context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
 
         router_prompt = PromptTemplate(
-            """Previous conversation:\n{context}\n\nGiven the current user message, determine the appropriate service:\n{message}\n\nReturn only one word (discovery/proposal/onboarding/heartbeat):"""
+            """Previous conversation:\n{context}\n\n"""
+            """Given the current user message, determine the appropriate service:"""
+            """\n{message}\n\n"""
+            """Return only one word (discovery/proposal/onboarding/heartbeat):"""
         )
 
         response = llm.complete(

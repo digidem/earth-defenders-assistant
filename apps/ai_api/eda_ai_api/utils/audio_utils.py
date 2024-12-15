@@ -1,6 +1,6 @@
 import os
 import tempfile
-from typing import Dict, Optional
+from typing import Optional
 
 from fastapi import UploadFile
 
@@ -40,11 +40,16 @@ async def process_audio_file(audio: UploadFile) -> str:
     content = await audio.read()
 
     try:
+        # Add null check and default to mp3
+        file_format = "mp3"
+        if content_type is not None:
+            file_format = ALLOWED_FORMATS.get(content_type, "mp3")
+
         if content_type == "audio/ogg":
             audio_path = convert_ogg(content, output_format="mp3")
         else:
             with tempfile.NamedTemporaryFile(
-                suffix=f".{ALLOWED_FORMATS.get(content_type, 'mp3')}", delete=False
+                suffix=f".{file_format}", delete=False
             ) as temp_file:
                 temp_file.write(content)
                 audio_path = temp_file.name

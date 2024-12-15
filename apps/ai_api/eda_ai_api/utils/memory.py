@@ -20,9 +20,11 @@ class ZepConversationManager:
             if session_id:
                 try:
                     await self.client.memory.get(session_id=session_id)
+                    logger.info(f"Found existing session: {session_id}")
                     return session_id
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to get session {session_id}: {str(e)}")
+                    # Continue to create new session
 
             user_id = user_id or uuid.uuid4().hex
             await self.client.user.add(
@@ -35,6 +37,7 @@ class ZepConversationManager:
             )
 
             await self.client.memory.add(session_id=new_session_id, messages=[])
+            logger.info(f"Created new session: {new_session_id}")
 
             return new_session_id
 

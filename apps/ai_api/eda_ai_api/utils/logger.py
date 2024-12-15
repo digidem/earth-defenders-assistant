@@ -2,5 +2,5 @@
 from loguru import logger
 
 
-def setup_logging():
+def setup_logger() -> None:
     logger.add("api.log", rotation="500 MB")
