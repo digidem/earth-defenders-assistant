@@ -1,4 +1,4 @@
-from main import initialize_grag, query
+from src.main import initialize_grag, query
 
 def main():
     print("Welcome to Product Support Assistant!")

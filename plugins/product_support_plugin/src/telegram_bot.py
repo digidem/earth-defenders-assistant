@@ -1,6 +1,6 @@
 import os
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
-from main import initialize_grag, query
+from src.main import initialize_grag, query
 from dotenv import load_dotenv
 import asyncio
 from concurrent.futures import ThreadPoolExecutor

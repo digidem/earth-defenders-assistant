@@ -143,23 +143,6 @@ wheels = [
 ]
 
 [[package]]
-name = "awana-rag-plugin"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "fast-graphrag" },
-    { name = "python-dotenv" },
-    { name = "python-telegram-bot" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fast-graphrag" },
-    { name = "python-dotenv" },
-    { name = "python-telegram-bot", specifier = ">=21.7" },
-]
-
-[[package]]
 name = "certifi"
 version = "2024.12.14"
 source = { registry = "https://pypi.org/simple" }
@@ -800,6 +783,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/08/b7/3053b7d8b648b077422cfd7235f83909b6b192c2fa42bb9dba51cdc773bf/optype-0.7.3.tar.gz", hash = "sha256:51c8dd104ac197457059bcee5e256160a641ca72c6c852012d952790a5e0cac0", size = 80608 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2b/92/466c23b21b341d062f33be00a307b1581b90ca86b07f27a4a71ecbec830b/optype-0.7.3-py3-none-any.whl", hash = "sha256:856416484131038799e0e9cefc19d0ef37e7b4fde2144f25e8bb0e8981ebbe95", size = 70043 },
+]
+
+[[package]]
+name = "product-support"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fast-graphrag" },
+    { name = "python-dotenv" },
+    { name = "python-telegram-bot" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fast-graphrag" },
+    { name = "python-dotenv" },
+    { name = "python-telegram-bot", specifier = ">=21.7" },
 ]
 
 [[package]]

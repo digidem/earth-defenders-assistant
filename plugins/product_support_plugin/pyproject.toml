@@ -1,7 +1,7 @@
 [project]
-name = "awana-rag-plugin"
+name = "product_support"
 version = "0.1.0"
-description = "A RAG plugin for analyzing Mapeo documentation to identify key features, user interactions, data collection methods, and how different components of the platform work together"
+description = "A RAG plugin for analyzing documentation to identify key features, user interactions, data collection methods, and how different components of a given platform work together"
 readme = "README.md"
 requires-python = ">=3.10.1,<4.0.0"
 dependencies = [
@@ -10,4 +10,16 @@ dependencies = [
     "python-telegram-bot>=21.7",
 ]
 [project.scripts]
-product-support-cli = "cli:main"
+product-support-cli = "src.cli:main"
+product-support = "src.main:initialize_grag"
+product-support-query = "src.main:query"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
