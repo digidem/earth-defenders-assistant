@@ -13,13 +13,15 @@ dependencies = [
 product-support-cli = "src.cli:main"
 product-support = "src.main:initialize_grag"
 product-support-query = "src.main:query"
+product-support-telegram = "src.telegram_bot:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+packages = ["src"]
+package-dir = {"product_support" = "src"}
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

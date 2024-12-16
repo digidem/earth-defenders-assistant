@@ -7,30 +7,29 @@ A RAG (Retrieval Augmented Generation) plugin for analyzing product support base
 This plugin processes documentation from Mapeo, an offline-first mapping and monitoring platform, to provide insights about:
 
 - Key features and functionality
-- User interaction patterns 
+- User interaction patterns
 - Data collection methodologies
 - Component integrations
 - System architecture
 
 ## Requirements
 
-- Python 3.10.1 or higher
-- uv package manager (recommended)
-- Dependencies listed in pyproject.toml
-
-## Installation
-
-1. Clone the repository:
+- Python 3.10.1 or higher (< 4.0.0)
+- libomp-dev (`sudo apt install libomp-dev`)
+- Dependencies:
+  - fast-graphrag
+  - python-dotenv
+  - python-telegram-bot >= 21.7
 
 ## Usage
 
-The plugin can be used in three ways:
+The plugin provides several ways to interact with the product support system:
 
-- As a CLI tool for direct queries
-- Through the Telegram bot interface
-- By importing and calling from your Python code
+- CLI tool: `uv run product-support-cli`
+- Telegram bot: `uv run product-support-telegram`
+- Python API: Import and use `src.main.initialize_grag()` or `src.main.query()`
 
-To install dependencies with uv (recommended):
+Example Python usage:
 
 ### Docker
 

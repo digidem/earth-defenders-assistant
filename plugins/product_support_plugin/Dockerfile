@@ -1,8 +1,9 @@
-FROM python:3.10.1-slim
+FROM python:3.11-slim
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    libomp-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -14,4 +15,4 @@ COPY . .
 RUN uv venv
 RUN uv sync --frozen
 # Run the application
-CMD ["uv", "run", "telegram_bot.py"]
+CMD ["uv", "run", "product-support-telegram"]
