@@ -37,12 +37,13 @@ Given a user message, determine the appropriate service to handle the request.
 Choose between:
 - discovery: For finding grant opportunities
 - proposal: For writing grant proposals
+- product_support: For product support
 - onboarding: For getting help using the system
 - heartbeat: For checking system health
 
 User message: {message}
 
-Return only one word (discovery/proposal/onboarding/heartbeat):"""
+Return only one word (discovery/proposal/onboarding/heartbeat/product_support):"""
 
 TOPIC_EXTRACTOR_TEMPLATE = """
 Extract up to 5 most relevant topics for grant opportunity research from the user message.
@@ -161,6 +162,8 @@ def process_decision(decision: str, message: str) -> Dict[str, Any]:
             .crew()
             .kickoff()
         )
+    elif decision == "product_support":
+        return {"redirect": "/product_support"}
     elif decision == "heartbeat":
         return {"is_alive": True}
     elif decision == "onboarding":

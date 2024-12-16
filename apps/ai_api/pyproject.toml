@@ -16,6 +16,7 @@ dependencies = [
     "opportunity-finder",
     "proposal_writer",
     "onboarding",
+    "product_support",
     "ffmpeg-python>=0.2.0",
     "python-multipart>=0.0.17",
 ]
@@ -73,6 +74,7 @@ ignore_missing_imports = true
 [tool.uv.sources]
 opportunity-finder = { path = "../../plugins/grant_plugin/opportunity_finder" }
 proposal_writer = { path = "../../plugins/grant_plugin/proposal_writer" }
+product_support = { path = "../../plugins/product_support_plugin" }
 onboarding = { path = "../../plugins/onboarding" }
 
 [build-system]
