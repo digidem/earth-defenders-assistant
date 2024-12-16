@@ -1,18 +1,42 @@
 from fast_graphrag import GraphRAG
 import json
-import os
 from pathlib import Path
+import importlib.resources as pkg_resources
+import product_support
 
 DOMAIN = "Analyze product documentation to understand features, usage patterns, technical capabilities, integrations, and provide accurate support responses."
 
 # Get the directory this file is in
 current_dir = Path(__file__).parent
-# Go up one level to the plugin root
-plugin_root = current_dir.parent
 
-with open(plugin_root / "qa.json") as f:
-    qa_data = json.load(f)
-    EXAMPLE_QUERIES = [example["query"] for example in qa_data["examples"]]
+# Get plugin root, handling both direct use and package import cases
+try:
+    # First try going up one level from current file
+    plugin_root = current_dir.parent
+    qa_test_path = plugin_root / "qa.json"
+    if not qa_test_path.exists():
+        raise FileNotFoundError
+except (FileNotFoundError, PermissionError):
+    # If that fails, try to find it relative to the package installation
+    plugin_root = Path(pkg_resources.files(product_support))
+
+qa_path = plugin_root / "qa.json"
+EXAMPLE_QUERIES = []
+
+if not qa_path.exists():
+    # Create empty qa.json with default structure
+    default_qa = {
+        "examples": []
+    }
+    with open(qa_path, "w") as f:
+        json.dump(default_qa, f, indent=4)
+
+try:
+    with open(qa_path) as f:
+        qa_data = json.load(f)
+        EXAMPLE_QUERIES = [example["query"] for example in qa_data["examples"]]
+except Exception as e:
+    print(f"Warning: Could not load qa.json: {str(e)}")
 
 ENTITY_TYPES = ["Feature", "Component", "User", "Action", "Platform", "Data"]
 def initialize_grag():
