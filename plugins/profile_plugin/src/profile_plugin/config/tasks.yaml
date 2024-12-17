@@ -20,9 +20,25 @@ start_conversation_flow:
     Ask the user to fill in the missing profile fields based on the analysis results.
     Start a conversation flow to fill the missing profile fields using the provided analysis.
     Use the analysis_results from the previous task's output.
+    If all fields are present, skip to the validate_profile task.
     Ask the user for the missing fields step-by-step in a conversational tone.
     Wait for user input (human-in-the-loop) to complete these fields.
   expected_output: >
     A series of conversational messages and user queries that guide the user to fill in missing fields.
     Short messages are preferred.
   agent: conversation_flow
+
+validate_profile:
+  description: >
+    Validate the following profile data:
+    - Check if all required fields are present
+    - Verify data format and consistency
+    - Flag any suspicious or inconsistent data
+    - Determine if additional research is needed
+  expected_output: >
+    A JSON object containing:
+    - validation_status: "valid" | "needs_verification" | "invalid"
+    - issues: array of identified issues
+    - research_needed: boolean
+    - research_topics: array of topics needing verification
+  agent: data_quality

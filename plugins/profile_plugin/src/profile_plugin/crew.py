@@ -25,6 +25,10 @@ class ProfilePluginCrew:
     def conversation_flow(self) -> Agent:
         return Agent(config=self.agents_config["conversation_flow"], verbose=True, llm=llm)
 
+    @agent
+    def data_quality(self) -> Agent:
+        return Agent(config=self.agents_config["data_quality"], verbose=True, llm=llm)
+
     @task
     def analyze_profile(self) -> Task:
         task_config = self.tasks_config["analyze_profile"]
@@ -46,7 +50,12 @@ class ProfilePluginCrew:
             human_input=True,
         )
 
-
+    @task
+    def validate_profile(self) -> Task:
+        task_config = self.tasks_config["validate_profile"]
+        return Task(
+            config=task_config,
+        )
 
     @crew
     def crew(self) -> Crew:
