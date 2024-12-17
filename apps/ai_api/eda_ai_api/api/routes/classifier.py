@@ -54,6 +54,7 @@ async def process_llm_response(message: str, response: str) -> str:
     processed = llm.complete(
         RESPONSE_PROCESSOR_TEMPLATE.format(original_message=message, response=response)
     )
+    logger.info(f"Processed response: {processed.text}")
     return processed.text
 
 
@@ -182,6 +183,16 @@ async def classifier_route(
             final_result = await process_llm_response(combined_message, str(result))
         else:
             final_result = str(result)
+
+        # Truncate if result exceeds character limit
+        if len(final_result) > 2499:
+            logger.warning(
+                f"Result exceeded 2499 characters (was {len(final_result)}). Truncating..."
+            )
+            final_result = final_result[:2499]
+
+        # Log both result and character count
+        logger.info(f"Final result ({len(final_result)} chars): {final_result}")
 
         await zep.add_conversation(session_id, combined_message, final_result)
         return ClassifierResponse(result=final_result, session_id=session_id)
