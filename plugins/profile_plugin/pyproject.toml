@@ -10,6 +10,7 @@ dependencies = [
 
 [project.scripts]
 profile_plugin = "profile_plugin.main:run"
+test_profile = "profile_plugin.test_profile:test_profile_analysis"
 run_crew = "profile_plugin.main:run"
 train = "profile_plugin.main:train"
 replay = "profile_plugin.main:replay"
