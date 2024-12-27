@@ -7,6 +7,7 @@ import {
 } from "./routes";
 import { messageSchema, queryParamsSchema } from "./types";
 
+const PORT = process.env.PORT || 3000;
 const app = new Elysia()
   .use(
     swagger({
@@ -28,24 +29,28 @@ const app = new Elysia()
     detail: {
       tags: ["messages"],
       description: "Send a new message",
-      request: {
-        body: {
-          type: "object",
-          properties: {
-            userId: { type: "string", example: "user123" },
-            text: { type: "string", example: "Hello world" },
-            platform: {
-              type: "string",
-              enum: ["whatsapp", "telegram", "simulator"],
-              example: "whatsapp",
-            },
-            meta: {
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: {
               type: "object",
-              example: { priority: "high" },
-              optional: true,
+              properties: {
+                userId: { type: "string", example: "user123" },
+                text: { type: "string", example: "Hello world" },
+                platform: {
+                  type: "string",
+                  enum: ["whatsapp", "telegram", "simulator"],
+                  example: "whatsapp",
+                },
+                meta: {
+                  type: "object",
+                  additionalProperties: true,
+                  example: { priority: "high" },
+                },
+              },
+              required: ["userId", "text", "platform"],
             },
           },
-          required: ["userId", "text", "platform"],
         },
       },
       responses: {
@@ -86,16 +91,35 @@ const app = new Elysia()
     detail: {
       tags: ["messages"],
       description: "Get received messages",
-      query: {
-        userId: { type: "string", optional: true },
-        limit: { type: "number", optional: true },
-        offset: { type: "number", optional: true },
-        platform: {
-          type: "string",
-          enum: ["whatsapp", "telegram", "simulator"],
-          optional: true,
+      parameters: [
+        {
+          in: "query",
+          name: "userId",
+          schema: { type: "string" },
+          required: false,
         },
-      },
+        {
+          in: "query",
+          name: "limit",
+          schema: { type: "number" },
+          required: false,
+        },
+        {
+          in: "query",
+          name: "offset",
+          schema: { type: "number" },
+          required: false,
+        },
+        {
+          in: "query",
+          name: "platform",
+          schema: {
+            type: "string",
+            enum: ["whatsapp", "telegram", "simulator"],
+          },
+          required: false,
+        },
+      ],
       responses: {
         "200": {
           description: "Messages retrieved successfully",
@@ -159,7 +183,10 @@ const app = new Elysia()
       },
     },
   })
-  .listen(3000);
+  .listen({
+    port: PORT,
+    hostname: "0.0.0.0", // This exposes the server externally
+  });
 
 const swaggerUrl = `http://${app.server?.hostname || "localhost"}:${
   app.server?.port
