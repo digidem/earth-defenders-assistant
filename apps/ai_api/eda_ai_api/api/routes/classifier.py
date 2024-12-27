@@ -24,7 +24,7 @@ router = APIRouter()
 
 # Setup LLM
 llm = Groq(
-    model="llama3-groq-70b-8192-tool-use-preview",
+    model="llama-3.3-70b-versatile",
     api_key=os.environ.get("GROQ_API_KEY"),
     temperature=0.5,
 )

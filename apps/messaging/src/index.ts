@@ -5,7 +5,7 @@ import {
   handleHealthCheck,
   handleSendMessage,
 } from "./routes";
-import { messageSchema, queryParamsSchema } from "./types";
+import { messageSchema } from "./types";
 
 const PORT = process.env.PORT || 3000;
 const app = new Elysia()
@@ -28,44 +28,32 @@ const app = new Elysia()
   .post("/api/messages/send", handleSendMessage, {
     detail: {
       tags: ["messages"],
-      description: "Send a new message",
+      description: "Process a message through AI API",
       requestBody: {
         content: {
           "application/json": {
             schema: {
               type: "object",
               properties: {
-                userId: { type: "string", example: "user123" },
-                text: { type: "string", example: "Hello world" },
-                platform: {
-                  type: "string",
-                  enum: ["whatsapp", "telegram", "simulator"],
-                  example: "whatsapp",
-                },
-                meta: {
-                  type: "object",
-                  additionalProperties: true,
-                  example: { priority: "high" },
-                },
+                message: { type: "string", example: "Hello world" },
+                sessionId: { type: "string", example: "5515991306053" },
+                audio: { type: "string", format: "binary", nullable: true },
               },
-              required: ["userId", "text", "platform"],
+              required: ["message", "sessionId"],
             },
           },
         },
       },
       responses: {
         "200": {
-          description: "Message sent successfully",
+          description: "Message processed successfully",
           content: {
             "application/json": {
               schema: {
                 type: "object",
                 properties: {
-                  id: { type: "string" },
-                  userId: { type: "string" },
-                  text: { type: "string" },
-                  platform: { type: "string" },
-                  timestamp: { type: "number" },
+                  result: { type: "string" },
+                  session_id: { type: "string" },
                 },
               },
             },
@@ -183,10 +171,7 @@ const app = new Elysia()
       },
     },
   })
-  .listen({
-    port: PORT,
-    hostname: "0.0.0.0", // This exposes the server externally
-  });
+  .listen(PORT);
 
 const swaggerUrl = `http://${app.server?.hostname || "localhost"}:${
   app.server?.port

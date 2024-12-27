@@ -16,6 +16,12 @@ const ERROR_MESSAGES = {
   UNKNOWN: "Ocorreu um erro inesperado. Pode tentar novamente?",
 };
 
+interface MessagePayload {
+  message: string;
+  sessionId: string;
+  audio?: Blob;
+}
+
 export async function handleMessage(message: WAMessage) {
   await react(message, "working");
 
@@ -33,7 +39,6 @@ export async function handleMessage(message: WAMessage) {
   if (!streamingReply) return console.error("No streaming reply");
 
   try {
-    // Extract message content and phone number
     const messageContent =
       message.message?.conversation ||
       message.message?.extendedTextMessage?.text ||
@@ -67,43 +72,41 @@ export async function handleMessage(message: WAMessage) {
       }
     }
 
-    // Create FormData
-    const formData = new FormData();
-    formData.append("message", messageContent);
-    formData.append("session_id", phoneNumber);
+    // Prepare request payload
+    const payload: MessagePayload = {
+      message: messageContent,
+      sessionId: phoneNumber,
+    };
 
-    // Add audio if present
     if (audioBlob) {
-      formData.append("audio", audioBlob, "audio.ogg");
+      payload.audio = audioBlob;
     }
 
-    // Make API request
+    // Make API request to messaging service
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout (10 * 60 * 1000 ms)
+    const timeoutId = setTimeout(() => controller.abort(), 600000);
 
-    const response = await fetch(
-      "http://127.0.0.1:8083/api/classifier/classify",
-      {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-        },
-        body: formData,
-        signal: controller.signal,
+    const response = await fetch("http://localhost:3001/api/messages/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
 
-    clearTimeout(timeoutId); // Clear timeout if request completes
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
+      console.dir(response, { depth: null });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
 
-    if (!data.result) return ERROR_MESSAGES.NO_RESPONSE;
-
-    console.log(data.result);
+    if (!data.result) {
+      throw new Error("No result from API");
+    }
 
     await sock.sendMessage(
       chatId,

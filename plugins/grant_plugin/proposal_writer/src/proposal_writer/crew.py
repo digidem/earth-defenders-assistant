@@ -6,7 +6,7 @@ from crewai.project import CrewBase, agent, crew, task
 
 # Initialize LLM
 llm = LLM(
-    model="groq/llama3-groq-70b-8192-tool-use-preview",  # Replace with your chosen Cerebras model name, e.g., "cerebras/llama3.1-8b"
+    model="groq/llama-3.3-70b-versatile",  # Replace with your chosen Cerebras model name, e.g., "cerebras/llama3.1-8b"
     api_key=os.environ.get("GROQ_API_KEY"),  # Your Cerebras API key
     temperature=0.5,
 )

@@ -4,7 +4,7 @@ from crewai.project import CrewBase, agent, crew, task
 
 # Configure LLM
 llm = LLM(
-    model="groq/llama3-groq-70b-8192-tool-use-preview",
+    model="groq/llama-3.3-70b-versatile",
     api_key=os.environ.get("GROQ_API_KEY"),
     temperature=0.5,
 )

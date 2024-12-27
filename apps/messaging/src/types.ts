@@ -1,10 +1,14 @@
 import { z } from "zod";
 
 export const messageSchema = z.object({
-  userId: z.string(),
-  text: z.string(),
-  platform: z.enum(["whatsapp", "telegram", "simulator"]),
-  meta: z.record(z.any()).optional(),
+  message: z.string(),
+  sessionId: z.string(),
+  audio: z.instanceof(Blob).optional(),
+});
+
+export const messageResponseSchema = z.object({
+  result: z.string(),
+  session_id: z.string().optional(),
 });
 
 export const queryParamsSchema = z.object({
@@ -15,4 +19,4 @@ export const queryParamsSchema = z.object({
 });
 
 export type Message = z.infer<typeof messageSchema>;
-export type QueryParams = z.infer<typeof queryParamsSchema>;
+export type MessageResponse = z.infer<typeof messageResponseSchema>;

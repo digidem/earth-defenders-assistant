@@ -7,33 +7,51 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!, // Get this from Supabase Studio
 );
 
+const AI_API_URL = process.env.AI_API_URL || "http://127.0.0.1:8083";
+
 export async function handleSendMessage(req: Request) {
   try {
-    const payload = messageSchema.parse(await req.json());
+    // Access body directly from Elysia's parsed request
+    const payload = messageSchema.parse(req.body);
 
-    const { data, error } = await supabase
-      .from("tosend_messages")
-      .insert([
-        {
-          user_id: payload.userId,
-          text: payload.text,
-          timestamp: Date.now(),
-          meta: {
-            platform: payload.platform,
-            ...payload.meta,
-          },
-        },
-      ])
-      .select()
-      .single();
+    logger.info("Received message request", {
+      sessionId: payload.sessionId,
+      hasAudio: !!payload.audio,
+    });
 
-    if (error) throw error;
+    // Create FormData for AI API
+    const formData = new FormData();
+    formData.append("message", payload.message);
+    formData.append("session_id", payload.sessionId);
 
-    logger.info("Message queued for sending", { userId: payload.userId });
+    if (payload.audio) {
+      formData.append("audio", payload.audio);
+    }
+
+    // Forward request to AI API
+    const response = await fetch(`${AI_API_URL}/api/classifier/classify`, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to process message");
+    }
+
+    logger.info("Message processed by AI API", {
+      sessionId: payload.sessionId,
+    });
     return Response.json(data);
   } catch (error) {
-    logger.error("Error queueing message", { error });
-    return Response.json({ error: "Failed to queue message" }, { status: 400 });
+    const message =
+      error instanceof Error ? error.message : "Failed to process message";
+    logger.error("Error processing message", { error: message });
+    return Response.json({ error: message }, { status: 400 });
   }
 }
 
