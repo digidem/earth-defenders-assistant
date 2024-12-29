@@ -9,6 +9,58 @@ const supabase = createClient(
 
 const AI_API_URL = process.env.AI_API_URL || "http://127.0.0.1:8083";
 
+async function saveMessageToSupabase(
+  whatsappId: string,
+  userMessage: string,
+  aiResponse: string,
+) {
+  try {
+    // First check if conversation exists
+    const { data: existingConversation } = await supabase
+      .from("messages")
+      .select("conversation_history")
+      .eq("whatsapp_id", whatsappId)
+      .single();
+
+    if (existingConversation) {
+      // Update existing conversation
+      const currentHistory = existingConversation.conversation_history || [];
+      const updatedHistory = [
+        ...currentHistory,
+        {
+          human: userMessage,
+          ai: aiResponse,
+          timestamp: new Date().toISOString(),
+        },
+      ];
+
+      const { error } = await supabase
+        .from("messages")
+        .update({ conversation_history: updatedHistory })
+        .eq("whatsapp_id", whatsappId);
+
+      if (error) throw error;
+    } else {
+      // Create new conversation
+      const { error } = await supabase.from("messages").insert({
+        whatsapp_id: whatsappId,
+        conversation_history: [
+          {
+            human: userMessage,
+            ai: aiResponse,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      });
+
+      if (error) throw error;
+    }
+  } catch (error) {
+    logger.error("Error saving to Supabase:", error);
+    throw error;
+  }
+}
+
 export async function handleSendMessage(req: Request) {
   try {
     logger.info("Received message request");
@@ -50,9 +102,17 @@ export async function handleSendMessage(req: Request) {
       throw new Error(data.message || "Failed to process message");
     }
 
-    logger.info("Message processed by AI API", {
+    // Save message to Supabase after successful AI response
+    await saveMessageToSupabase(
+      payload.sessionId,
+      payload.message,
+      data.result,
+    );
+
+    logger.info("Message processed and saved", {
       sessionId: payload.sessionId,
     });
+
     return Response.json(data);
   } catch (error) {
     const message =
