@@ -1,10 +1,6 @@
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
-import {
-  handleGetMessages,
-  handleHealthCheck,
-  handleSendMessage,
-} from "./routes";
+import { handleHealthCheck, handleSendMessage } from "./routes";
 import { messageSchema } from "./types";
 
 const PORT = process.env.PORT || 3000;
@@ -61,81 +57,6 @@ const app = new Elysia()
         },
         "400": {
           description: "Invalid request payload",
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  error: { type: "string" },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  .get("/api/messages/receive", handleGetMessages, {
-    detail: {
-      tags: ["messages"],
-      description: "Get received messages",
-      parameters: [
-        {
-          in: "query",
-          name: "userId",
-          schema: { type: "string" },
-          required: false,
-        },
-        {
-          in: "query",
-          name: "limit",
-          schema: { type: "number" },
-          required: false,
-        },
-        {
-          in: "query",
-          name: "offset",
-          schema: { type: "number" },
-          required: false,
-        },
-        {
-          in: "query",
-          name: "platform",
-          schema: {
-            type: "string",
-            enum: ["whatsapp", "telegram", "simulator"],
-          },
-          required: false,
-        },
-      ],
-      responses: {
-        "200": {
-          description: "Messages retrieved successfully",
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  messages: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        id: { type: "string" },
-                        userId: { type: "string" },
-                        text: { type: "string" },
-                        platform: { type: "string" },
-                        timestamp: { type: "number" },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        "400": {
-          description: "Invalid request parameters",
           content: {
             "application/json": {
               schema: {
