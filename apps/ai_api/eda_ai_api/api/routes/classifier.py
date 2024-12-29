@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 from typing import Any, Dict, Optional
@@ -10,7 +11,7 @@ from onboarding.crew import OnboardingCrew
 from opportunity_finder.crew import OpportunityFinderCrew
 from proposal_writer.crew import ProposalWriterCrew
 
-from eda_ai_api.models.classifier import ClassifierResponse
+from eda_ai_api.models.classifier import ClassifierResponse, MessageHistory
 from eda_ai_api.utils.audio_utils import process_audio_file
 from eda_ai_api.utils.memory import ZepConversationManager
 from eda_ai_api.utils.prompts import (
@@ -59,26 +60,42 @@ async def process_llm_response(message: str, response: str) -> str:
 
 
 async def process_decision(
-    decision: str, message: str, history: list
+    decision: str,
+    message: str,
+    zep_history: list,
+    supabase_history: list[MessageHistory] = [],
 ) -> Dict[str, Any]:
-    """Process routing decision with conversation context"""
+    """Process routing decision with conversation context from both sources"""
     logger.info(f"Processing decision: {decision} for message: {message}")
 
+    # Combine histories for context
+    context_parts = []
+
+    if supabase_history:
+        supabase_context = format_supabase_history(supabase_history)
+        context_parts.append(f"Recent conversation:\n{supabase_context}")
+
+    if zep_history:
+        zep_context = "\n".join(
+            [f"{msg['role']}: {msg['content']}" for msg in zep_history]
+        )
+        context_parts.append(f"Long-term memory:\n{zep_context}")
+
+    combined_context = "\n\n".join(context_parts)
+
     if decision == "discovery":
-        topics = await extract_topics(message, history)
+        topics = await extract_topics(message, zep_history)
         logger.info(f"Extracted topics: {topics}")
 
         if topics == ["INSUFFICIENT_CONTEXT"]:
-            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
             response = llm.complete(
                 INSUFFICIENT_TEMPLATES["discovery"].format(
-                    context=context, message=message
+                    context=combined_context, message=message
                 )
             )
             processed_response = await process_llm_response(message, response.text)
             return {"response": processed_response}
 
-        # Add return for successful discovery
         crew_result = (
             OpportunityFinderCrew().crew().kickoff(inputs={"topics": ", ".join(topics)})
         )
@@ -86,20 +103,20 @@ async def process_decision(
         return {"response": processed_response}
 
     elif decision == "proposal":
-        community_project, grant_call = await extract_proposal_details(message, history)
+        community_project, grant_call = await extract_proposal_details(
+            message, zep_history
+        )
         logger.info(f"Project: {community_project}, Grant: {grant_call}")
 
         if community_project == "unknown" or grant_call == "unknown":
-            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
             response = llm.complete(
                 INSUFFICIENT_TEMPLATES["proposal"].format(
-                    context=context, message=message
+                    context=combined_context, message=message
                 )
             )
             processed_response = await process_llm_response(message, response.text)
             return {"response": processed_response}
 
-        # Add crew result and return
         crew_result = (
             ProposalWriterCrew()
             .crew()
@@ -124,11 +141,27 @@ async def process_decision(
         return {"error": f"Unknown decision type: {decision}"}
 
 
+def format_supabase_history(history: list[MessageHistory]) -> str:
+    """Format last 10 Supabase messages into conversation format"""
+    if not history:
+        return ""
+
+    # Get last 10 messages
+    limited_history = history[-10:]
+
+    formatted = []
+    for msg in limited_history:
+        formatted.extend([f"human: {msg.human}", f"assistant: {msg.ai}"])
+
+    return "\n".join(formatted[-10:])  # Take last 10 messages total
+
+
 @router.post("/classify", response_model=ClassifierResponse)
 async def classifier_route(
     message: Optional[str] = Form(default=None),
     audio: Optional[UploadFile] = File(default=None),
     session_id: Optional[str] = Form(default=None),
+    message_history: Optional[str] = Form(default=None),  # JSON string
 ) -> ClassifierResponse:
     """Main route handler with conversation memory"""
     try:
@@ -138,8 +171,9 @@ async def classifier_route(
 
         logger.info(f"New request - Session: {current_session_id}, User: {user_id}")
 
+        # Initialize both history sources
         zep = ZepConversationManager()
-        session_id = await zep.get_or_create_session(
+        zep_session_id = await zep.get_or_create_session(
             user_id=user_id, session_id=current_session_id
         )
 
@@ -159,10 +193,28 @@ async def classifier_route(
         if not combined_message:
             return ClassifierResponse(result="Error: No valid input provided")
 
-        # Get conversation history and make decision
-        history = await zep.get_conversation_history(session_id)
-        context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+        # Get both conversation histories
+        zep_history = await zep.get_conversation_history(zep_session_id)
+        supabase_history = []
+        if message_history:
+            try:
+                supabase_history = [
+                    MessageHistory(**msg) for msg in json.loads(message_history)
+                ]
+            except json.JSONDecodeError:
+                logger.warning("Invalid message_history JSON format")
 
+        # Combine both histories for context
+        zep_context = "\n".join(
+            [f"{msg['role']}: {msg['content']}" for msg in zep_history]
+        )
+        supabase_context = format_supabase_history(supabase_history)
+
+        combined_context = f"""Recent conversation:\n{supabase_context}\n\nLong-term memory:\n{zep_context}"""
+
+        logger.info(f"Combined context:\n{combined_context}")
+
+        # Use combined context in router prompt
         router_prompt = PromptTemplate(
             """Previous conversation:\n{context}\n\n"""
             """Given the current user message, determine the appropriate service:"""
@@ -171,12 +223,14 @@ async def classifier_route(
         )
 
         response = llm.complete(
-            router_prompt.format(context=context, message=combined_message)
+            router_prompt.format(context=combined_context, message=combined_message)
         )
         decision = response.text.strip().lower()
 
-        # Process decision and store conversation
-        result = await process_decision(decision, combined_message, history)
+        # Process decision using combined context
+        result = await process_decision(
+            decision, combined_message, zep_history, supabase_history
+        )
 
         # Process final result if it's not already processed
         if isinstance(result.get("response"), str):
@@ -194,8 +248,8 @@ async def classifier_route(
         # Log both result and character count
         logger.info(f"Final result ({len(final_result)} chars): {final_result}")
 
-        await zep.add_conversation(session_id, combined_message, final_result)
-        return ClassifierResponse(result=final_result, session_id=session_id)
+        await zep.add_conversation(zep_session_id, combined_message, final_result)
+        return ClassifierResponse(result=final_result, session_id=zep_session_id)
 
     except Exception as e:
         logger.error(f"Error in classifier route: {str(e)}")

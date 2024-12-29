@@ -87,6 +87,20 @@ export async function handleSendMessage(req: Request) {
       formData.append("audio", audioBlob);
     }
 
+    // Add message history to formData
+    const { data: existingConversation } = await supabase
+      .from("messages")
+      .select("conversation_history")
+      .eq("whatsapp_id", payload.sessionId)
+      .single();
+
+    if (existingConversation?.conversation_history) {
+      formData.append(
+        "message_history",
+        JSON.stringify(existingConversation.conversation_history),
+      );
+    }
+
     // Forward request to AI API
     const response = await fetch(`${AI_API_URL}/api/classifier/classify`, {
       method: "POST",
