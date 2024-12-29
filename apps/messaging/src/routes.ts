@@ -11,6 +11,7 @@ const AI_API_URL = process.env.AI_API_URL || "http://127.0.0.1:8083";
 
 export async function handleSendMessage(req: Request) {
   try {
+    logger.info("Received message request");
     // Access body directly from Elysia's parsed request
     const payload = messageSchema.parse(req.body);
 
@@ -25,7 +26,13 @@ export async function handleSendMessage(req: Request) {
     formData.append("session_id", payload.sessionId);
 
     if (payload.audio) {
-      formData.append("audio", payload.audio);
+      const binaryStr = atob(payload.audio);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const audioBlob = new Blob([bytes], { type: "audio/ogg" }); // Adjust mime type as needed
+      formData.append("audio", audioBlob);
     }
 
     // Forward request to AI API
@@ -51,6 +58,7 @@ export async function handleSendMessage(req: Request) {
     const message =
       error instanceof Error ? error.message : "Failed to process message";
     logger.error("Error processing message", { error: message });
+    console.error(error);
     return Response.json({ error: message }, { status: 400 });
   }
 }

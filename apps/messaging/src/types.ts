@@ -3,7 +3,7 @@ import { z } from "zod";
 export const messageSchema = z.object({
   message: z.string(),
   sessionId: z.string(),
-  audio: z.instanceof(Blob).optional(),
+  audio: z.string().optional(), // Changed from Blob to string
 });
 
 export const messageResponseSchema = z.object({

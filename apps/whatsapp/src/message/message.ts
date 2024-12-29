@@ -1,3 +1,4 @@
+import { logger } from "@trigger.dev/sdk/v3";
 import { type WAMessage, downloadMediaMessage } from "@whiskeysockets/baileys";
 import { sock } from "../client";
 import { BOT_PREFIX } from "../constants";
@@ -19,7 +20,7 @@ const ERROR_MESSAGES = {
 interface MessagePayload {
   message: string;
   sessionId: string;
-  audio?: Blob;
+  audio?: string; // Changed from Blob to string
 }
 
 export async function handleMessage(message: WAMessage) {
@@ -45,7 +46,11 @@ export async function handleMessage(message: WAMessage) {
       "";
     const phoneNumber = getPhoneNumber(message);
 
-    let audioBlob: Blob | undefined;
+    // Initialize payload first
+    const payload: MessagePayload = {
+      message: messageContent,
+      sessionId: phoneNumber,
+    };
 
     if (message.message?.imageMessage || message.message?.audioMessage) {
       const media = await downloadMediaMessage(message, "buffer", {});
@@ -67,19 +72,14 @@ export async function handleMessage(message: WAMessage) {
         return;
       }
 
-      if (isAudio && mimetype) {
-        audioBlob = new Blob([media], { type: mimetype });
+      if (isAudio && mimetype && media instanceof Buffer) {
+        logger.info("Received audio message", {
+          sessionId: phoneNumber,
+          hasAudio: true,
+        });
+        // Convert Buffer to base64
+        payload.audio = media.toString("base64");
       }
-    }
-
-    // Prepare request payload
-    const payload: MessagePayload = {
-      message: messageContent,
-      sessionId: phoneNumber,
-    };
-
-    if (audioBlob) {
-      payload.audio = audioBlob;
     }
 
     // Make API request to messaging service
