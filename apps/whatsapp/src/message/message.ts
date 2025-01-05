@@ -2,8 +2,6 @@ import { logger } from "@trigger.dev/sdk/v3";
 import { type WAMessage, downloadMediaMessage } from "@whiskeysockets/baileys";
 import { sock } from "../client";
 import { BOT_PREFIX } from "../constants";
-import { client } from "../trigger/client";
-import type { MessagePayload, MessageResponse } from "../types";
 import { getPhoneNumber, react } from "../utils";
 
 const IMAGE_ERROR_MSG =
@@ -18,6 +16,12 @@ const ERROR_MESSAGES = {
   TIMEOUT: "Desculpe, demorei muito para responder. Pode tentar novamente?",
   UNKNOWN: "Ocorreu um erro inesperado. Pode tentar novamente?",
 };
+
+interface MessagePayload {
+  message: string;
+  sessionId: string;
+  audio?: string; // Changed from Blob to string
+}
 
 export async function handleMessage(message: WAMessage) {
   await react(message, "working");
@@ -78,21 +82,35 @@ export async function handleMessage(message: WAMessage) {
       }
     }
 
-    // Use trigger.dev to send message
-    const eventResponse = await client.sendEvent({
-      name: "message.send",
-      payload,
+    // Make API request to messaging service
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600000);
+
+    const response = await fetch("http://localhost:3001/api/messages/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
     });
 
-    const result = eventResponse.payload as MessageResponse;
+    clearTimeout(timeoutId);
 
-    if (!result?.result) {
+    if (!response.ok) {
+      console.dir(response, { depth: null });
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.result) {
       throw new Error("No result from API");
     }
 
     await sock.sendMessage(
       chatId,
-      { text: result.result, edit: streamingReply.key },
+      { text: data.result, edit: streamingReply.key },
       { quoted: message },
     );
 
