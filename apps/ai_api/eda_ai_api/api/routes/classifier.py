@@ -7,9 +7,7 @@ from fastapi import APIRouter, File, Form, UploadFile
 from llama_index.core import PromptTemplate
 from llama_index.llms.groq import Groq
 from loguru import logger
-from onboarding.crew import OnboardingCrew
-from opportunity_finder.crew import OpportunityFinderCrew
-from proposal_writer.crew import ProposalWriterCrew
+import httpx
 
 from eda_ai_api.models.classifier import ClassifierResponse, MessageHistory
 from eda_ai_api.utils.audio_utils import process_audio_file
@@ -83,62 +81,69 @@ async def process_decision(
 
     combined_context = "\n\n".join(context_parts)
 
-    if decision == "discovery":
-        topics = await extract_topics(message, zep_history)
-        logger.info(f"Extracted topics: {topics}")
+    async with httpx.AsyncClient() as client:
+        if decision == "discovery":
+            topics = await extract_topics(message, zep_history)
+            logger.info(f"Extracted topics: {topics}")
 
-        if topics == ["INSUFFICIENT_CONTEXT"]:
-            response = llm.complete(
-                INSUFFICIENT_TEMPLATES["discovery"].format(
-                    context=combined_context, message=message
+            if topics == ["INSUFFICIENT_CONTEXT"]:
+                response = llm.complete(
+                    INSUFFICIENT_TEMPLATES["discovery"].format(
+                        context=combined_context, message=message
+                    )
                 )
+                processed_response = await process_llm_response(message, response.text)
+                return {"response": processed_response}
+
+            # Call discovery API instead of crew directly
+            api_response = await client.post(
+                "http://127.0.0.1:8083/api/grant/discovery", json={"topics": topics}
             )
-            processed_response = await process_llm_response(message, response.text)
+            result = api_response.json()
+            processed_response = await process_llm_response(message, str(result))
             return {"response": processed_response}
 
-        crew_result = (
-            OpportunityFinderCrew().crew().kickoff(inputs={"topics": ", ".join(topics)})
-        )
-        processed_response = await process_llm_response(message, str(crew_result))
-        return {"response": processed_response}
-
-    elif decision == "proposal":
-        community_project, grant_call = await extract_proposal_details(
-            message, zep_history
-        )
-        logger.info(f"Project: {community_project}, Grant: {grant_call}")
-
-        if community_project == "unknown" or grant_call == "unknown":
-            response = llm.complete(
-                INSUFFICIENT_TEMPLATES["proposal"].format(
-                    context=combined_context, message=message
-                )
+        elif decision == "proposal":
+            community_project, grant_call = await extract_proposal_details(
+                message, zep_history
             )
-            processed_response = await process_llm_response(message, response.text)
+            logger.info(f"Project: {community_project}, Grant: {grant_call}")
+
+            if community_project == "unknown" or grant_call == "unknown":
+                response = llm.complete(
+                    INSUFFICIENT_TEMPLATES["proposal"].format(
+                        context=combined_context, message=message
+                    )
+                )
+                processed_response = await process_llm_response(message, response.text)
+                return {"response": processed_response}
+
+            # Call proposal API instead of crew directly
+            api_response = await client.post(
+                "http://127.0.0.1:8083/api/grant/proposal",
+                json={"project": community_project, "grant": grant_call},
+            )
+            result = api_response.json()
+            processed_response = await process_llm_response(message, str(result))
             return {"response": processed_response}
 
-        crew_result = (
-            ProposalWriterCrew()
-            .crew()
-            .kickoff(inputs={"project": community_project, "grant": grant_call})
-        )
-        processed_response = await process_llm_response(message, str(crew_result))
-        return {"response": processed_response}
+        elif decision == "heartbeat":
+            processed_response = await process_llm_response(
+                message, str({"is_alive": True})
+            )
+            return {"response": processed_response}
 
-    elif decision == "heartbeat":
-        processed_response = await process_llm_response(
-            message, str({"is_alive": True})
-        )
-        return {"response": processed_response}
+        elif decision == "onboarding":
+            # Use existing guide endpoint instead of creating new one
+            api_response = await client.get(
+                "http://127.0.0.1:8083/api/onboarding/guide"
+            )
+            result = api_response.json()
+            processed_response = await process_llm_response(message, str(result))
+            return {"response": processed_response}
 
-    elif decision == "onboarding":
-        result = OnboardingCrew().crew().kickoff()
-        processed_response = await process_llm_response(message, str(result))
-        logger.info(f"Processed onboarding response: {processed_response}")
-        return {"response": processed_response}
-
-    else:
-        return {"error": f"Unknown decision type: {decision}"}
+        else:
+            return {"error": f"Unknown decision type: {decision}"}
 
 
 def format_supabase_history(history: list[MessageHistory]) -> str:

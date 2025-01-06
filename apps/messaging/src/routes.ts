@@ -38,8 +38,6 @@ async function saveMessageToSupabase(
         .from("messages")
         .update({ conversation_history: updatedHistory })
         .eq("whatsapp_id", whatsappId);
-
-      if (error) throw error;
     } else {
       // Create new conversation
       const { error } = await supabase.from("messages").insert({
@@ -52,8 +50,6 @@ async function saveMessageToSupabase(
           },
         ],
       });
-
-      if (error) throw error;
     }
   } catch (error) {
     logger.error("Error saving to Supabase:", error);
