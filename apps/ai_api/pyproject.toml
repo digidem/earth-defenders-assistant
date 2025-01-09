@@ -25,6 +25,11 @@ dependencies = [
     "llama-index-readers-file>=0.4.1",
     "httpx>=0.24.0,<0.25.0",
     "zep-python>=2.0.2",
+    "mem0ai>=0.1.25",
+    "rank-bm25>=0.2.2",
+    "neo4j>=5.27.0",
+    "langchain>=0.3.4",
+    "langgraph>=0.2.35",
 ]
 
 [project.optional-dependencies]

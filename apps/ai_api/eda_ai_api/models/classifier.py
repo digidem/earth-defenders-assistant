@@ -8,6 +8,9 @@ class MessageHistory(BaseModel):
     ai: str
     timestamp: str
 
+    def to_context_format(self) -> str:
+        return f"Human: {self.human}\nAssistant: {self.ai}"
+
 
 class ClassifierRequest(BaseModel):
     message: Optional[str] = None
