@@ -9,6 +9,35 @@ const supabase = createClient(
 
 const AI_API_URL = process.env.AI_API_URL || "http://127.0.0.1:8083";
 
+// Add new function to get/create Supabase ID
+async function getSupabaseId(whatsappId: string): Promise<string> {
+  try {
+    // First check if user exists
+    const { data: existingUser } = await supabase
+      .from("messages")
+      .select("id")
+      .eq("whatsapp_id", whatsappId)
+      .single();
+
+    if (existingUser) {
+      return existingUser.id;
+    }
+
+    // If not exists, create new user
+    const { data: newUser, error } = await supabase
+      .from("messages")
+      .insert([{ whatsapp_id: whatsappId }])
+      .select("id")
+      .single();
+
+    if (error) throw error;
+    return newUser.id;
+  } catch (error) {
+    logger.error("Error getting Supabase ID:", error);
+    throw error;
+  }
+}
+
 async function saveMessageToSupabase(
   userId: string,
   userMessage: string,
@@ -57,21 +86,23 @@ async function saveMessageToSupabase(
   }
 }
 
+// Modify handleSendMessage
 export async function handleSendMessage(req: Request) {
   try {
-    logger.info("Received message request");
-    // Access body directly from Elysia's parsed request
     const payload = messageSchema.parse(req.body);
 
-    logger.info("Received message request", {
-      sessionId: payload.sessionId,
+    // Get Supabase ID from WhatsApp ID
+    const supabaseId = await getSupabaseId(payload.sessionId);
+
+    logger.info("Processing message", {
+      whatsappId: payload.sessionId,
+      supabaseId,
       hasAudio: !!payload.audio,
     });
 
-    // Create FormData for AI API
     const formData = new FormData();
     formData.append("message", payload.message);
-    formData.append("session_id", payload.sessionId);
+    formData.append("session_id", supabaseId); // Use Supabase ID instead
     if (payload.platform) {
       formData.append("platform", payload.platform);
     }
@@ -90,7 +121,7 @@ export async function handleSendMessage(req: Request) {
     const { data: existingConversation } = await supabase
       .from("messages")
       .select("conversation_history")
-      .eq("user_id", payload.sessionId)
+      .eq("user_id", supabaseId) // Use Supabase ID
       .single();
 
     if (existingConversation?.conversation_history) {
@@ -117,7 +148,7 @@ export async function handleSendMessage(req: Request) {
 
     // Save message to Supabase after successful AI response
     await saveMessageToSupabase(
-      payload.sessionId,
+      supabaseId, // Use Supabase ID
       payload.message,
       data.result,
     );
