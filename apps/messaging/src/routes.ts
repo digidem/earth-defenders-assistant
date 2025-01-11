@@ -72,6 +72,9 @@ export async function handleSendMessage(req: Request) {
     const formData = new FormData();
     formData.append("message", payload.message);
     formData.append("session_id", payload.sessionId);
+    if (payload.platform) {
+      formData.append("platform", payload.platform);
+    }
 
     if (payload.audio) {
       const binaryStr = atob(payload.audio);

@@ -73,14 +73,14 @@ Response:"""
 
 RESPONSE_PROCESSOR_TEMPLATE = PromptTemplate(
     """IMPORTANT: You must respond in exactly the same language as the user's
-    original message:
+    original message. User is on {platform} platform.
 {original_message}
 
 Process this response to:
 1. MATCH THE EXACT LANGUAGE of the input message (this is crucial!)
 2. Be clear and conversational in that language
 3. Not exceed 2000 characters (summarize if longer)
-4. Use WhatsApp formatting:
+4. Use {platform} formatting:
    - *bold* for important terms
    - _italic_ for emphasis
    - ```code``` for technical terms
@@ -98,5 +98,5 @@ Process this response to:
 Original response:
 {response}
 
-Respond in the SAME LANGUAGE as the original message with WhatsApp formatting:"""
+Respond in the SAME LANGUAGE as the original message with {platform} formatting:"""
 )

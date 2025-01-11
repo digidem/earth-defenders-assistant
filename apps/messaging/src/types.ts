@@ -4,6 +4,7 @@ export const messageSchema = z.object({
   message: z.string(),
   sessionId: z.string(),
   audio: z.string().optional(), // Changed from Blob to string
+  platform: z.enum(["whatsapp", "telegram", "simulator"]).optional(),
 });
 
 export const messageResponseSchema = z.object({

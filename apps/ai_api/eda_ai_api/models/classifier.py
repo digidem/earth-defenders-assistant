@@ -17,6 +17,7 @@ class ClassifierRequest(BaseModel):
     audio: Optional[UploadFile] = None
     session_id: Optional[str] = None
     message_history: Optional[List[MessageHistory]] = None
+    platform: Optional[str] = None  # Add platform field
 
     class Config:
         arbitrary_types_allowed = True

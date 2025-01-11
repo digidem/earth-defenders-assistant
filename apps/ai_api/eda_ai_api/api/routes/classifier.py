@@ -30,7 +30,9 @@ llm = ChatGroq(
 )
 
 
-async def process_discovery(message: str, context: str) -> Dict[str, str]:
+async def process_discovery(
+    message: str, context: str, platform: str = "default"
+) -> Dict[str, str]:
     """Process discovery requests"""
     response = llm.invoke(
         [HumanMessage(content=TOPIC_TEMPLATE.format(context=context, message=message))]
@@ -48,7 +50,8 @@ async def process_discovery(message: str, context: str) -> Dict[str, str]:
     async with httpx.AsyncClient() as client:
         logger.info("Calling discovery API...")
         api_response = await client.post(
-            "http://127.0.0.1:8083/api/grant/discovery", json={"topics": topics}
+            "http://127.0.0.1:8083/api/grant/discovery",
+            json={"topics": topics, "platform": platform},
         )
         logger.info(f"Discovery API Response: {api_response.json()}")
         return {"result": str(api_response.json())}
@@ -72,11 +75,13 @@ async def classifier_route(
     audio: Optional[UploadFile] = File(default=None),
     session_id: Optional[str] = Form(default=None),
     message_history: Optional[str] = Form(default=None),
+    platform: Optional[str] = Form(default="default"),
 ) -> ClassifierResponse:
     """Main route handler"""
     try:
         current_session = session_id or str(uuid.uuid4())
         logger.info(f"New request - Session: {current_session}")
+        logger.info(f"Platform received: {platform}")  # Add this line
 
         # Initialize/get Mem0 session - Disabled
         # current_session = await mem0_manager.get_or_create_session(session_id=current_session)
@@ -106,9 +111,15 @@ async def classifier_route(
         decision = await route_message(final_message, supabase_context)
         logger.info(f"Routing decision: {decision}")
 
+        # Update logging when processing route decision
+        logger.info(f"Processing {decision} request for platform: {platform}")
+
         # Process based on route
         if decision == "discovery":
-            response = await process_discovery(final_message, supabase_context)
+            response = await process_discovery(
+                final_message, supabase_context, platform
+            )
+            logger.info(f"Discovery response for platform {platform}: {response}")
         elif decision == "heartbeat":
             response = {"result": "*Yes, I'm here! 🟢*\n_Ready to help you!_"}
         else:
@@ -124,6 +135,8 @@ async def classifier_route(
         #     user_message=final_message,
         #     assistant_response=result,
         # )
+
+        response = {"result": result, "platform": platform}
 
         return ClassifierResponse(result=result, session_id=current_session)
 

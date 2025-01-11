@@ -21,6 +21,7 @@ interface MessagePayload {
   message: string;
   sessionId: string;
   audio?: string; // Changed from Blob to string
+  platform?: string;
 }
 
 export async function handleMessage(message: WAMessage) {
@@ -50,6 +51,7 @@ export async function handleMessage(message: WAMessage) {
     const payload: MessagePayload = {
       message: messageContent,
       sessionId: phoneNumber,
+      platform: "whatsapp", // Add platform identifier
     };
 
     if (message.message?.imageMessage || message.message?.audioMessage) {
