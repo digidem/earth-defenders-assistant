@@ -19,7 +19,8 @@ from eda_ai_api.utils.prompts import (
 )
 
 router = APIRouter()
-mem0_manager = Mem0ConversationManager()
+# Disabled Mem0 memory manager
+# mem0_manager = Mem0ConversationManager()
 
 # Setup LLM
 llm = ChatGroq(
@@ -77,10 +78,8 @@ async def classifier_route(
         current_session = session_id or str(uuid.uuid4())
         logger.info(f"New request - Session: {current_session}")
 
-        # Initialize/get Mem0 session
-        current_session = await mem0_manager.get_or_create_session(
-            session_id=current_session
-        )
+        # Initialize/get Mem0 session - Disabled
+        # current_session = await mem0_manager.get_or_create_session(session_id=current_session)
 
         # Process inputs
         combined_message = []
@@ -93,7 +92,7 @@ async def classifier_route(
         if not combined_message:
             return ClassifierResponse(result="Error: No valid input provided")
 
-        # Get conversation history from both systems
+        # Get conversation history from Supabase
         history = []
         if message_history:
             try:
@@ -101,10 +100,7 @@ async def classifier_route(
             except json.JSONDecodeError:
                 logger.warning("Invalid message_history JSON format")
 
-        # Get long-term context from Mem0
-        mem0_history = await mem0_manager.get_conversation_history(current_session)
-
-        # Combine contexts
+        # Get context from Supabase only
         supabase_context = SupabaseMemory.format_history(history)
         final_message = "\n".join(combined_message)
         decision = await route_message(final_message, supabase_context)
@@ -122,12 +118,12 @@ async def classifier_route(
         if len(result) > 2499:
             result = result[:2499]
 
-        # Store interaction in Mem0
-        await mem0_manager.add_conversation(
-            session_id=current_session,
-            user_message=final_message,
-            assistant_response=result,
-        )
+        # Disabled Mem0 storage
+        # await mem0_manager.add_conversation(
+        #     session_id=current_session,
+        #     user_message=final_message,
+        #     assistant_response=result,
+        # )
 
         return ClassifierResponse(result=result, session_id=current_session)
 

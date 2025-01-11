@@ -10,7 +10,7 @@ const supabase = createClient(
 const AI_API_URL = process.env.AI_API_URL || "http://127.0.0.1:8083";
 
 async function saveMessageToSupabase(
-  whatsappId: string,
+  userId: string,
   userMessage: string,
   aiResponse: string,
 ) {
@@ -19,7 +19,7 @@ async function saveMessageToSupabase(
     const { data: existingConversation } = await supabase
       .from("messages")
       .select("conversation_history")
-      .eq("whatsapp_id", whatsappId)
+      .eq("user_id", userId)
       .single();
 
     if (existingConversation) {
@@ -37,11 +37,11 @@ async function saveMessageToSupabase(
       const { error } = await supabase
         .from("messages")
         .update({ conversation_history: updatedHistory })
-        .eq("whatsapp_id", whatsappId);
+        .eq("user_id", userId);
     } else {
       // Create new conversation
       const { error } = await supabase.from("messages").insert({
-        whatsapp_id: whatsappId,
+        user_id: userId,
         conversation_history: [
           {
             human: userMessage,
@@ -87,7 +87,7 @@ export async function handleSendMessage(req: Request) {
     const { data: existingConversation } = await supabase
       .from("messages")
       .select("conversation_history")
-      .eq("whatsapp_id", payload.sessionId)
+      .eq("user_id", payload.sessionId)
       .single();
 
     if (existingConversation?.conversation_history) {
