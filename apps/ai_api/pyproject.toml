@@ -30,6 +30,7 @@ dependencies = [
     "neo4j>=5.27.0",
     "langchain>=0.3.4",
     "langgraph>=0.2.35",
+    "anthropic>=0.42.0",
 ]
 
 [project.optional-dependencies]

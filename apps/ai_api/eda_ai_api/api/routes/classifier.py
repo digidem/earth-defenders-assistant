@@ -10,7 +10,7 @@ import httpx
 
 from eda_ai_api.models.classifier import ClassifierResponse, MessageHistory
 from eda_ai_api.utils.audio_utils import process_audio_file
-from eda_ai_api.utils.memory import SupabaseMemory
+from eda_ai_api.utils.memory import SupabaseMemory, Mem0ConversationManager
 from eda_ai_api.utils.prompts import (
     ROUTER_TEMPLATE,
     INSUFFICIENT_TEMPLATES,
@@ -19,11 +19,12 @@ from eda_ai_api.utils.prompts import (
 )
 
 router = APIRouter()
+mem0_manager = Mem0ConversationManager()
 
 # Setup LLM
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
-    api_key="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",
+    api_key=os.environ.get("GROQ_API_KEY"),  # Use environment variable
     temperature=0.5,
 )
 
@@ -76,6 +77,11 @@ async def classifier_route(
         current_session = session_id or str(uuid.uuid4())
         logger.info(f"New request - Session: {current_session}")
 
+        # Initialize/get Mem0 session
+        current_session = await mem0_manager.get_or_create_session(
+            session_id=current_session
+        )
+
         # Process inputs
         combined_message = []
         if audio:
@@ -87,7 +93,7 @@ async def classifier_route(
         if not combined_message:
             return ClassifierResponse(result="Error: No valid input provided")
 
-        # Get conversation history
+        # Get conversation history from both systems
         history = []
         if message_history:
             try:
@@ -95,15 +101,18 @@ async def classifier_route(
             except json.JSONDecodeError:
                 logger.warning("Invalid message_history JSON format")
 
-        # Format context and route message
-        context = SupabaseMemory.format_history(history)
+        # Get long-term context from Mem0
+        mem0_history = await mem0_manager.get_conversation_history(current_session)
+
+        # Combine contexts
+        supabase_context = SupabaseMemory.format_history(history)
         final_message = "\n".join(combined_message)
-        decision = await route_message(final_message, context)
+        decision = await route_message(final_message, supabase_context)
         logger.info(f"Routing decision: {decision}")
 
         # Process based on route
         if decision == "discovery":
-            response = await process_discovery(final_message, context)
+            response = await process_discovery(final_message, supabase_context)
         elif decision == "heartbeat":
             response = {"result": "*Yes, I'm here! 🟢*\n_Ready to help you!_"}
         else:
@@ -112,6 +121,13 @@ async def classifier_route(
         result = response["result"]
         if len(result) > 2499:
             result = result[:2499]
+
+        # Store interaction in Mem0
+        await mem0_manager.add_conversation(
+            session_id=current_session,
+            user_message=final_message,
+            assistant_response=result,
+        )
 
         return ClassifierResponse(result=result, session_id=current_session)
 

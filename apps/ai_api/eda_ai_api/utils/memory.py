@@ -1,15 +1,28 @@
 import uuid
 import os
 from typing import Dict, List, Optional
+from dotenv import load_dotenv
 from eda_ai_api.models.classifier import MessageHistory
 from loguru import logger
 from mem0 import Memory
 
+# Load environment variables
+load_dotenv()
+
 
 class Mem0ConversationManager:
     def __init__(self):
+        # Validate API keys
+        groq_api_key = os.getenv("GROQ_API_KEY")
+        huggingface_api_key = os.getenv("HUGGINGFACE_API_KEY")
+
+        if not huggingface_api_key:
+            raise ValueError("HUGGINGFACE_API_KEY environment variable is not set")
+        if not groq_api_key:
+            raise ValueError("GROQ_API_KEY environment variable is not set")
+
         config = {
-            "version": "v1.1",  # Required version field
+            "version": "v1.1",
             "graph_store": {
                 "provider": "neo4j",
                 "config": {
@@ -17,35 +30,24 @@ class Mem0ConversationManager:
                     "username": "neo4j",
                     "password": "password",
                 },
-                "llm": {  # Graph store specific LLM
-                    "provider": "groq",
-                    "config": {
-                        "model": "llama-3.3-70b-versatile",
-                        "api_key": os.environ.get("GROQ_API_KEY"),
-                        "temperature": 0.0,
-                    },
-                },
             },
             "embedder": {
                 "provider": "huggingface",
                 "config": {
                     "model": "sentence-transformers/all-mpnet-base-v2",
-                    "api_key": os.environ.get("HUGGINGFACE_API_KEY"),
+                    "api_key": huggingface_api_key,
                 },
             },
-            "llm": {  # Main LLM
+            "llm": {
                 "provider": "groq",
                 "config": {
                     "model": "llama-3.3-70b-versatile",
-                    "api_key": os.environ.get("GROQ_API_KEY"),
-                    "temperature": 0,
-                    "max_tokens": 8000,
+                    "api_key": groq_api_key,
+                    "max_tokens": 1000,
                 },
             },
         }
-        self.memory = Memory.from_config(
-            config_dict=config
-        )  # Changed to use config_dict parameter
+        self.memory = Memory.from_config(config_dict=config)
 
     async def get_or_create_session(
         self, user_id: Optional[str] = None, session_id: Optional[str] = None
