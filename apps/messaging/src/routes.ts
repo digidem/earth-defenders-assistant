@@ -1,5 +1,6 @@
 import { logger } from "@eda/logger";
 import { createClient } from "@supabase/supabase-js";
+import { tasks } from "@trigger.dev/sdk/v3";
 import { messageSchema, queryParamsSchema } from "./types";
 
 const supabase = createClient(
@@ -88,6 +89,7 @@ async function saveMessageToSupabase(
 
 // Modify handleSendMessage
 export async function handleSendMessage(req: Request) {
+  const startTime = performance.now();
   try {
     const payload = messageSchema.parse(req.body);
 
@@ -141,6 +143,17 @@ export async function handleSendMessage(req: Request) {
     });
 
     const data = await response.json();
+    const duration = performance.now() - startTime;
+
+    // Monitor API call using Trigger.dev
+    await tasks.trigger("monitor-api-call", {
+      endpoint: "/api/classifier/classify",
+      method: "POST",
+      statusCode: response.status,
+      duration,
+      timestamp: new Date().toISOString(),
+      sessionId: payload.sessionId,
+    });
 
     if (!response.ok) {
       throw new Error(data.message || "Failed to process message");
@@ -159,6 +172,19 @@ export async function handleSendMessage(req: Request) {
 
     return Response.json(data);
   } catch (error) {
+    const duration = performance.now() - startTime;
+
+    // Monitor failed API calls
+    await tasks.trigger("monitor-api-call", {
+      endpoint: "/api/classifier/classify",
+      method: "POST",
+      statusCode: 500,
+      duration,
+      timestamp: new Date().toISOString(),
+      sessionId: payload.sessionId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+
     const message =
       error instanceof Error ? error.message : "Failed to process message";
     logger.error("Error processing message", { error: message });
