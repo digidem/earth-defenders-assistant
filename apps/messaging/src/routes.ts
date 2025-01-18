@@ -1,7 +1,7 @@
 import { logger } from "@eda/logger";
 import { createClient } from "@supabase/supabase-js";
 import { tasks } from "@trigger.dev/sdk/v3";
-import { messageSchema, queryParamsSchema } from "./types";
+import { type Message, messageSchema, queryParamsSchema } from "./types";
 
 const supabase = createClient(
   "http://localhost:54321", // Local Supabase URL from config.toml
@@ -90,50 +90,79 @@ async function saveMessageToSupabase(
 // Modify handleSendMessage
 export async function handleSendMessage(req: Request) {
   const startTime = performance.now();
+  let payload: Message = {
+    message: "",
+    sessionId: "unknown",
+  }; // Initialize with default values
+
   try {
-    const payload = messageSchema.parse(req.body);
+    logger.info("Starting message processing", { body: req.body });
+
+    payload = messageSchema.parse(req.body);
+    logger.info("Payload parsed successfully", { payload });
 
     // Get Supabase ID from WhatsApp ID
     const supabaseId = await getSupabaseId(payload.sessionId);
-
-    logger.info("Processing message", {
-      whatsappId: payload.sessionId,
+    logger.info("Supabase ID retrieved", {
       supabaseId,
-      hasAudio: !!payload.audio,
+      whatsappId: payload.sessionId,
     });
 
     const formData = new FormData();
     formData.append("message", payload.message);
-    formData.append("session_id", supabaseId); // Use Supabase ID instead
+    formData.append("session_id", supabaseId);
+
     if (payload.platform) {
       formData.append("platform", payload.platform);
+      logger.info("Platform added to formData", { platform: payload.platform });
     }
 
     if (payload.audio) {
-      const binaryStr = atob(payload.audio);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i);
+      logger.info("Processing audio data", { hasAudio: true });
+      try {
+        const binaryStr = atob(payload.audio);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const audioBlob = new Blob([bytes], { type: "audio/ogg" });
+        formData.append("audio", audioBlob);
+        logger.info("Audio data processed successfully");
+      } catch (audioError) {
+        logger.error("Error processing audio", { error: audioError });
+        throw new Error("Failed to process audio data");
       }
-      const audioBlob = new Blob([bytes], { type: "audio/ogg" }); // Adjust mime type as needed
-      formData.append("audio", audioBlob);
     }
 
-    // Add message history to formData
-    const { data: existingConversation } = await supabase
+    // Log conversation history retrieval
+    logger.info("Fetching conversation history", { userId: supabaseId });
+    const { data: existingConversation, error: historyError } = await supabase
       .from("messages")
       .select("conversation_history")
-      .eq("user_id", supabaseId) // Use Supabase ID
+      .eq("user_id", supabaseId)
       .single();
+
+    if (historyError) {
+      logger.error("Error fetching conversation history", {
+        error: historyError,
+      });
+    }
 
     if (existingConversation?.conversation_history) {
       formData.append(
         "message_history",
         JSON.stringify(existingConversation.conversation_history),
       );
+      logger.info("Conversation history added to formData", {
+        historyLength: existingConversation.conversation_history.length,
+      });
     }
 
-    // Forward request to AI API
+    // Log API request
+    logger.info("Making API request to classifier", {
+      url: `${AI_API_URL}/api/classifier/classify`,
+    });
+
     const response = await fetch(`${AI_API_URL}/api/classifier/classify`, {
       method: "POST",
       headers: {
@@ -142,8 +171,17 @@ export async function handleSendMessage(req: Request) {
       body: formData,
     });
 
+    logger.info("API response received", {
+      status: response.status,
+      ok: response.ok,
+    });
+
     const data = await response.json();
+    console.log("API response parsed:", data);
+
     const duration = performance.now() - startTime;
+
+    logger.info("Triggering monitor-api-call task");
 
     // Monitor API call using Trigger.dev
     await tasks.trigger("monitor-api-call", {
@@ -181,7 +219,7 @@ export async function handleSendMessage(req: Request) {
       statusCode: 500,
       duration,
       timestamp: new Date().toISOString(),
-      sessionId: payload.sessionId,
+      sessionId: payload.sessionId, // Now safe to use since payload is initialized
       error: error instanceof Error ? error.message : "Unknown error",
     });
 

@@ -1,5 +1,6 @@
-import { logger, task } from "@trigger.dev/sdk/v3";
+import { task } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
+import { logger } from "../../logger/src";
 
 const apiCallSchema = z.object({
   endpoint: z.string(),
