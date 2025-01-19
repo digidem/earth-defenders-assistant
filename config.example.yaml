@@ -39,8 +39,8 @@ api_keys:
 # Database Settings
 databases:
   supabase:
-    url: "xxx"
-    project_id: "xxx"
+    url: http://127.0.0.1:54321
+    project_id: "create-eda"
 
   langtrace_postgres:
     host: "langtrace-postgres"
@@ -57,14 +57,12 @@ databases:
 
   trigger_postgres:
     host: postgres
-    port: "${ports.db.postgres}"
     user: "xxx"
     password: "xxx"
     database: postgres
 
   redis:
     host: redis
-    port: "${ports.db.redis}"
     tls_disabled: true
 
   neo4j:
@@ -81,16 +79,16 @@ databases:
 # Service Configurations
 services:
   ai_api:
-    debug: false
+    debug: true
 
   whatsapp:
-    bot_prefix: "*[BOT]:*"
-    cmd_prefix: "!"
-    bot_name: "Bot"
+    bot_prefix: "*[BOT]:*"  # Message prefix for bot responses
+    cmd_prefix: "!"         # Command prefix for users
+    bot_name: "Sydney"
     enable_reactions: true
     reactions:
       queued: "🔁"
-      working: "⚙️"
+      working: "⚙️" 
       done: "✅"
       error: "⚠️"
     puppeteer_path: "/snap/bin/chromium"
@@ -104,13 +102,12 @@ services:
   langtrace:
     api:
       host: "http://localhost:3000/api/trace"
-      key: "${api_keys.langtrace}"
     admin:
-      email: "admin@example.com"
+      email: "xxx"
       password: "xxx"
       enable_login: true
     telemetry:
-      enabled: false
+      enabled: true
     posthog:
       host: "xxx"
 
