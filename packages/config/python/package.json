@@ -1,0 +1,7 @@
+{
+  "name": "@eda/config-python",
+  "private": true,
+  "scripts": {
+    "build": "uv pip install -e ."
+  }
+}

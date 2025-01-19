@@ -1,7 +1,10 @@
+import { ConfigLoader } from "@eda/config";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
 import { handleHealthCheck, handleSendMessage } from "./routes";
 import { messageSchema } from "./types";
+
+const config = ConfigLoader.getConfig();
 
 const PORT = process.env.PORT || 3000;
 const app = new Elysia()

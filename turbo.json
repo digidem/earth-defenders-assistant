@@ -63,6 +63,13 @@
     "seed": {
       "cache": false,
       "dependsOn": ["migrate"]
+    },
+    "build:config": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "packages/config/typescript/dist/**",
+        "packages/config/python/dist/**"
+      ]
     }
   }
 }

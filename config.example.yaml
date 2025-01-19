@@ -1,0 +1,47 @@
+# Service Ports
+ports:
+  whatsapp: 4000
+  messaging: 3001
+  ai_api: 8000
+  langtrace: 3003
+  trigger: 3040
+
+# API Keys
+api_keys:
+  groq: "xxx"
+  huggingface: "xxx"
+  serper: "xxx"
+  langtrace: ""
+  trigger: "xxx"
+
+# Database Configs
+databases:
+  supabase:
+    url: "xxx"
+    service_key: ""
+  postgres:
+    host: "xxx"
+    port: 5432
+    user: "xxx"
+    password: "xxx"
+    database: "xxx"
+
+# AI Models
+ai_models:
+  premium:
+    provider: "groq"
+    model: "llama-3.3-70b-versatile"
+    temperature: 0.5
+    description: "High-performance model"
+  
+  standard:
+    provider: "groq"  
+    model: "mixtral-8x7b-v1"
+    temperature: 0.7
+    description: "Balanced model"
+
+  basic:
+    provider: "groq"
+    model: "llama-2-7b-chat" 
+    temperature: 0.8
+    description: "Fast model"

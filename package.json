@@ -1,6 +1,12 @@
 {
   "name": "earth-denfeders-assistant",
-  "workspaces": ["packages/*", "apps/*", "tooling/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "tooling/*",
+    "packages/config/typescript",
+    "packages/config/python"
+  ],
   "scripts": {
     "prepare:db": "lefthook install && turbo run migrate && turbo run seed",
     "dev": "turbo dev --filter=@eda/jobs --filter=@eda/simulator --filter=@eda/ai-api",
@@ -30,7 +36,8 @@
     "format": "biome format --write .",
     "lint:repo": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions",
     "lint:repo:fix": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions --fix",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "build:config": "turbo run build --filter=@eda/config"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
@@ -41,5 +48,8 @@
     "typescript": "^5.6.3"
   },
   "packageManager": "bun@1.1.34",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@eda/config": "workspace:*"
+  }
 }

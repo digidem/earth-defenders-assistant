@@ -1,0 +1,15 @@
+{
+  "name": "@eda/config",
+  "version": "0.1.0",
+  "main": "dist/config.js",
+  "types": "dist/config.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && bun build ./src/config.ts --outdir ./dist --target node",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "yaml": "^2.3.4",
+    "zod": "^3.22.4"
+  }
+}

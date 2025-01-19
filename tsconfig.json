@@ -1,3 +1,9 @@
 {
-  "extends": "@eda/typescript/base.json"
+  "extends": "@eda/typescript/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@eda/config": ["../../packages/config/typescript/dist"]
+    }
+  }
 }

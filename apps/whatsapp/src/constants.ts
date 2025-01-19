@@ -1,11 +1,12 @@
 import dotenv from "dotenv";
 import dotenvExpand from "dotenv-expand";
 dotenvExpand.expand(dotenv.config());
+import { config } from "@eda/config";
 
-export const CMD_PREFIX = process.env.CMD_PREFIX?.trim() as string;
-export const BOT_PREFIX = `${process.env.BOT_PREFIX?.trim()} ` as string;
-export const BOT_NAME = process.env.BOT_NAME?.trim() as string;
-export const ENABLE_REACTIONS = process.env.ENABLE_REACTIONS as string;
+export const CMD_PREFIX = config.whatsapp.cmd_prefix;
+export const BOT_PREFIX = config.whatsapp.bot_prefix;
+export const BOT_NAME = config.whatsapp.bot_name;
+export const ENABLE_REACTIONS = config.whatsapp.enable_reactions;
 export const ALLOWED_USERS = process.env.ALLOWED_USERS
   ? process.env.ALLOWED_USERS.split(",")
   : [];
