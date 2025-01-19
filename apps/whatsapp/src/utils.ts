@@ -43,27 +43,9 @@ export async function react(
   reaction: keyof typeof REACTIONS,
 ) {
   switch (ENABLE_REACTIONS) {
-    case "false":
+    case false:
       break;
-    case "true":
-      await sock.sendMessage(message.key.remoteJid!, {
-        react: {
-          text: REACTIONS[reaction],
-          key: message.key,
-        },
-      });
-      break;
-    case "dms_only":
-      if (isGroupMessage(message)) return;
-      await sock.sendMessage(message.key.remoteJid!, {
-        react: {
-          text: REACTIONS[reaction],
-          key: message.key,
-        },
-      });
-      break;
-    case "groups_only":
-      if (!isGroupMessage(message)) return;
+    case true:
       await sock.sendMessage(message.key.remoteJid!, {
         react: {
           text: REACTIONS[reaction],

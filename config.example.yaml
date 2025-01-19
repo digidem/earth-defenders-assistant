@@ -1,47 +1,181 @@
-# Service Ports
+# Service Ports (all port configurations in one place)
 ports:
-  whatsapp: 4000
-  messaging: 3001
-  ai_api: 8000
-  langtrace: 3003
-  trigger: 3040
+  messaging: 3001  # WhatsApp message handling service
+  ai_api: 8000    # FastAPI service for AI operations
+  langtrace: 3003 # LangTrace monitoring service
+  trigger: 3040   # Trigger.dev job processing
+  remix: 3030     # Trigger.dev remix app
+  whatsapp: 4000  # WhatsApp bot service
+  dashboard: 8080 # Admin dashboard
+  landingpage: 8081
+  docs: 8082
+  db:
+    postgres: 5432
+    redis: 6379
+    neo4j:
+      http: 7474  # Neo4j browser interface
+      bolt: 7687  # Neo4j database connection
+    clickhouse: 8123
 
-# API Keys
+# API Keys (unified section for all API keys)
 api_keys:
-  groq: "xxx"
-  huggingface: "xxx"
-  serper: "xxx"
-  langtrace: ""
-  trigger: "xxx"
+  groq: "xxx"   # LLM API
+  huggingface: "xxx"  # Embeddings API
+  serper: "xxx"     # Search API
+  langtrace: "xxx"  # LLM monitoring
+  trigger: "xxx"  # Background jobs
+  resend: "xxx" # Email service
+  openai: "xxx"
+  supabase:
+    service_key: "xxx"
+    anon_key: "xxx"
+  openpanel:
+    client_id: "xxx"
+    secret: "xxx"
+  dub: "xxx"
+  sentry:
+    auth_token: "xxx"
 
-# Database Configs
+# Database Settings
 databases:
   supabase:
     url: "xxx"
-    service_key: ""
-  postgres:
-    host: "xxx"
+    project_id: "xxx"
+
+  langtrace_postgres:
+    host: "langtrace-postgres"
     port: 5432
     user: "xxx"
     password: "xxx"
-    database: "xxx"
+    database: "langtrace"
 
-# AI Models
+  langtrace_clickhouse:
+    host: "http://langtrace-clickhouse:8123"
+    user: "xxx"
+    password: "xxx"
+    database: "langtrace_traces"
+
+  trigger_postgres:
+    host: postgres
+    port: "${ports.db.postgres}"
+    user: "xxx"
+    password: "xxx"
+    database: postgres
+
+  redis:
+    host: redis
+    port: "${ports.db.redis}"
+    tls_disabled: true
+
+  neo4j:
+    host: localhost
+    auth:
+      user: "xxx"
+      password: "xxx"
+    plugins: ["apoc"]
+    healthcheck:
+      interval: 10
+      timeout: 5
+      retries: 3
+
+# Service Configurations
+services:
+  ai_api:
+    debug: false
+
+  whatsapp:
+    bot_prefix: "*[BOT]:*"
+    cmd_prefix: "!"
+    bot_name: "Bot"
+    enable_reactions: true
+    reactions:
+      queued: "🔁"
+      working: "⚙️"
+      done: "✅"
+      error: "⚠️"
+    puppeteer_path: "/snap/bin/chromium"
+    ignore_messages_warning: false
+    mongodb_uri: "xxx"
+
+  resend:
+    from_email: "xxx"
+    reply_to: "xxx"
+
+  langtrace:
+    api:
+      host: "http://localhost:3000/api/trace"
+      key: "${api_keys.langtrace}"
+    admin:
+      email: "admin@example.com"
+      password: "xxx"
+      enable_login: true
+    telemetry:
+      enabled: false
+    posthog:
+      host: "xxx"
+
+  trigger:
+    project_id: "xxx"
+    api_url: "http://localhost:3040"
+    environment: "development"
+    runtime: "docker-compose"
+    v3_enabled: true
+    concurrency:
+      org_execution_limit: 300
+      env_execution_limit: 100
+    auth:
+      magic_link_secret: "xxx"
+      session_secret: "xxx"
+      encryption_key: "xxx"
+      provider_secret: "xxx"
+      coordinator_secret: "xxx"
+    deployment:
+      worker:
+        http_port: 9020
+        coordinator_host: "127.0.0.1"
+        coordinator_port: 9020
+      docker:
+        publish_ip: "127.0.0.1"
+    sentry:
+      auth_token: "xxx"
+      dsn: "xxx"
+      org: "xxx"
+      project: "xxx"
+
+  dashboard:
+    auth:
+      nextauth_secret: "xxx"
+      azure:
+        client_id: "xxx"
+        client_secret: "xxx"
+        tenant_id: "xxx"
+      google:
+        client_id: "xxx"
+        secret: "xxx"
+
+  upstash:
+    redis_url: "xxx"
+    redis_token: "xxx"
+
+# AI Models Configuration
 ai_models:
   premium:
     provider: "groq"
     model: "llama-3.3-70b-versatile"
     temperature: 0.5
-    description: "High-performance model"
-  
+    description: "High-performance model for complex reasoning and generation"
   standard:
-    provider: "groq"  
+    provider: "groq"
     model: "mixtral-8x7b-v1"
     temperature: 0.7
-    description: "Balanced model"
-
+    description: "Balanced model for general purpose tasks"
   basic:
     provider: "groq"
-    model: "llama-2-7b-chat" 
+    model: "llama-2-7b-chat"
     temperature: 0.8
-    description: "Fast model"
+    description: "Fast model for simple tasks and quick responses"
+
+# Access Control
+access:
+  allowed_users: []  # List of allowed phone numbers
+  blocked_users: []  # List of blocked phone numbers
