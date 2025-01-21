@@ -37,7 +37,7 @@
     "lint:repo": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions",
     "lint:repo:fix": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions --fix",
     "typecheck": "turbo typecheck",
-    "build:config": "turbo run build --filter=@eda/config"
+    "build:config": "turbo run build --filter=@eda/config --filter=@eda/config-python"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

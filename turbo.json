@@ -66,9 +66,13 @@
     },
     "build:config": {
       "dependsOn": ["^build"],
+      "inputs": ["config.yaml", "packages/config/**/src/**"],
       "outputs": [
         "packages/config/typescript/dist/**",
-        "packages/config/python/dist/**"
+        "packages/config/python/.venv/**",
+        "packages/config/python/config.yaml",
+        "packages/config/typescript/package.json",
+        "packages/config/python/pyproject.toml"
       ]
     }
   }
