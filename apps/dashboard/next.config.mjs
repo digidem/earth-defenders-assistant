@@ -1,4 +1,5 @@
 import "./src/env.mjs";
+import { config } from "@eda/config";
 import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
@@ -16,4 +17,5 @@ export default withSentryConfig(nextConfig, {
   hideSourceMaps: true,
   disableLogger: true,
   tunnelRoute: "/monitoring",
+  authToken: config.api_keys.sentry.auth_token,
 });
