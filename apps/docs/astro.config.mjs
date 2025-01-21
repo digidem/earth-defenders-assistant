@@ -1,9 +1,14 @@
+import starlight from "@astrojs/starlight";
+import { config } from "@eda/config";
 // @ts-check
 import { defineConfig } from "astro/config";
-import starlight from "@astrojs/starlight";
 
 // https://astro.build/config
 export default defineConfig({
+  server: {
+    port: config.ports.docs,
+    host: false,
+  },
   integrations: [
     starlight({
       title: "My Docs",
