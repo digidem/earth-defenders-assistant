@@ -1,12 +1,16 @@
 import os
+from eda_config import ConfigLoader
 from crewai import Agent, Crew, Process, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
 
-# Configure LLM
+# Get config
+config = ConfigLoader.get_config()
+
+# Configure LLM using config settings
 llm = LLM(
-    model="groq/llama-3.3-70b-versatile",
-    api_key=os.environ.get("GROQ_API_KEY"),
-    temperature=0.5,
+    model=config.ai_models["premium"].model,
+    api_key=config.api_keys.groq,
+    temperature=config.ai_models["premium"].temperature,
 )
 
 

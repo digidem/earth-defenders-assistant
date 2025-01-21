@@ -25,11 +25,11 @@ router = APIRouter()
 # Disabled Mem0 memory manager
 # mem0_manager = Mem0ConversationManager()
 
-# Setup LLM
+# Update LLM configuration
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
-    api_key=os.environ.get("GROQ_API_KEY"),  # Use environment variable
-    temperature=0.5,
+    model=config.ai_models["premium"].model,
+    api_key=config.api_keys.groq,
+    temperature=config.ai_models["premium"].temperature,
 )
 
 
@@ -52,8 +52,9 @@ async def process_discovery(
 
     async with httpx.AsyncClient() as client:
         logger.info("Calling discovery API...")
+        discovery_port = config.ports.ai_api
         api_response = await client.post(
-            "http://127.0.0.1:8083/api/grant/discovery",
+            f"http://127.0.0.1:{discovery_port}/api/grant/discovery",
             json={"topics": topics, "platform": platform},
         )
         logger.info(f"Discovery API Response: {api_response.json()}")

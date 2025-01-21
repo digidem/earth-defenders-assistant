@@ -1,14 +1,18 @@
 import datetime
 import os
 from typing import List
+from eda_config import ConfigLoader
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
-# Initialize LLM
+# Get config
+config = ConfigLoader.get_config()
+
+# Initialize LLM using config
 llm = LLM(
-    model="groq/llama-3.3-70b-versatile",  # Replace with your chosen Cerebras model name, e.g., "cerebras/llama3.1-8b"
-    api_key=os.environ.get("GROQ_API_KEY"),  # Your Cerebras API key
-    temperature=0.5,
+    model=config.ai_models["premium"].model,
+    api_key=config.api_keys.groq,
+    temperature=config.ai_models["premium"].temperature,
 )
 
 

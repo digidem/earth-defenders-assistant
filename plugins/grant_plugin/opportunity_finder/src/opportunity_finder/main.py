@@ -1,54 +1,60 @@
 #!/usr/bin/env python
 import os
 import sys
+from eda_config import ConfigLoader
 from opportunity_finder.crew import OpportunityFinderCrew
 from langtrace_python_sdk import langtrace
+
+# Get config
+config = ConfigLoader.get_config()
+
+
 # This main file is intended to be a way for you to run your
 # crew locally, so refrain from adding unnecessary logic into this file.
 # Replace with inputs you want to test with, it will automatically
 # interpolate any tasks and agents information
 def init_langtrace():
-    """Initialize langtrace with environment variables."""
+    """Initialize langtrace with config values."""
     langtrace.init(
-        api_key=os.environ.get('LANGTRACE_API_KEY'),
-        api_host=os.environ.get('LANGTRACE_API_HOST', 'http://localhost:3000/api/trace'),
+        api_key=config.api_keys.langtrace,
+        api_host=config.services.langtrace.api.host,
     )
+
 
 def run():
     """
     Run the crew with default topics.
     """
     init_langtrace()
-    inputs = {
-        'topics': 'Climate Justice, Indigenous Land Defense, Sociobiodiveristy'
-    }
+    inputs = {"topics": "Climate Justice, Indigenous Land Defense, Sociobiodiveristy"}
     OpportunityFinderCrew().crew().kickoff(inputs=inputs)
+
 
 def main(topics: str):
     """
     Run the crew with specified topics.
-    
+
     Args:
         topics: Comma-separated string of topics to search for opportunities
     """
     init_langtrace()
-    inputs = {
-        'topics': topics
-    }
+    inputs = {"topics": topics}
     return OpportunityFinderCrew().crew().kickoff(inputs=inputs)
+
 
 def train():
     """
     Train the crew for a given number of iterations.
     """
-    inputs = {
-        'topics': 'Climate Justice, Indigenous Land Defense, Sociobiodiveristy'
-    }
+    inputs = {"topics": "Climate Justice, Indigenous Land Defense, Sociobiodiveristy"}
     try:
-        OpportunityFinderCrew().crew().train(n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs)
+        OpportunityFinderCrew().crew().train(
+            n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs
+        )
 
     except Exception as e:
         raise Exception(f"An error occurred while training the crew: {e}")
+
 
 def replay():
     """
@@ -60,15 +66,16 @@ def replay():
     except Exception as e:
         raise Exception(f"An error occurred while replaying the crew: {e}")
 
+
 def test():
     """
     Test the crew execution and returns the results.
     """
-    inputs = {
-        'topics': 'Climate Justice, Indigenous Land Defense, Sociobiodiveristy'
-    }
+    inputs = {"topics": "Climate Justice, Indigenous Land Defense, Sociobiodiveristy"}
     try:
-        OpportunityFinderCrew().crew().test(n_iterations=int(sys.argv[1]), openai_model_name=sys.argv[2], inputs=inputs)
+        OpportunityFinderCrew().crew().test(
+            n_iterations=int(sys.argv[1]), openai_model_name=sys.argv[2], inputs=inputs
+        )
 
     except Exception as e:
         raise Exception(f"An error occurred while replaying the crew: {e}")

@@ -1,15 +1,20 @@
-import os
 import datetime
+import os
+from eda_config import ConfigLoader
 from crewai import Agent, Crew, Process, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
 from crewai_tools import ScrapeWebsiteTool, SerperDevTool
 
-search_tool = SerperDevTool()
+# Get config
+config = ConfigLoader.get_config()
+
+search_tool = SerperDevTool(api_key=config.api_keys.serper)
 scrape_tool = ScrapeWebsiteTool()
+
 llm = LLM(
-    model="groq/llama-3.3-70b-versatile",  # Replace with your chosen Cerebras model name, e.g., "cerebras/llama3.1-8b"
-    api_key=os.environ.get("GROQ_API_KEY"),  # Your Cerebras API key
-    temperature=0.5,
+    model=config.ai_models["premium"].model,
+    api_key=config.api_keys.groq,
+    temperature=config.ai_models["premium"].temperature,
 )
 
 

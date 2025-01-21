@@ -1,7 +1,7 @@
 # Service Ports (all port configurations in one place)
 ports:
   messaging: 3001  # WhatsApp message handling service
-  ai_api: 8000    # FastAPI service for AI operations
+  ai_api: 8083    # FastAPI service for AI operations
   langtrace: 3003 # LangTrace monitoring service
   trigger: 3040   # Trigger.dev job processing
   remix: 3030     # Trigger.dev remix app
