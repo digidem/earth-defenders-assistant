@@ -10,7 +10,7 @@ export default defineConfig({
     port: config.ports.landingpage,
   },
   define: {
-    "process.env.VITE_OPENPANEL_CLIENT_ID": JSON.stringify(
+    VITE_OPENPANEL_CLIENT_ID: JSON.stringify(
       config.api_keys.openpanel.client_id,
     ),
   },
