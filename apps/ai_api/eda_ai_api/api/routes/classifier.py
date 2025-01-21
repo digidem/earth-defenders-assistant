@@ -21,8 +21,6 @@ from eda_config.config import ConfigLoader  # Add this import
 
 config = ConfigLoader.get_config()  # Add this line
 
-print(config.services.ai_api)
-
 router = APIRouter()
 # Disabled Mem0 memory manager
 # mem0_manager = Mem0ConversationManager()

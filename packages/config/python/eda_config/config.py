@@ -29,11 +29,9 @@ class ConfigLoader:
                 )
 
             config_path = project_root / "config.yaml"
-            print(f"DEBUG: Loading config from {config_path}")  # Debugging line
 
             with open(config_path) as f:
                 config_data = yaml.safe_load(f)
-                print(f"DEBUG: Loaded config data: {config_data}")  # Debugging line
                 
             cls._instance = Config(**config_data)
         return cls._instance
