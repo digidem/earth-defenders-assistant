@@ -29,7 +29,7 @@
     "clean:workspaces": "turbo clean",
     "deploy:trigger": "cd deploy/trigger-stack && chmod +x deploy.sh && ./deploy.sh",
     "deploy:langtrace": "docker compose -f deploy/langtrace-stack/docker-compose.yml up -d",
-    "deploy:neo4j": "docker compose -f deploy/neo4j-stack/docker-compose.yml up -d",
+    "deploy:neo4j": "cd deploy/neo4j-stack && chmod +x deploy.sh && ./deploy.sh",
     "status": "bun status",
     "start:dashboard": "turbo start --filter=@eda/dashboard",
     "test": "turbo test --parallel",
