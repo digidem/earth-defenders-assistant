@@ -23,6 +23,9 @@ jobs:
     - name: Install dependencies
       run: bun install
 
+    - name: Build config package
+      run: bun run build:config
+
     - name: Create Docker network
       run: docker network create eda-network || true
 
@@ -33,10 +36,7 @@ jobs:
             echo "Processing $dir"
             cd "$dir"
             
-            # Generate env file from config
-            bun run export-config.ts > .env
-            
-            # Start containers
+            # Start containers directly with config
             docker compose up -d
             
             # Store the directory name for later use
@@ -54,11 +54,9 @@ jobs:
         while IFS= read -r dir; do
           echo "Testing endpoints for $dir"
           
-          # Extract the service name from directory path
           service_name=$(basename "$dir")
           port=$(bun run @eda/config getPorts $service_name)
           
-          # Default to 3000 if no port found
           if [ -z "$port" ]; then
             echo "No port found for $service_name in config, using default 3000"
             port=3000
@@ -66,7 +64,6 @@ jobs:
           
           test_url="http://localhost:${port}/"
           
-          # Test the endpoint
           curl --fail "$test_url" || {
             echo "Failed to reach $test_url for $service_name"
             exit 1
