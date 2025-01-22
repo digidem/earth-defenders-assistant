@@ -66,11 +66,12 @@ jobs:
     - name: Test endpoints
       run: |
         while IFS= read -r dir; do
-          service_name=$(basename "$dir")
-          echo "Testing endpoints for $dir"
+          # Extract service name by removing "deploy/" and "-stack"
+          service_name=$(basename "$dir" | sed 's/-stack//')
+          echo "Testing endpoints for service: $service_name"
           
           # Skip config packages
-          if [[ "$service_name" == *"config"* ]]; then
+          if [[ "$service_name" == "config" ]]; then
             echo "Skipping config package: $service_name"
             continue
           fi
