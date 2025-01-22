@@ -1,14 +1,17 @@
+import { config } from "@eda/config";
 import { logger } from "@eda/logger";
 import { createClient } from "@supabase/supabase-js";
 import { tasks } from "@trigger.dev/sdk/v3";
 import { type Message, messageSchema, queryParamsSchema } from "./types";
 
+// Replace Supabase client initialization
 const supabase = createClient(
-  "http://localhost:54321", // Local Supabase URL from config.toml
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // Get this from Supabase Studio
+  config.databases.supabase.url,
+  config.api_keys.supabase.service_key,
 );
 
-const AI_API_URL = process.env.AI_API_URL || "http://127.0.0.1:8083";
+// Replace AI API URL constant
+const AI_API_URL = `http://localhost:${config.ports.ai_api}`;
 
 // Add new function to get/create Supabase ID
 async function getSupabaseId(whatsappId: string): Promise<string> {
@@ -16,12 +19,12 @@ async function getSupabaseId(whatsappId: string): Promise<string> {
     // First check if user exists
     const { data: existingUser } = await supabase
       .from("messages")
-      .select("id")
+      .select("user_id")
       .eq("whatsapp_id", whatsappId)
       .single();
 
     if (existingUser) {
-      return existingUser.id;
+      return existingUser.user_id;
     }
 
     // If not exists, create new user
@@ -143,6 +146,7 @@ export async function handleSendMessage(req: Request) {
       .single();
 
     if (historyError) {
+      console.error(historyError);
       logger.error("Error fetching conversation history", {
         error: historyError,
       });
