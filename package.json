@@ -28,7 +28,7 @@
     "build:landingpage": "turbo build --filter=@eda/landingpage",
     "clean:workspaces": "turbo clean",
     "deploy:trigger": "cd deploy/trigger-stack && chmod +x deploy.sh && ./deploy.sh",
-    "deploy:langtrace": "docker compose -f deploy/langtrace-stack/docker-compose.yml up -d",
+    "deploy:langtrace": "cd deploy/langtrace-stack && chmod +x deploy.sh && ./deploy.sh",
     "deploy:neo4j": "cd deploy/neo4j-stack && chmod +x deploy.sh && ./deploy.sh",
     "status": "bun status",
     "start:dashboard": "turbo start --filter=@eda/dashboard",
