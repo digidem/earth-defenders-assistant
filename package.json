@@ -34,8 +34,8 @@
     "start:dashboard": "turbo start --filter=@eda/dashboard",
     "test": "turbo test --parallel",
     "format": "biome format --write .",
-    "lint:repo": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions",
-    "lint:repo:fix": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions --fix",
+    "lint:repo": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions -r packages-without-package-json -r root-package-dependencies",
+    "lint:repo:fix": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions -r packages-without-package-json -r root-package-dependencies --fix",
     "typecheck": "turbo typecheck",
     "build:config": "turbo run build --filter=@eda/config --filter=@eda/config-python"
   },

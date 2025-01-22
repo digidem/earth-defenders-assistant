@@ -1,23 +1,22 @@
 import json
-import os
-from typing import Optional, List, Dict
 import uuid
-from fastapi import APIRouter, File, Form, UploadFile
-from langchain_groq import ChatGroq
-from langchain_core.messages import HumanMessage
-from loguru import logger
+from typing import Dict, Optional
+
 import httpx
+from eda_config.config import ConfigLoader  # Add this import
+from fastapi import APIRouter, File, Form, UploadFile
+from langchain_core.messages import HumanMessage
+from langchain_groq import ChatGroq
+from loguru import logger
 
 from eda_ai_api.models.classifier import ClassifierResponse, MessageHistory
 from eda_ai_api.utils.audio_utils import process_audio_file
-from eda_ai_api.utils.memory import SupabaseMemory, Mem0ConversationManager
+from eda_ai_api.utils.memory import SupabaseMemory
 from eda_ai_api.utils.prompts import (
-    ROUTER_TEMPLATE,
     INSUFFICIENT_TEMPLATES,
-    PROPOSAL_TEMPLATE,
+    ROUTER_TEMPLATE,
     TOPIC_TEMPLATE,
 )
-from eda_config.config import ConfigLoader  # Add this import
 
 config = ConfigLoader.get_config()  # Add this line
 
@@ -34,9 +33,12 @@ llm = ChatGroq(
 
 
 async def process_discovery(
-    message: str, context: str, platform: str = "default"
+    message: str, context: str, platform: Optional[str] = "default"
 ) -> Dict[str, str]:
     """Process discovery requests"""
+    # Ensure platform is never None
+    actual_platform = platform or "default"
+
     response = llm.invoke(
         [HumanMessage(content=TOPIC_TEMPLATE.format(context=context, message=message))]
     )
@@ -55,7 +57,7 @@ async def process_discovery(
         discovery_port = config.ports.ai_api
         api_response = await client.post(
             f"http://127.0.0.1:{discovery_port}/api/grant/discovery",
-            json={"topics": topics, "platform": platform},
+            json={"topics": topics, "platform": actual_platform},
         )
         logger.info(f"Discovery API Response: {api_response.json()}")
         return {"result": str(api_response.json())}
@@ -71,6 +73,30 @@ async def route_message(message: str, context: str) -> str:
     decision = response.content.lower().strip()
     logger.info(f"Router Decision: {decision}")
     return decision
+
+
+async def process_input_messages(
+    message: Optional[str], audio: Optional[UploadFile]
+) -> list[str]:
+    combined_message = []
+    if audio:
+        transcription = await process_audio_file(audio)
+        combined_message.append(f'Transcription: "{transcription}"')
+    if message:
+        combined_message.append(f'Message: "{message}"')
+    return combined_message
+
+
+async def process_message_history(
+    message_history: Optional[str],
+) -> list[MessageHistory]:
+    history = []
+    if message_history:
+        try:
+            history = [MessageHistory(**msg) for msg in json.loads(message_history)]
+        except json.JSONDecodeError:
+            logger.warning("Invalid message_history JSON format")
+    return history
 
 
 @router.post("/classify", response_model=ClassifierResponse)
@@ -90,60 +116,38 @@ async def classifier_route(
         # Initialize/get Mem0 session - Disabled
         # current_session = await mem0_manager.get_or_create_session(session_id=current_session)
 
-        # Process inputs
-        combined_message = []
-        if audio:
-            transcription = await process_audio_file(audio)
-            combined_message.append(f'Transcription: "{transcription}"')
-        if message:
-            combined_message.append(f'Message: "{message}"')
-
+        combined_message = await process_input_messages(message, audio)
         if not combined_message:
             return ClassifierResponse(result="Error: No valid input provided")
 
-        # Get conversation history from Supabase
-        history = []
-        if message_history:
-            try:
-                history = [MessageHistory(**msg) for msg in json.loads(message_history)]
-            except json.JSONDecodeError:
-                logger.warning("Invalid message_history JSON format")
-
-        # Get context from Supabase only
+        history = await process_message_history(message_history)
         supabase_context = SupabaseMemory.format_history(history)
+
         final_message = "\n".join(combined_message)
         decision = await route_message(final_message, supabase_context)
-        logger.info(f"Routing decision: {decision}")
-
-        # Update logging when processing route decision
         logger.info(f"Processing {decision} request for platform: {platform}")
 
-        # Process based on route
-        if decision == "discovery":
-            response = await process_discovery(
-                final_message, supabase_context, platform
-            )
-            logger.info(f"Discovery response for platform {platform}: {response}")
-        elif decision == "heartbeat":
-            response = {"result": "*Yes, I'm here! 🟢*\n_Ready to help you!_"}
-        else:
-            response = {"result": f"Service '{decision}' not implemented yet"}
-
-        result = response["result"]
-        if len(result) > 2499:
-            result = result[:2499]
-
-        # Disabled Mem0 storage
-        # await mem0_manager.add_conversation(
-        #     session_id=current_session,
-        #     user_message=final_message,
-        #     assistant_response=result,
-        # )
-
-        response = {"result": result, "platform": platform}
+        response = await process_route_decision(
+            decision, final_message, supabase_context, platform
+        )
+        result = response["result"][:2499]  # Truncate if needed
 
         return ClassifierResponse(result=result, session_id=current_session)
 
     except Exception as e:
         logger.error(f"Error in classifier route: {str(e)}")
         return ClassifierResponse(result=f"Error: {str(e)}")
+
+
+async def process_route_decision(
+    decision: str, message: str, context: str, platform: Optional[str]
+) -> Dict[str, str]:
+    if decision == "discovery":
+        response = await process_discovery(message, context, platform or "default")
+        logger.info(f"Discovery response for platform {platform}: {response}")
+    elif decision == "heartbeat":
+        response = {"result": "*Yes, I'm here! 🟢*\n_Ready to help you!_"}
+    else:
+        response = {"result": f"Service '{decision}' not implemented yet"}
+
+    return response

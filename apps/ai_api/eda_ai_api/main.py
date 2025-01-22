@@ -1,5 +1,6 @@
-from fastapi import FastAPI
 from eda_config import ConfigLoader
+from fastapi import FastAPI
+
 from eda_ai_api.api.routes.router import api_router
 from eda_ai_api.core.config import API_PREFIX, APP_NAME, APP_VERSION
 from eda_ai_api.core.event_handlers import start_app_handler, stop_app_handler
@@ -24,13 +25,18 @@ def get_app() -> FastAPI:
 app = get_app()
 
 
-def run_server():
+def run_server() -> None:
     """Run the API server using config settings"""
     import uvicorn
 
-    uvicorn.run(
-        "eda_ai_api.main:app", host="0.0.0.0", port=config.ports.ai_api, reload=True
-    )
+    # Use localhost for development, configure via config for production
+    host = "127.0.0.1"  # Default to localhost
+    if config.services.ai_api.get(
+        "allow_external", False
+    ):  # Only if explicitly enabled
+        host = "0.0.0.0"  # nosec B104 # Explicitly allowed in config
+
+    uvicorn.run("eda_ai_api.main:app", host=host, port=config.ports.ai_api, reload=True)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,3 @@
-from starlette.config import Config
-from starlette.datastructures import Secret
-
 APP_VERSION = "0.0.1"
 APP_NAME = "AI API for Earth Defenders Assistant"
 API_PREFIX = "/api"

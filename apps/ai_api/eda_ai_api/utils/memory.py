@@ -1,17 +1,19 @@
-import uuid
 import os
+import uuid
 from typing import Dict, List, Optional
+
 from dotenv import load_dotenv
-from eda_ai_api.models.classifier import MessageHistory
 from loguru import logger
 from mem0 import Memory
+
+from eda_ai_api.models.classifier import MessageHistory
 
 # Load environment variables
 load_dotenv()
 
 
 class Mem0ConversationManager:
-    def __init__(self):
+    def __init__(self) -> None:
         # Validate API keys
         groq_api_key = os.getenv("GROQ_API_KEY")
         huggingface_api_key = os.getenv("HUGGINGFACE_API_KEY")
