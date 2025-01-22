@@ -18,8 +18,14 @@ jobs:
       with:
         bun-version: latest
 
+    - name: Setup UV
+      uses: astral-sh/setup-uv@v3
+
     - name: Install dependencies
-      run: bun install
+      run: |
+        bun install
+        uv venv
+        . .venv/bin/activate
 
     - name: Setup config
       run: |
