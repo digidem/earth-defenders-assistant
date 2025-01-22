@@ -863,7 +863,6 @@ dependencies = [
     { name = "rank-bm25" },
     { name = "requests" },
     { name = "uvicorn" },
-    { name = "zep-python" },
 ]
 
 [package.optional-dependencies]
@@ -912,12 +911,11 @@ requires-dist = [
     { name = "rank-bm25", specifier = ">=0.2.2" },
     { name = "requests", specifier = ">=2.31.0" },
     { name = "uvicorn", specifier = ">=0.25.0" },
-    { name = "zep-python", specifier = ">=2.0.2" },
 ]
 
 [[package]]
 name = "eda-config"
-version = "0.1.13"
+version = "0.1.19"
 source = { directory = "../../packages/config/python" }
 dependencies = [
     { name = "pydantic" },
@@ -5301,20 +5299,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/93/c7/c7f954200ebae213f0b76b072dcd3c37b39a42f4cf3d80a30d580bcedef7/yarl-1.17.0-cp313-cp313-win32.whl", hash = "sha256:d0131b14cb545c1a7bd98f4565a3e9bdf25a1bd65c83fc156ee5d8a8499ec4a3", size = 308608 },
     { url = "https://files.pythonhosted.org/packages/c7/cc/57117f63f27668e87e3ea9ce9fecab7331f0a30b72690211a2857b5db9f5/yarl-1.17.0-cp313-cp313-win_amd64.whl", hash = "sha256:01c96efa4313c01329e88b7e9e9e1b2fc671580270ddefdd41129fa8d0db7696", size = 314345 },
     { url = "https://files.pythonhosted.org/packages/93/86/f1305e1ab1d6dc27d245ffc83d18d88f2bebf6c6488725ee82dffb3eda7a/yarl-1.17.0-py3-none-any.whl", hash = "sha256:62dd42bb0e49423f4dd58836a04fcf09c80237836796025211bbe913f1524993", size = 44053 },
-]
-
-[[package]]
-name = "zep-python"
-version = "2.0.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b5/64/1b0c4afa6d0e8f35e1072eacdfe8ec216871be5f2dfd569942f69232482f/zep_python-2.0.2.tar.gz", hash = "sha256:919fd635ad5801f30d9ef6da0bb99e854ed4c3cd1357dc8ada4a39b8171a41bc", size = 22273 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/d4/09a6bc0c32f91b7b5b93322513d51299ca9b35bdd6b0560b39104c296f39/zep_python-2.0.2-py3-none-any.whl", hash = "sha256:d7b2cadf1eb15007825362cae5ddff9c9d0ada5b4f75cf91e5b87986459f7817", size = 40011 },
 ]
 
 [[package]]

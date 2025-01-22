@@ -10,7 +10,9 @@ ports:
   landingpage: 8081
   docs: 8082
   db:
-    postgres: 5432
+    postgres: 5439      
+    trigger_postgres: 5440  
+    langtrace_postgres: 5441 
     redis: 6379
     neo4j:
       http: 7474  # Neo4j browser interface
@@ -114,7 +116,7 @@ services:
   trigger:
     project_id: "xxx"
     api_url: "http://localhost:3040"
-    environment: "development"
+    environment: "production"
     runtime: "docker-compose"
     v3_enabled: true
     concurrency:

@@ -64,6 +64,8 @@ class ApiKeys(BaseModel):
 
 class DbPorts(BaseModel):
     postgres: int
+    trigger_postgres: int  # Add new port
+    langtrace_postgres: int  # Add new port
     redis: int
     neo4j: Dict[str, int]
     clickhouse: int

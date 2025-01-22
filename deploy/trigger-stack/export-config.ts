@@ -18,7 +18,7 @@ const envVars = {
   DIRECT_URL: `postgresql://${config.databases.trigger_postgres.user}:${config.databases.trigger_postgres.password}@postgres:5432/${config.databases.trigger_postgres.database}`, // Add this line
 
   // Add database ports
-  POSTGRES_PORT: config.ports.db.postgres,
+  POSTGRES_PORT: config.ports.db.trigger_postgres, // Use trigger-specific port
   REDIS_PORT: config.ports.db.redis,
 
   // Redis settings

@@ -171,6 +171,8 @@ export const ConfigSchema = z.object({
     docs: z.number(),
     db: z.object({
       postgres: z.number(),
+      trigger_postgres: z.number(), // Add new port
+      langtrace_postgres: z.number(), // Add new port
       redis: z.number(),
       neo4j: z.object({
         http: z.number(),
