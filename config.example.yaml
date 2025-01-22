@@ -39,37 +39,37 @@ api_keys:
 # Database Settings
 databases:
   supabase:
-    url: http://127.0.0.1:54321
+    url: "http://localhost:54321"
     project_id: "create-eda"
 
   langtrace_postgres:
     host: "langtrace-postgres"
     port: 5432
-    user: "xxx"
-    password: "xxx"
+    user: "ltuser"
+    password: "ltpasswd"
     database: "langtrace"
 
   langtrace_clickhouse:
     host: "http://langtrace-clickhouse:8123"
-    user: "xxx"
-    password: "xxx"
+    user: "lt_clickhouse_user"
+    password: "clickhousepw"
     database: "langtrace_traces"
 
   trigger_postgres:
-    host: postgres
-    user: "xxx"
-    password: "xxx"
-    database: postgres
+    host: "postgres"
+    user: "postgres"
+    password: "postgres"
+    database: "postgres"
 
   redis:
-    host: redis
+    host: "redis"
     tls_disabled: true
 
   neo4j:
-    host: localhost
+    host: "localhost"
     auth:
-      user: "xxx"
-      password: "xxx"
+      user: "neo4j"
+      password: "password"
     plugins: ["apoc"]
     healthcheck:
       interval: 10
@@ -96,20 +96,20 @@ services:
     mongodb_uri: "xxx"
 
   resend:
-    from_email: "xxx"
-    reply_to: "xxx"
+    from_email: "onboarding@resend.dev"
+    reply_to: "xxx@example.com"
 
   langtrace:
     api:
       host: "http://localhost:3000/api/trace"
     admin:
-      email: "xxx"
+      email: "admin@langtrace.ai"
       password: "xxx"
       enable_login: true
     telemetry:
       enabled: true
     posthog:
-      host: "xxx"
+      host: "https://us.i.posthog.com"
 
   trigger:
     project_id: "xxx"
@@ -130,7 +130,7 @@ services:
       worker:
         http_port: 9020
         coordinator_host: "127.0.0.1"
-        coordinator_port: 9020
+        coordinator_port: 9021
       docker:
         publish_ip: "127.0.0.1"
     sentry:
