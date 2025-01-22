@@ -15,13 +15,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install UV
-      uses: astral-sh/setup-uv@v3
-
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
       with:
         bun-version: latest
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v3
 
     - name: Install dependencies
       run: |
@@ -29,23 +29,31 @@ jobs:
         uv venv
         . .venv/bin/activate
 
-    - name: Build config package
-      run: bun run build:config
+    - name: Setup config
+      run: |
+        cp config.example.yaml config.yaml
+        bun run build:config
 
     - name: Create Docker network
       run: docker network create eda-network || true
 
     - name: Find and process deploy directories
       run: |
+        # Create dirs file
+        touch $GITHUB_WORKSPACE/deploy_dirs.txt
+        
         for dir in deploy/*/; do
           if [ -d "$dir" ]; then
             echo "Processing $dir"
             cd "$dir"
             
-            # Start containers directly with config
+            # Generate env from config
+            bun run export-config.ts > .env
+            
+            # Start containers
             docker compose up -d
             
-            # Store the directory name for later use
+            # Store directory
             echo "${dir%/}" >> $GITHUB_WORKSPACE/deploy_dirs.txt
             
             cd $GITHUB_WORKSPACE
@@ -69,8 +77,9 @@ jobs:
           fi
           
           test_url="http://localhost:${port}/"
+          echo "Testing URL: $test_url"
           
-          curl --fail "$test_url" || {
+          curl --fail --retry 3 --retry-delay 5 "$test_url" || {
             echo "Failed to reach $test_url for $service_name"
             exit 1
           }
@@ -79,8 +88,10 @@ jobs:
     - name: Cleanup
       if: always()
       run: |
-        while IFS= read -r dir; do
-          cd "$dir"
-          docker compose down
-          cd $GITHUB_WORKSPACE
-        done < $GITHUB_WORKSPACE/deploy_dirs.txt
+        if [ -f "$GITHUB_WORKSPACE/deploy_dirs.txt" ]; then
+          while IFS= read -r dir; do
+            cd "$dir"
+            docker compose down
+            cd $GITHUB_WORKSPACE
+          done < $GITHUB_WORKSPACE/deploy_dirs.txt
+        fi
