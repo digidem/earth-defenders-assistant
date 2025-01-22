@@ -1,7 +1,6 @@
-import { logger } from "@trigger.dev/sdk/v3";
+import { logger } from "@eda/logger";
 import { type WAMessage, downloadMediaMessage } from "@whiskeysockets/baileys";
 import { sock } from "../client";
-import { BOT_PREFIX } from "../constants";
 import { getPhoneNumber, react } from "../utils";
 
 const IMAGE_ERROR_MSG =

@@ -1,7 +1,7 @@
 import { config } from "@eda/config";
 import { logger } from "@eda/logger";
 import { createClient } from "@supabase/supabase-js";
-import { tasks } from "@trigger.dev/sdk/v3";
+import { configure, tasks } from "@trigger.dev/sdk/v3";
 import { type Message, messageSchema, queryParamsSchema } from "./types";
 
 // Replace Supabase client initialization
@@ -9,6 +9,11 @@ const supabase = createClient(
   config.databases.supabase.url,
   config.api_keys.supabase.service_key,
 );
+
+configure({
+  secretKey: config.api_keys.trigger,
+  baseURL: config.services.trigger.api_url,
+});
 
 // Replace AI API URL constant
 const AI_API_URL = `http://localhost:${config.ports.ai_api}`;
@@ -187,15 +192,19 @@ export async function handleSendMessage(req: Request) {
 
     logger.info("Triggering monitor-api-call task");
 
-    // Monitor API call using Trigger.dev
-    await tasks.trigger("monitor-api-call", {
-      endpoint: "/api/classifier/classify",
-      method: "POST",
-      statusCode: response.status,
-      duration,
-      timestamp: new Date().toISOString(),
-      sessionId: payload.sessionId,
-    });
+    try {
+      // Monitor API call using Trigger.dev
+      await tasks.trigger("monitor-api-call", {
+        endpoint: "/api/classifier/classify",
+        method: "POST",
+        statusCode: response.status,
+        duration,
+        timestamp: new Date().toISOString(),
+        sessionId: payload.sessionId,
+      });
+    } catch (triggerError) {
+      logger.error("Error triggering monitoring task:", triggerError);
+    }
 
     if (!response.ok) {
       throw new Error(data.message || "Failed to process message");
@@ -216,16 +225,23 @@ export async function handleSendMessage(req: Request) {
   } catch (error) {
     const duration = performance.now() - startTime;
 
-    // Monitor failed API calls
-    await tasks.trigger("monitor-api-call", {
-      endpoint: "/api/classifier/classify",
-      method: "POST",
-      statusCode: 500,
-      duration,
-      timestamp: new Date().toISOString(),
-      sessionId: payload.sessionId, // Now safe to use since payload is initialized
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    try {
+      // Monitor failed API calls
+      await tasks.trigger("monitor-api-call", {
+        endpoint: "/api/classifier/classify",
+        method: "POST",
+        statusCode: 500,
+        duration,
+        timestamp: new Date().toISOString(),
+        sessionId: payload.sessionId,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    } catch (triggerError) {
+      logger.error(
+        "Error triggering monitoring task for failed call:",
+        triggerError,
+      );
+    }
 
     const message =
       error instanceof Error ? error.message : "Failed to process message";

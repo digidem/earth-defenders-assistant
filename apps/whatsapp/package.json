@@ -17,7 +17,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@trigger.dev/sdk": "3.2.1",
+    "@trigger.dev/sdk": "3.3.11",
     "@types/common-tags": "^1.8.4",
     "@whiskeysockets/baileys": "^6.7.9",
     "common-tags": "^1.8.2",
