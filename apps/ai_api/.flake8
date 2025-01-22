@@ -87,6 +87,7 @@ hang-closing = True
 # E133 - closing bracket is missing indentation (conflicts with black)
 # E203 - whitespace before ‘:’ (conflicts with black)
 # W503 - line break before binary operator
+# W504 - line break after binary operator
 # F401 - module imported but unused
 # F403 - ‘from module import *’ used; unable to detect undefined names
 #
@@ -95,7 +96,8 @@ hang-closing = True
 ignore =
     E133,
     E203,
-    W503
+    W503,
+    W504
 # Specify the list of error codes you wish Flake8 to report.
 select =
     E,

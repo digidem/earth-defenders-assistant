@@ -66,9 +66,15 @@ jobs:
     - name: Test endpoints
       run: |
         while IFS= read -r dir; do
+          service_name=$(basename "$dir")
           echo "Testing endpoints for $dir"
           
-          service_name=$(basename "$dir")
+          # Skip config packages
+          if [[ "$service_name" == *"config"* ]]; then
+            echo "Skipping config package: $service_name"
+            continue
+          fi
+          
           port=$(bun run @eda/config getPorts $service_name)
           
           if [ -z "$port" ]; then

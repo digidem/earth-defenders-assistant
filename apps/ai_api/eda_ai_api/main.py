@@ -31,15 +31,14 @@ def run_server() -> None:
 
     # Use localhost for development, configure via config for production
     host = "127.0.0.1"  # Default to localhost
-    if (
+    allow_external = (
         hasattr(config.services.ai_api, "allow_external")
         and config.services.ai_api.allow_external
-    ):
+    )
+    if allow_external:
         host = "0.0.0.0"  # nosec B104 # Explicitly allowed in config
 
-    uvicorn.run(
-        "eda_ai_api.main:app", host=host, port=config.ports.ai_api, reload=True
-    )
+    uvicorn.run("eda_ai_api.main:app", host=host, port=config.ports.ai_api, reload=True)
 
 
 if __name__ == "__main__":

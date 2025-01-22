@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "uv run python -m eda_ai_api.main",
     "start": "uv run python -m eda_ai_api.main",
-    "lint": "bash ./scripts/linting.sh",
+    "lint": "uvx flake8 eda_ai_api --config=setup.cfg",
     "test": "bash ./scripts/test.sh"
   }
 }
