@@ -1,3 +1,4 @@
+import { config } from "@eda/config"; // Add this import
 import type { proto } from "@whiskeysockets/baileys";
 import { stripIndents } from "common-tags";
 import { sock } from "./client";
@@ -29,12 +30,8 @@ async function getGroupName(groupJid: string): Promise<string> {
   }
 }
 
-export const REACTIONS = {
-  queued: process.env.QUEUED_REACTION || "🔁",
-  working: process.env.WORKING_REACTION || "⚙️",
-  done: process.env.DONE_REACTION || "✅",
-  error: process.env.ERROR_REACTION || "⚠️",
-};
+// Replace REACTIONS definition with config values
+export const REACTIONS = config.services.whatsapp.reactions;
 
 export type Reaction = keyof typeof REACTIONS;
 
@@ -194,7 +191,7 @@ export async function shouldIgnoreUnread(
       warningMessage = `Too many unread messages (${unreadCount}) since I've last seen this chat. I'm ignoring them. If you need me to respond, please message me again.`;
     }
 
-    if (IGNORE_MESSAGES_WARNING === "true") {
+    if (IGNORE_MESSAGES_WARNING) {
       await sock.sendMessage(chatJid, { text: BOT_PREFIX + warningMessage });
     }
 
