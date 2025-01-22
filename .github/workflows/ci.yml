@@ -21,8 +21,13 @@ jobs:
     - name: Install dependencies
       run: bun install
 
-    - name: Run builds
-      run: bun run build
+    - name: Setup config
+      run: |
+        cp config.example.yaml config.yaml
+        bun run build:config
+
+    - name: Build remaining packages
+      run: turbo run build --filter=!@eda/config --filter=!@eda/config-python
 
     # - name: Run tests
     #   run: bun run test

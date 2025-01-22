@@ -16,6 +16,7 @@ const envVars = {
   POSTGRES_URL_NO_SSL: `postgres://${config.databases.langtrace_postgres.user}:${config.databases.langtrace_postgres.password}@${config.databases.langtrace_postgres.host}/${config.databases.langtrace_postgres.database}`,
   POSTGRES_URL_NON_POOLING: `postgres://${config.databases.langtrace_postgres.user}:${config.databases.langtrace_postgres.password}@${config.databases.langtrace_postgres.host}/${config.databases.langtrace_postgres.database}`,
   POSTGRES_IMAGE_TAG: "16",
+  POSTGRES_PORT: config.ports.db.postgres,
 
   // App settings
   NEXT_PUBLIC_APP_NAME: config.services.langtrace.api.host,
@@ -30,6 +31,7 @@ const envVars = {
   CLICK_HOUSE_USER: config.databases.langtrace_clickhouse.user,
   CLICK_HOUSE_PASSWORD: config.databases.langtrace_clickhouse.password,
   CLICK_HOUSE_DATABASE_NAME: config.databases.langtrace_clickhouse.database,
+  CLICKHOUSE_PORT: config.ports.db.clickhouse,
 
   // Admin settings
   ADMIN_EMAIL: config.services.langtrace.admin.email,

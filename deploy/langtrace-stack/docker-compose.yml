@@ -26,7 +26,7 @@ services:
     env_file:
       - .env
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -39,7 +39,7 @@ services:
       - CLICKHOUSE_USER=${CLICK_HOUSE_USER}
       - CLICKHOUSE_DB=${CLICK_HOUSE_DATABASE_NAME}
     ports:
-      - "8123:8123"
+      - "${CLICKHOUSE_PORT}:8123"
       - "9000:9000"
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://langtrace-clickhouse:8123/ping || exit 1

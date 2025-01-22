@@ -44,7 +44,7 @@ databases:
 
   langtrace_postgres:
     host: "langtrace-postgres"
-    port: 5432
+    port: 5435
     user: "ltuser"
     password: "ltpasswd"
     database: "langtrace"
