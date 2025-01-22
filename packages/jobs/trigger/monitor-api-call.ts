@@ -1,20 +1,10 @@
 import { task } from "@trigger.dev/sdk/v3";
-import { z } from "zod";
 import { logger } from "../../logger/src";
-
-const apiCallSchema = z.object({
-  endpoint: z.string(),
-  method: z.string(),
-  statusCode: z.number(),
-  duration: z.number(),
-  timestamp: z.string(),
-  sessionId: z.string(),
-  error: z.string().optional(),
-});
+import type { ApiCall } from "../schemas/monitor-api-calls.schema";
 
 export const monitorApiCallTask = task({
   id: "monitor-api-call",
-  run: async (payload: z.infer<typeof apiCallSchema>, { ctx }) => {
+  run: async (payload: ApiCall, { ctx }) => {
     logger.info("API Call monitored", {
       endpoint: payload.endpoint,
       statusCode: payload.statusCode,
