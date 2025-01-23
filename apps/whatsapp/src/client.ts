@@ -12,6 +12,7 @@ import { handleCommand } from "./commands/commands_index";
 import { CMD_PREFIX } from "./constants";
 import { handleMessage } from "./message/message";
 import {
+  getRemoteJid,
   isGroupMessage,
   react,
   shouldIgnore,
@@ -99,26 +100,29 @@ async function startSock() {
       const upsert = events["messages.upsert"];
       //console.log("recv messages ", JSON.stringify(upsert, undefined, 2));
 
+      // Update the message processing code
       if (upsert.type === "notify") {
         for (const message of upsert.messages) {
-          const chatId = message.key.remoteJid!;
-          const unreadCount = unreadCounts[chatId] || 0;
+          try {
+            const chatId = getRemoteJid(message);
+            const unreadCount = unreadCounts[chatId] || 0;
 
-          if (await shouldIgnore(message)) return;
-          if (!(await shouldReply(message))) return;
-          if (await shouldIgnoreUnread(message, unreadCount)) return;
+            if (await shouldIgnore(message)) continue;
+            if (!(await shouldReply(message))) continue;
+            if (await shouldIgnoreUnread(message, unreadCount)) continue;
 
-          await react(message, "queued");
+            await react(message, "queued");
 
-          // Add the message to the queue
-          if (!messageQueue[chatId]) {
-            messageQueue[chatId] = [];
-          }
-          messageQueue[chatId].push(message);
+            if (!messageQueue[chatId]) {
+              messageQueue[chatId] = [];
+            }
+            messageQueue[chatId].push(message);
 
-          // Process the queue if not already processing
-          if (!isProcessingMessage) {
-            await processMessageQueue(chatId);
+            if (!isProcessingMessage) {
+              await processMessageQueue(chatId);
+            }
+          } catch (error) {
+            console.error("Error processing message:", error);
           }
         }
       }

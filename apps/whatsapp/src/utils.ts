@@ -12,6 +12,15 @@ import {
   IGNORE_MESSAGES_WARNING,
 } from "./constants";
 
+// Add this helper function at the top
+export function getRemoteJid(message: proto.IWebMessageInfo): string {
+  const jid = message.key.remoteJid;
+  if (!jid) {
+    throw new Error("Message has no remote JID");
+  }
+  return jid;
+}
+
 export function isGroupMessage(message: proto.IWebMessageInfo) {
   return message.key.remoteJid?.endsWith("@g.us") ?? false;
 }
@@ -39,19 +48,18 @@ export async function react(
   message: proto.IWebMessageInfo,
   reaction: keyof typeof REACTIONS,
 ) {
-  switch (ENABLE_REACTIONS) {
-    case false:
-      break;
-    case true:
-      await sock.sendMessage(message.key.remoteJid!, {
-        react: {
-          text: REACTIONS[reaction],
-          key: message.key,
-        },
-      });
-      break;
-    default:
-      break;
+  if (!ENABLE_REACTIONS) return;
+
+  try {
+    const jid = getRemoteJid(message);
+    await sock.sendMessage(jid, {
+      react: {
+        text: REACTIONS[reaction],
+        key: message.key,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to send reaction:", error);
   }
 }
 
@@ -73,56 +81,63 @@ ${helpStatement}`;
 }
 
 export async function shouldIgnore(message: proto.IWebMessageInfo) {
-  if (ALLOWED_USERS.length === 0 && BLOCKED_USERS.length === 0) {
-    return false;
-  }
-
-  const senderNumber = getPhoneNumber(message);
-
-  if (isGroupMessage(message)) {
-    // Check if this message came from a blocked user
-    if (BLOCKED_USERS.includes(senderNumber)) {
-      console.warn(
-        `Ignoring message from blocked user "${message.pushName}" <${senderNumber}>`,
-      );
-      return true;
+  try {
+    if (ALLOWED_USERS.length === 0 && BLOCKED_USERS.length === 0) {
+      return false;
     }
 
-    // Fetch group metadata
-    const groupJid = message.key.remoteJid!;
-    try {
-      const groupMetadata = await sock.groupMetadata(groupJid);
+    const senderNumber = getPhoneNumber(message);
 
-      // Check if any allowed users are in the group
-      const allowedInGroup = groupMetadata.participants.some((participant) => {
-        const participantNumber = participant.id.split("@")[0];
-        return ALLOWED_USERS.includes(participantNumber);
-      });
-
-      if (!allowedInGroup) {
+    if (isGroupMessage(message)) {
+      // Check if this message came from a blocked user
+      if (BLOCKED_USERS.includes(senderNumber)) {
         console.warn(
-          `Ignoring message from group "${groupMetadata.subject}" because no allowed users are in it`,
+          `Ignoring message from blocked user "${message.pushName}" <${senderNumber}>`,
         );
         return true;
       }
-    } catch (error) {
-      console.error("Error fetching group metadata:", error);
-      return true; // Ignore the message if we can't fetch group data
-    }
-  } else {
-    // It's a private message, so just check if the user is blocked or isn't in the allowed list
-    if (
-      BLOCKED_USERS.includes(senderNumber) ||
-      !ALLOWED_USERS.includes(senderNumber)
-    ) {
-      console.warn(
-        `Ignoring message from blocked/not allowed user "${message.pushName}" <${senderNumber}>`,
-      );
-      return true;
-    }
-  }
 
-  return false;
+      // Fetch group metadata
+      const groupJid = getRemoteJid(message);
+      try {
+        const groupMetadata = await sock.groupMetadata(groupJid);
+
+        // Check if any allowed users are in the group
+        const allowedInGroup = groupMetadata.participants.some(
+          (participant) => {
+            const participantNumber = participant.id.split("@")[0];
+            return ALLOWED_USERS.includes(participantNumber);
+          },
+        );
+
+        if (!allowedInGroup) {
+          console.warn(
+            `Ignoring message from group "${groupMetadata.subject}" because no allowed users are in it`,
+          );
+          return true;
+        }
+      } catch (error) {
+        console.error("Error fetching group metadata:", error);
+        return true; // Ignore the message if we can't fetch group data
+      }
+    } else {
+      // It's a private message, so just check if the user is blocked or isn't in the allowed list
+      if (
+        BLOCKED_USERS.includes(senderNumber) ||
+        !ALLOWED_USERS.includes(senderNumber)
+      ) {
+        console.warn(
+          `Ignoring message from blocked/not allowed user "${message.pushName}" <${senderNumber}>`,
+        );
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Error in shouldIgnore:", error);
+    return true;
+  }
 }
 
 export async function shouldReply(message: proto.IWebMessageInfo) {
@@ -168,34 +183,39 @@ export async function shouldIgnoreUnread(
   unreadCount: number,
 ) {
   if (unreadCount > 1) {
-    const chatJid = message.key.remoteJid!;
+    try {
+      const chatJid = getRemoteJid(message);
 
-    // Mark messages as read
-    await sock.readMessages([message.key]);
+      // Mark messages as read
+      await sock.readMessages([message.key]);
 
-    const isGroup = chatJid.endsWith("@g.us");
-    let warningMessage = "";
+      const isGroup = chatJid.endsWith("@g.us");
+      let warningMessage = "";
 
-    if (isGroup) {
-      const groupName = await getGroupName(chatJid);
-      console.warn(
-        `Too many unread messages (${unreadCount}) for group chat "${groupName}". Ignoring...`,
-      );
-      warningMessage = `Too many unread messages (${unreadCount}) since I've last seen this chat. I'm ignoring them. If you need me to respond, please @mention me or quote my last completion in this chat.`;
-    } else {
-      console.warn(
-        `Too many unread messages (${unreadCount}) for chat with user "${getPhoneNumber(
-          message,
-        )}". Ignoring...`,
-      );
-      warningMessage = `Too many unread messages (${unreadCount}) since I've last seen this chat. I'm ignoring them. If you need me to respond, please message me again.`;
+      if (isGroup) {
+        const groupName = await getGroupName(chatJid);
+        console.warn(
+          `Too many unread messages (${unreadCount}) for group chat "${groupName}". Ignoring...`,
+        );
+        warningMessage = `Too many unread messages (${unreadCount}) since I've last seen this chat. I'm ignoring them. If you need me to respond, please @mention me or quote my last completion in this chat.`;
+      } else {
+        console.warn(
+          `Too many unread messages (${unreadCount}) for chat with user "${getPhoneNumber(
+            message,
+          )}". Ignoring...`,
+        );
+        warningMessage = `Too many unread messages (${unreadCount}) since I've last seen this chat. I'm ignoring them. If you need me to respond, please message me again.`;
+      }
+
+      if (IGNORE_MESSAGES_WARNING) {
+        await sock.sendMessage(chatJid, { text: BOT_PREFIX + warningMessage });
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error in shouldIgnoreUnread:", error);
+      return true;
     }
-
-    if (IGNORE_MESSAGES_WARNING) {
-      await sock.sendMessage(chatJid, { text: BOT_PREFIX + warningMessage });
-    }
-
-    return true;
   }
 
   return false;
