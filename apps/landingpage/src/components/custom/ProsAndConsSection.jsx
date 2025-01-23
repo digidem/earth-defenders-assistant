@@ -1,6 +1,6 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { CheckCircle, Target } from "lucide-react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 
 const ProsAndConsSection = ({ theme, themeColors }) => {
@@ -19,21 +19,21 @@ const ProsAndConsSection = ({ theme, themeColors }) => {
   };
 
   const objectives = [
-    t("enhanceAccessibility"),
-    t("implementOffline"),
-    t("trainAI"),
-    t("developTools"),
-    t("supportSustainable"),
-    t("integrateWhatsApp"),
+    { id: "obj-accessibility", text: t("enhanceAccessibility") },
+    { id: "obj-offline", text: t("implementOffline") },
+    { id: "obj-ai", text: t("trainAI") },
+    { id: "obj-tools", text: t("developTools") },
+    { id: "obj-sustainable", text: t("supportSustainable") },
+    { id: "obj-whatsapp", text: t("integrateWhatsApp") },
   ];
 
   const outcomes = [
-    t("empoweredCommunities"),
-    t("languageCulturalPreservation"),
-    t("increasedAccessibility"),
-    t("dataSovereignty"),
-    t("effectiveProjectManagement"),
-    t("simplifiedCommunication"),
+    { id: "out-communities", text: t("empoweredCommunities") },
+    { id: "out-preservation", text: t("languageCulturalPreservation") },
+    { id: "out-accessibility", text: t("increasedAccessibility") },
+    { id: "out-sovereignty", text: t("dataSovereignty") },
+    { id: "out-management", text: t("effectiveProjectManagement") },
+    { id: "out-communication", text: t("simplifiedCommunication") },
   ];
 
   return (
@@ -63,8 +63,8 @@ const ProsAndConsSection = ({ theme, themeColors }) => {
               <CheckCircle className="mr-2" /> {t("projectObjectives")}
             </h3>
             <ul className="list-disc list-inside space-y-2">
-              {objectives.map((objective, index) => (
-                <li key={index}>{objective}</li>
+              {objectives.map((objective) => (
+                <li key={objective.id}>{objective.text}</li>
               ))}
             </ul>
           </motion.div>
@@ -84,8 +84,8 @@ const ProsAndConsSection = ({ theme, themeColors }) => {
               <Target className="mr-2" /> {t("expectedOutcomes")}
             </h3>
             <ul className="list-disc list-inside space-y-2">
-              {outcomes.map((outcome, index) => (
-                <li key={index}>{outcome}</li>
+              {outcomes.map((outcome) => (
+                <li key={outcome.id}>{outcome.text}</li>
               ))}
             </ul>
           </motion.div>
@@ -100,9 +100,21 @@ const ProsAndConsSection = ({ theme, themeColors }) => {
             y: ["-30px", "30px"],
           }}
           transition={{
-            rotate: { repeat: Number.POSITIVE_INFINITY, duration: 20, ease: "linear" },
-            x: { repeat: Number.POSITIVE_INFINITY, duration: 5, yoyo: Number.POSITIVE_INFINITY },
-            y: { repeat: Number.POSITIVE_INFINITY, duration: 7, yoyo: Number.POSITIVE_INFINITY },
+            rotate: {
+              repeat: Number.POSITIVE_INFINITY,
+              duration: 20,
+              ease: "linear",
+            },
+            x: {
+              repeat: Number.POSITIVE_INFINITY,
+              duration: 5,
+              yoyo: Number.POSITIVE_INFINITY,
+            },
+            y: {
+              repeat: Number.POSITIVE_INFINITY,
+              duration: 7,
+              yoyo: Number.POSITIVE_INFINITY,
+            },
           }}
         />
         <motion.div
@@ -113,9 +125,21 @@ const ProsAndConsSection = ({ theme, themeColors }) => {
             y: ["50px", "-50px"],
           }}
           transition={{
-            rotate: { repeat: Number.POSITIVE_INFINITY, duration: 20, ease: "linear" },
-            x: { repeat: Number.POSITIVE_INFINITY, duration: 6, yoyo: Number.POSITIVE_INFINITY },
-            y: { repeat: Number.POSITIVE_INFINITY, duration: 8, yoyo: Number.POSITIVE_INFINITY },
+            rotate: {
+              repeat: Number.POSITIVE_INFINITY,
+              duration: 20,
+              ease: "linear",
+            },
+            x: {
+              repeat: Number.POSITIVE_INFINITY,
+              duration: 6,
+              yoyo: Number.POSITIVE_INFINITY,
+            },
+            y: {
+              repeat: Number.POSITIVE_INFINITY,
+              duration: 8,
+              yoyo: Number.POSITIVE_INFINITY,
+            },
           }}
         />
       </div>
@@ -124,10 +148,14 @@ const ProsAndConsSection = ({ theme, themeColors }) => {
           viewBox="0 0 1200 120"
           preserveAspectRatio="none"
           className="relative block w-full h-16"
+          style={{ transform: "scaleY(-1)" }}
           initial={{ y: 20 }}
           animate={{ y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
+          role="img"
+          aria-labelledby="prosConsWaveTitle"
         >
+          <title id="prosConsWaveTitle">Pros and Cons Section Wave</title>
           <path
             d="M985.66,92.83C906.67,72,823.78,31,743.84,14.19c-82.26-17.34-168.06-16.33-250.45.39-57.84,11.73-114,31.07-172,41.86A600.21,600.21,0,0,1,0,27.35V120H1200V95.8C1132.19,118.92,1055.71,111.31,985.66,92.83Z"
             className={`fill-current ${themeColors[theme].secondary}`}

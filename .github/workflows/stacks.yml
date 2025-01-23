@@ -76,7 +76,8 @@ jobs:
             continue
           fi
           
-          port=$(bun run @eda/config getPorts $service_name)
+          # Use the built config module through node
+          port=$(node -e "import('@eda/config').then(c => console.log(c.config.ports['${service_name}']))")
           
           if [ -z "$port" ]; then
             echo "No port found for $service_name in config, using default 3000"
