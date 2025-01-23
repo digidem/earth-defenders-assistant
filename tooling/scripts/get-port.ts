@@ -8,6 +8,12 @@ if (!serviceName) {
   process.exit(1);
 }
 
+// Special handling for Neo4j
+if (serviceName === "neo4j") {
+  console.log(config.ports.db.neo4j.http);
+  process.exit(0);
+}
+
 // Get port from config
 const port = config.ports[serviceName as keyof typeof config.ports];
 
