@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { parse } from "yaml";
 import { z } from "zod";
 import { type Config, ConfigSchema } from "./types";
