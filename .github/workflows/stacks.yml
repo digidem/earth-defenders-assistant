@@ -61,7 +61,15 @@ jobs:
       run: |
         while IFS= read -r dir; do
           service_name=$(basename "$dir" | sed 's/-stack//')
-          echo "Testing endpoints for service: $service_name"
+          echo "=== Testing endpoints for service: $service_name ==="
+          
+          # Show container status
+          echo "Docker container status:"
+          docker ps -a | grep $service_name || true
+          
+          # Show container logs
+          echo "Container logs:"
+          docker logs $service_name 2>&1 || true
           
           # Skip config packages
           if [[ "$service_name" == "config" ]]; then
@@ -69,22 +77,36 @@ jobs:
             continue
           fi
           
-          # Get port using bun script
+          # Get and verify port
           port=$(bun run -b --bun ./tooling/scripts/get-port.ts ${service_name})
+          echo "Retrieved port: $port"
           
           if [ -z "$port" ]; then
             echo "No port found for $service_name in config, skipping..."
             continue
           fi
           
+          # Network connectivity check
+          echo "Testing network connectivity:"
+          nc -zv localhost $port 2>&1 || true
+          
           test_url="http://localhost:${port}/"
           echo "Testing URL: $test_url"
           
-          curl --fail --retry 5 --retry-delay 10 --retry-connrefused "$test_url" || {
+          # More verbose curl
+          curl -v --fail --retry 5 --retry-delay 10 --retry-connrefused "$test_url" || {
+            echo "=== Error Details ==="
             echo "Failed to reach $test_url for $service_name"
-            docker logs ${service_name} || true
+            echo "Container status:"
+            docker ps -a | grep $service_name || true
+            echo "Latest logs:"
+            docker logs --tail 50 ${service_name} 2>&1 || true
+            echo "Network status:"
+            netstat -tulpn | grep $port || true
             exit 1
           }
+          
+          echo "=== Test completed for $service_name ==="
         done < $GITHUB_WORKSPACE/deploy_dirs.txt
 
     - name: Check service health
