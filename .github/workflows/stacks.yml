@@ -61,12 +61,44 @@ jobs:
         done
 
     - name: Wait for services to be ready
-      run: sleep 50
+      run: |
+        while IFS= read -r dir; do
+          service_name=$(basename "$dir" | sed 's/-stack//')
+          echo "Waiting for $service_name..."
+          
+          # Get port from config
+          port=$(bun run -b --bun ./tooling/scripts/get-port.ts ${service_name})
+          
+          if [ -z "$port" ]; then
+            echo "No port configured for $service_name, skipping..."
+            continue
+          fi
+          
+          # Wait for container health check
+          timeout 120 bash -c "until docker ps --filter name=${service_name} --format '{{.Status}}' | grep -q 'healthy'; do 
+            echo 'Waiting for ${service_name} health check...'
+            sleep 5
+          done" || {
+            echo "Service $service_name failed to become healthy"
+            docker logs ${service_name}
+            exit 1
+          }
+          
+          # Wait for port to be available
+          timeout 60 bash -c "until nc -z localhost $port; do 
+            echo 'Waiting for port $port...'
+            sleep 2
+          done" || {
+            echo "Service $service_name failed to expose port $port"
+            docker logs ${service_name}
+            exit 1
+          }
+          
+        done < $GITHUB_WORKSPACE/deploy_dirs.txt
 
     - name: Test endpoints
       run: |
         while IFS= read -r dir; do
-          # Extract service name by removing "deploy/" and "-stack"
           service_name=$(basename "$dir" | sed 's/-stack//')
           echo "Testing endpoints for service: $service_name"
           
@@ -76,19 +108,43 @@ jobs:
             continue
           fi
           
-          # Use the built config module through node
-          port=$(node -e "import('@eda/config').then(c => console.log(c.config.ports['${service_name}']))")
+          # Get port using bun script
+          port=$(bun run -b --bun ./tooling/scripts/get-port.ts ${service_name})
           
           if [ -z "$port" ]; then
-            echo "No port found for $service_name in config, using default 3000"
-            port=3000
+            echo "No port found for $service_name in config, skipping..."
+            continue
           fi
           
           test_url="http://localhost:${port}/"
           echo "Testing URL: $test_url"
           
-          curl --fail --retry 3 --retry-delay 5 "$test_url" || {
+          curl --fail --retry 5 --retry-delay 10 --retry-connrefused "$test_url" || {
             echo "Failed to reach $test_url for $service_name"
+            docker logs ${service_name} || true
+            exit 1
+          }
+        done < $GITHUB_WORKSPACE/deploy_dirs.txt
+
+    - name: Check service health
+      run: |
+        while IFS= read -r dir; do
+          service_name=$(basename "$dir" | sed 's/-stack//')
+          echo "Checking health for $service_name..."
+          
+          # Get port from config
+          port=$(bun run -b --bun ./tooling/scripts/get-port.ts ${service_name})
+          
+          # Skip if no port found
+          if [ -z "$port" ]; then
+            echo "No port configured for $service_name, skipping..."
+            continue
+          fi
+          
+          # Wait for port to be available
+          timeout 60 bash -c "until nc -z localhost $port; do sleep 2; done" || {
+            echo "Service $service_name not ready on port $port"
+            docker logs ${service_name} || true
             exit 1
           }
         done < $GITHUB_WORKSPACE/deploy_dirs.txt
