@@ -53,6 +53,19 @@ jobs:
             # Store directory
             echo "${dir%/}" >> $GITHUB_WORKSPACE/deploy_dirs.txt
             
+            # Wait for containers to be fully up
+            echo "Waiting for containers to initialize..."
+            sleep 15
+            
+            # Check if all containers are healthy
+            docker compose ps --format "{{.Name}} {{.Status}}" | while read -r line; do
+              if [[ ! $line =~ "(healthy)" ]] && [[ ! $line =~ "Up" ]]; then
+                echo "Container not healthy: $line"
+                docker compose logs
+                exit 1
+              fi
+            done
+            
             cd $GITHUB_WORKSPACE
           fi
         done
