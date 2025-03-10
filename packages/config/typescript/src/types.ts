@@ -139,6 +139,7 @@ const ApiKeysSchema = z.object({
   supabase: z.object({
     service_key: z.string(),
     anon_key: z.string(),
+    api_key: z.string(), // Added Supabase API key
   }),
   openpanel: z.object({
     client_id: z.string(),
@@ -148,6 +149,7 @@ const ApiKeysSchema = z.object({
   sentry: z.object({
     auth_token: z.string(),
   }),
+  deepseek: z.string(), // Added DeepSeek API key
 });
 
 // AI Models

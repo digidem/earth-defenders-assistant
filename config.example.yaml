@@ -28,9 +28,11 @@ api_keys:
   trigger: "xxx"  # Background jobs
   resend: "xxx" # Email service
   openai: "xxx"
+  deepseek: "xxx"  # DeepSeek LLM API
   supabase:
     service_key: "xxx"
     anon_key: "xxx"
+    api_key: "xxx"  # Supabase API key
   openpanel:
     client_id: "xxx"
     secret: "xxx"

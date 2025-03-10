@@ -37,6 +37,7 @@ class DatabaseConfig(BaseModel):
 class SupabaseKeys(BaseModel):
     service_key: str
     anon_key: str
+    api_key: str  # Added Supabase API key
 
 
 class OpenPanelKeys(BaseModel):
@@ -60,6 +61,7 @@ class ApiKeys(BaseModel):
     openpanel: OpenPanelKeys
     dub: str
     sentry: SentryKeys
+    deepseek: str  # Added DeepSeek API key
 
 
 class DbPorts(BaseModel):
