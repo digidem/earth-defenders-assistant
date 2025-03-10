@@ -57,6 +57,7 @@ class ApiKeys(BaseModel):
     trigger: str
     resend: str
     openai: str
+    openrouter: str  # Added OpenRouter API key
     supabase: SupabaseKeys
     openpanel: OpenPanelKeys
     dub: str

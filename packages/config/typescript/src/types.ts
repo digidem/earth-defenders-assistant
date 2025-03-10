@@ -136,6 +136,7 @@ const ApiKeysSchema = z.object({
   trigger: z.string(),
   resend: z.string(),
   openai: z.string(),
+  openrouter: z.string(), // Added OpenRouter API key
   supabase: z.object({
     service_key: z.string(),
     anon_key: z.string(),

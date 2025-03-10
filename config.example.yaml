@@ -28,6 +28,7 @@ api_keys:
   trigger: "xxx"  # Background jobs
   resend: "xxx" # Email service
   openai: "xxx"
+  openrouter: "xxx" # OpenRouter API key
   deepseek: "xxx"  # DeepSeek LLM API
   supabase:
     service_key: "xxx"
@@ -161,8 +162,8 @@ services:
 # AI Models Configuration
 ai_models:
   premium:
-    provider: "groq"
-    model: "llama-3.3-70b-versatile"
+    provider: "openrouter"
+    model: "deepseek/deepseek-chat:free"
     temperature: 0.5
     description: "High-performance model for complex reasoning and generation"
   standard:

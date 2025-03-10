@@ -9,7 +9,9 @@ config = ConfigLoader.get_config()
 
 # Create the model instance using settings from config
 model = LiteLLMModel(
-    model_id=config.ai_models["premium"].model, api_key=config.api_keys.groq
+    model_id=f"{config.ai_models['premium'].provider}/{config.ai_models['premium'].model}",
+    api_key=config.api_keys.openrouter,
+    temperature=config.ai_models["premium"].temperature,
 )
 
 
@@ -32,7 +34,7 @@ def get_agent(platform: str = "whatsapp", variables: Optional[Dict] = None):
     manager_agent = CodeAgent(
         tools=[],  # Add your tools here
         model=model,
-        max_steps=7,
+        max_steps=3,
     )
 
     return manager_agent
