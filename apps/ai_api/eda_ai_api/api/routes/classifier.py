@@ -40,7 +40,11 @@ async def process_discovery(
     actual_platform = platform or "default"
 
     response = llm.invoke(
-        [HumanMessage(content=TOPIC_TEMPLATE.format(context=context, message=message))]
+        [
+            HumanMessage(
+                content=TOPIC_TEMPLATE.format(context=context, message=message)
+            )
+        ]
     )
     topics = [t.strip() for t in response.content.split(",") if t.strip()][:5]
     logger.info(f"Extracted Topics: {topics}")
@@ -65,7 +69,9 @@ async def process_discovery(
 
 async def route_message(message: str, context: str) -> str:
     """Route message to appropriate handler"""
-    logger.info(f"\n=== Routing Message ===\nContext: {context}\nMessage: {message}")
+    logger.info(
+        f"\n=== Routing Message ===\nContext: {context}\nMessage: {message}"
+    )
 
     response = llm.invoke(
         [HumanMessage(content=ROUTER_TEMPLATE.format(message=message))]
@@ -93,7 +99,9 @@ async def process_message_history(
     history = []
     if message_history:
         try:
-            history = [MessageHistory(**msg) for msg in json.loads(message_history)]
+            history = [
+                MessageHistory(**msg) for msg in json.loads(message_history)
+            ]
         except json.JSONDecodeError:
             logger.warning("Invalid message_history JSON format")
     return history
@@ -143,7 +151,9 @@ async def process_route_decision(
     decision: str, message: str, context: str, platform: Optional[str]
 ) -> Dict[str, str]:
     if decision == "discovery":
-        response = await process_discovery(message, context, platform or "default")
+        response = await process_discovery(
+            message, context, platform or "default"
+        )
         logger.info(f"Discovery response for platform {platform}: {response}")
     elif decision == "heartbeat":
         response = {"result": "*Yes, I'm here! 🟢*\n_Ready to help you!_"}
