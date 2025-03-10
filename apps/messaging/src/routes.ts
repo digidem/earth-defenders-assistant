@@ -167,12 +167,12 @@ export async function handleSendMessage(req: Request) {
       });
     }
 
-    // Log API request
-    logger.info("Making API request to classifier", {
-      url: `${AI_API_URL}/api/classifier/classify`,
+    // Log API request - UPDATE THIS URL
+    logger.info("Making API request to message handler", {
+      url: `${AI_API_URL}/api/message_handler/handle`,
     });
 
-    const response = await fetch(`${AI_API_URL}/api/classifier/classify`, {
+    const response = await fetch(`${AI_API_URL}/api/message_handler/handle`, {
       method: "POST",
       headers: {
         accept: "application/json",
@@ -195,7 +195,7 @@ export async function handleSendMessage(req: Request) {
     try {
       // Monitor API call using Trigger.dev
       await tasks.trigger("monitor-api-call", {
-        endpoint: "/api/classifier/classify",
+        endpoint: "/api/message_handler/handle",
         method: "POST",
         statusCode: response.status,
         duration,
@@ -228,7 +228,7 @@ export async function handleSendMessage(req: Request) {
     try {
       // Monitor failed API calls
       await tasks.trigger("monitor-api-call", {
-        endpoint: "/api/classifier/classify",
+        endpoint: "/api/message_handler/handle",
         method: "POST",
         statusCode: 500,
         duration,

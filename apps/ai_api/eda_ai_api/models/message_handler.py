@@ -13,7 +13,7 @@ class MessageHistory(BaseModel):
         return f"Human: {self.human}\nAssistant: {self.ai}"
 
 
-class ClassifierRequest(BaseModel):
+class MessageHandlerRequest(BaseModel):
     message: Optional[str] = None
     audio: Optional[UploadFile] = None
     session_id: Optional[str] = None
@@ -24,5 +24,6 @@ class ClassifierRequest(BaseModel):
         arbitrary_types_allowed = True
 
 
-class ClassifierResponse(BaseModel):
+class MessageHandlerResponse(BaseModel):
     result: str
+    session_id: Optional[str] = None

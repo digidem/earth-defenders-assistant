@@ -13,24 +13,19 @@ dependencies = [
     "loguru>=0.7.2",
     "pydantic>=2.5.3",
     "langchain-groq>=0.2.1",
-    "opportunity-finder",
-    "proposal_writer",
-    "onboarding",
     "eda-config",
     "ffmpeg-python>=0.2.0",
     "python-multipart>=0.0.17",
-    "llama-index>=0.12.3",
-    "llama-index-llms-groq>=0.3.0",
-    "llama-index-embeddings-huggingface>=0.4.0",
-    "llama-index-vector-stores-postgres>=0.3.2",
-    "llama-index-readers-file>=0.4.1",
     "httpx>=0.24.0,<0.25.0",
     "mem0ai>=0.1.25",
     "rank-bm25>=0.2.2",
     "neo4j>=5.27.0",
     "langchain>=0.3.4",
     "langgraph>=0.2.35",
-    "anthropic>=0.42.0"
+    "anthropic>=0.42.0",
+    "deepseek>=0.1.0",
+    "groq>=0.4.0",
+    "smolagents>=1.10.0",
 ]
 
 [project.optional-dependencies]
@@ -47,43 +42,5 @@ dev = [
 [project.scripts]
 run = "eda_ai_api.main:app"
 
-[tool.black]
-line-length = 88
-target-version = ['py311']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  \.toml
-  |\.sh
-  |\.yaml
-  |\.yml
-  |\.git
-  |\.ini
-  |Dockerfile
-  |Jenkinfile
-)/
-'''
-
-[tool.pytest.ini_options]
-testpaths = ['tests']
-
-[tool.coverage.run]
-source = ['eda_ai_api']
-branch = true
-
-[tool.coverage.report]
-fail_under = 90
-precision = 2
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = false
-warn_unused_configs = true
-disallow_untyped_defs = true
-ignore_missing_imports = true
-
 [tool.uv.sources]
-opportunity-finder = { path = "../../plugins/grant_plugin/opportunity_finder" }
-proposal_writer = { path = "../../plugins/grant_plugin/proposal_writer" }
-onboarding = { path = "../../plugins/onboarding" }
 eda-config = { path = "../../packages/config/python" }

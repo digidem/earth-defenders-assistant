@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from loguru import logger
 from mem0 import Memory
 
-from eda_ai_api.models.classifier import MessageHistory
+from eda_ai_api.models.message_handler import MessageHistory
 
 # Load environment variables
 load_dotenv()
@@ -19,7 +19,9 @@ class Mem0ConversationManager:
         huggingface_api_key = os.getenv("HUGGINGFACE_API_KEY")
 
         if not huggingface_api_key:
-            raise ValueError("HUGGINGFACE_API_KEY environment variable is not set")
+            raise ValueError(
+                "HUGGINGFACE_API_KEY environment variable is not set"
+            )
         if not groq_api_key:
             raise ValueError("GROQ_API_KEY environment variable is not set")
 
@@ -112,7 +114,9 @@ class Mem0ConversationManager:
 
             # Sort by timestamp and limit
             sorted_memories = sorted(
-                memories, key=lambda x: x.metadata.get("timestamp", "0"), reverse=True
+                memories,
+                key=lambda x: x.metadata.get("timestamp", "0"),
+                reverse=True,
             )[:limit]
 
             # Format for consistency with previous implementation
