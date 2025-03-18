@@ -10,7 +10,7 @@
     "generate": "supabase gen types --lang=typescript --local --schema public > ../../packages/supabase/src/types/db.ts"
   },
   "dependencies": {
-    "supabase": "^2.6.8"
+    "supabase": "^2.19.7"
   },
   "devDependencies": {
     "@snaplet/copycat": "^5.1.0",

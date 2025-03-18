@@ -22,6 +22,7 @@ from smolagents.agents import populate_template
 config = ConfigLoader.get_config()
 
 router = APIRouter()
+memory = SupabaseMemory()
 
 
 async def process_input_messages(
@@ -93,24 +94,35 @@ async def message_handler_route(
                 session_id=current_session,
             )
 
-        # Process message history
-        logger.debug("Getting message history")
-        history = await process_message_history(message_history)
-
-        # Format conversation history for the agent
-        logger.debug("Formatting conversation history")
+        # Process message history - either from passed JSON or from database
         conversation_history = []
-        if history:
-            for msg in history:
-                conversation_history.append(
-                    {
-                        "user": msg.human,
-                        "assistant": msg.ai,
-                    }
+        try:
+            if message_history:
+                # Use provided message history if available
+                history = await process_message_history(message_history)
+                for msg in history:
+                    conversation_history.append(
+                        {
+                            "user": msg.human,
+                            "assistant": msg.ai,
+                        }
+                    )
+            else:
+                # Otherwise retrieve from Supabase
+                db_history = await memory.get_conversation_history(
+                    session_id=current_session,
+                    limit=5,  # Configure this as needed
                 )
+                conversation_history = await memory.format_history_for_context(
+                    db_history
+                )
+
             logger.debug(
                 f"Conversation history formatted with {len(conversation_history)} entries"
             )
+        except Exception as e:
+            logger.error(f"Error processing history: {str(e)}", exc_info=True)
+            # Continue without history if there's an error
 
         # Get current time for message formatting
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -135,7 +147,6 @@ async def message_handler_route(
         # Set up the custom prompt with all required variables
         logger.debug("Configuring agent prompt")
         try:
-
             # Debugging the variables going into the prompt template
             logger.debug(f"Bot name: {config.services.whatsapp.bot_name}")
             logger.debug(
@@ -149,14 +160,14 @@ async def message_handler_route(
             agent.prompt_templates["system_prompt"] = populate_template(
                 MANAGER_SYSTEM_PROMPT,
                 variables={
-                    # "conversation_history": conversation_history,
+                    "conversation_history": conversation_history,  # Now including conversation history
                     "bot_name": config.services.whatsapp.bot_name,
                     "formatting_guidelines": get_formatting_guidelines(
                         platform
                     ),
-                    "tools": agent.tools,  # Changed from agent.tools_dict to agent.tools
-                    "authorized_imports": BASE_BUILTIN_MODULES,  # Add the authorized imports
-                    "managed_agents": {},  # Add empty managed_agents if needed by template
+                    "tools": agent.tools,
+                    "authorized_imports": BASE_BUILTIN_MODULES,
+                    "managed_agents": {},
                 },
             )
             logger.debug("Agent prompt configured successfully")
@@ -184,8 +195,19 @@ async def message_handler_route(
                 session_id=current_session,
             )
 
-        # Store conversation in Supabase could be implemented here
-        logger.debug("Conversation storage not implemented yet")
+        # Store conversation in Supabase
+        try:
+            await memory.add_message_to_history(
+                session_id=current_session,
+                user_message=final_message,
+                assistant_response=response_content,
+                platform=platform,
+                metadata={"source": "api_request"},
+            )
+            logger.info(f"Conversation stored for session {current_session}")
+        except Exception as db_error:
+            logger.error(f"Failed to store conversation: {str(db_error)}")
+            # Continue even if storage fails
 
         # Ensure response content is not None before returning
         if response_content is None:

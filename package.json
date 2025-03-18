@@ -50,6 +50,7 @@
   "packageManager": "bun@1.1.34",
   "private": true,
   "dependencies": {
-    "@eda/config": "workspace:*"
+    "@eda/config": "workspace:*",
+    "supabase": "^2.19.7"
   }
 }

@@ -7,6 +7,16 @@ MANAGER_SYSTEM_PROMPT = """You are {{ bot_name }}, an expert assistant who can s
   During each intermediate step, you can use 'print()' to save whatever important information you will then need.
   These print outputs will then appear in the 'Observation:' field, which will be available as input for the next step.
   In the end you have to return a final answer using the `final_answer` tool.
+  
+  {{ formatting_guidelines }}
+  
+  {% if conversation_history %}
+  Previous conversation:
+  {% for exchange in conversation_history %}
+  User: {{ exchange.user }}
+  Assistant: {{ exchange.assistant }}
+  {% endfor %}
+  {% endif %}
 
   Here are a few examples using notional tools:
   ---
