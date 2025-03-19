@@ -1,10 +1,8 @@
+import { config } from "@eda/config";
 import { logger } from "@eda/logger";
 import { type WAMessage, downloadMediaMessage } from "@whiskeysockets/baileys";
 import { sock } from "../client";
 import { getPhoneNumber, react } from "../utils";
-
-const IMAGE_ERROR_MSG =
-  "Não consigo processar imagens no momento. Por favor, me envie apenas mensagens de texto ou áudio.";
 
 const WAITING_MSG =
   "Estou analisando sua mensagem... Como preciso pensar com cuidado, pode demorar alguns minutos.";
@@ -17,10 +15,9 @@ const ERROR_MESSAGES = {
 };
 
 interface MessagePayload {
-  message: string;
-  sessionId: string;
-  audio?: string; // Changed from Blob to string
-  platform?: string;
+  message?: string;
+  user_platform_id: string;
+  platform: string;
 }
 
 export async function handleMessage(message: WAMessage) {
@@ -46,60 +43,100 @@ export async function handleMessage(message: WAMessage) {
       "";
     const phoneNumber = getPhoneNumber(message);
 
-    // Initialize payload first
-    const payload: MessagePayload = {
-      message: messageContent,
-      sessionId: phoneNumber,
-      platform: "whatsapp", // Add platform identifier
-    };
+    // Format user_platform_id properly with platform prefix
+    const platformUserId = `whatsapp_${phoneNumber}`;
 
-    if (message.message?.imageMessage || message.message?.audioMessage) {
-      const media = await downloadMediaMessage(message, "buffer", {});
-      const mimetype =
-        message.message?.imageMessage?.mimetype ||
-        message.message?.audioMessage?.mimetype;
+    // Create multipart form data for the request
+    const formData = new FormData();
 
-      const isImage = mimetype?.includes("image");
-      const isAudio = mimetype?.includes("audio");
+    // Add text message if present
+    if (messageContent) {
+      formData.append("message", messageContent);
+    }
 
-      // Early return if image is detected
-      if (isImage) {
-        await sock.sendMessage(
-          chatId,
-          { text: IMAGE_ERROR_MSG, edit: streamingReply.key },
-          { quoted: message },
-        );
-        await react(message, "done");
-        return;
-      }
+    // Add properly formatted user platform id and platform
+    formData.append("user_platform_id", platformUserId);
+    formData.append("platform", "whatsapp");
 
-      if (isAudio && mimetype && media instanceof Buffer) {
-        logger.info("Received audio message", {
-          sessionId: phoneNumber,
-          hasAudio: true,
+    // Handle attachments (images, audio, etc.)
+    if (
+      message.message?.imageMessage ||
+      message.message?.audioMessage ||
+      message.message?.documentMessage ||
+      message.message?.videoMessage
+    ) {
+      try {
+        const media = await downloadMediaMessage(message, "buffer", {});
+
+        // Get mimetype and filename from the message
+        const mimetype =
+          message.message?.imageMessage?.mimetype ||
+          message.message?.audioMessage?.mimetype ||
+          message.message?.documentMessage?.mimetype ||
+          message.message?.videoMessage?.mimetype ||
+          "application/octet-stream";
+
+        // Fix the fileName access by using only document fileName
+        // and generating names for other types
+        let filename = message.message?.documentMessage?.fileName || "";
+
+        // If no filename from document, generate one based on type and timestamp
+        if (!filename) {
+          const timestamp = Date.now();
+          if (message.message?.imageMessage) {
+            filename = `image-${timestamp}${getExtensionFromMimeType(mimetype)}`;
+          } else if (message.message?.videoMessage) {
+            filename = `video-${timestamp}${getExtensionFromMimeType(mimetype)}`;
+          } else if (message.message?.audioMessage) {
+            filename = `audio-${timestamp}${getExtensionFromMimeType(mimetype)}`;
+          } else {
+            filename = `attachment-${timestamp}${getExtensionFromMimeType(mimetype)}`;
+          }
+        }
+
+        // Log attachment information
+        logger.info("Processing attachment", {
+          user_platform_id: platformUserId,
+          mimetype,
+          filename,
         });
-        // Convert Buffer to base64
-        payload.audio = media.toString("base64");
+
+        // Add attachment to form data
+        if (media instanceof Buffer) {
+          const blob = new Blob([media], { type: mimetype });
+          formData.append("attachment", blob, filename);
+        }
+      } catch (attachmentError) {
+        logger.error("Failed to process attachment", {
+          error: attachmentError,
+        });
       }
     }
 
-    // Make API request to messaging service
+    // Make API request to AI service
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 600000);
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min timeout
 
-    const response = await fetch("http://localhost:3001/api/messages/send", {
+    // Construct URL using config
+    const aiApiUrl = `http://localhost:${config.ports.ai_api}/api/message_handler/handle`;
+
+    logger.info(
+      `Sending request to AI API: ${aiApiUrl}, user_platform_id: ${platformUserId}`,
+    );
+
+    const response = await fetch(aiApiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+      body: formData,
       signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.dir(response, { depth: null });
+      logger.error("AI API error response", {
+        status: response.status,
+        statusText: response.statusText,
+      });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -117,7 +154,8 @@ export async function handleMessage(message: WAMessage) {
 
     await react(message, "done");
   } catch (error) {
-    console.error(error);
+    logger.error("Error handling message", { error });
+
     const errorMessage =
       error instanceof Error
         ? error.message.includes("timeout")
@@ -135,4 +173,30 @@ export async function handleMessage(message: WAMessage) {
 
     await react(message, "error");
   }
+}
+
+// Helper function to get file extension from mimetype
+function getExtensionFromMimeType(mimetype: string): string {
+  const mimeToExt: Record<string, string> = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "audio/mpeg": ".mp3",
+    "audio/ogg": ".ogg",
+    "audio/mp4": ".m4a",
+    "audio/webm": ".webm",
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "application/pdf": ".pdf",
+    "application/vnd.ms-excel": ".xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+      ".xlsx",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      ".docx",
+    "text/plain": ".txt",
+    "application/json": ".json",
+  };
+
+  return mimeToExt[mimetype] || "";
 }

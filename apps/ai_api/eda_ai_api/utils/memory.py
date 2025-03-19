@@ -3,10 +3,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 
 from loguru import logger
-from supabase import create_client, Client as SupabaseClient
+from supabase import create_client
 
 from eda_config.config import ConfigLoader
-from eda_ai_api.models.message_handler import MessageHistory
 
 config = ConfigLoader.get_config()
 
@@ -20,7 +19,7 @@ class SupabaseMemory:
             self.supabase_url = config.databases.supabase.url
             self.supabase_key = config.api_keys.supabase.service_key
 
-            # Fix: Use proper initialization without extra parameters
+            # Initialize Supabase client
             self.client = create_client(self.supabase_url, self.supabase_key)
             logger.info("SupabaseMemory initialized successfully")
         except Exception as e:
@@ -29,7 +28,7 @@ class SupabaseMemory:
                 f"Supabase initialization error: {str(e)}"
             ) from e
 
-    async def get_user(
+    async def get_user_by_platform_id(
         self, platform: str, platform_user_id: str
     ) -> Optional[Dict]:
         """Get user by platform and platform_user_id"""
@@ -58,8 +57,9 @@ class SupabaseMemory:
         self,
         platform: str,
         platform_user_id: str,
-        full_name: Optional[str] = None,
+        name: Optional[str] = None,
         email: Optional[str] = None,
+        phone: Optional[str] = None,
     ) -> Dict:
         """Create a new user"""
         try:
@@ -72,13 +72,31 @@ class SupabaseMemory:
             }
 
             # Add optional fields if provided
-            if full_name:
-                user_data["full_name"] = full_name
+            if name:
+                user_data["name"] = name
             if email:
                 user_data["email"] = email
+            if phone:
+                user_data["phone"] = phone
 
             response = self.client.table("users").insert(user_data).execute()
             logger.info(f"Created new user for {platform}:{platform_user_id}")
+
+            # Create an initial empty conversation history entry
+            # The content field is now directly an empty array
+            self.client.table("messages").insert(
+                {
+                    "id": str(uuid.uuid4()),
+                    "user_id": user_id,
+                    "content": [],  # Direct array instead of nested object
+                    "created_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now().isoformat(),
+                }
+            ).execute()
+
+            logger.info(
+                f"Created initial conversation history for user {user_id}"
+            )
 
             if response.data and len(response.data) > 0:
                 return response.data[0]
@@ -91,8 +109,9 @@ class SupabaseMemory:
         self,
         platform: str,
         platform_user_id: str,
-        full_name: Optional[str] = None,
+        name: Optional[str] = None,
         email: Optional[str] = None,
+        phone: Optional[str] = None,
     ) -> Dict:
         """
         Get existing user or create a new user record.
@@ -100,18 +119,55 @@ class SupabaseMemory:
         """
         try:
             # Try to find existing user
-            user = await self.get_user(platform, platform_user_id)
+            user = await self.get_user_by_platform_id(
+                platform, platform_user_id
+            )
 
             if user:
                 return user
 
             # Create new user if not found
             return await self.create_user(
-                platform, platform_user_id, full_name, email
+                platform, platform_user_id, name, email, phone
             )
         except Exception as e:
             logger.error(f"Failed to get/create user: {str(e)}")
             raise
+
+    async def get_conversation_history_entry(
+        self, user_id: str
+    ) -> Optional[Dict]:
+        """Get the conversation history entry for a user"""
+        try:
+            response = (
+                self.client.table("messages")
+                .select("*")
+                .eq("user_id", user_id)
+                .execute()
+            )
+
+            if response.data and len(response.data) > 0:
+                # Return the first entry (should be only one per user)
+                return response.data[0]
+
+            # If no entry exists, create an empty one
+            entry = {
+                "id": str(uuid.uuid4()),
+                "user_id": user_id,
+                "content": [],  # Direct array instead of nested object
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat(),
+            }
+
+            self.client.table("messages").insert(entry).execute()
+            logger.info(f"Created new conversation history for user {user_id}")
+
+            return entry
+        except Exception as e:
+            logger.error(
+                f"Error retrieving conversation history entry: {str(e)}"
+            )
+            return None
 
     async def add_message_to_history(
         self,
@@ -119,51 +175,47 @@ class SupabaseMemory:
         user_message: str,
         assistant_response: str,
         platform: str = "whatsapp",
-        metadata: Optional[Dict] = None,
+        metadata: Optional[Dict] = None,  # We'll ignore this parameter
     ) -> bool:
-        """Store a message exchange in the messages table using JSONB content"""
+        """Store a message exchange in the messages table as part of the JSONB content"""
         try:
             # First get or create a user based on session_id (as platform_user_id)
             user = await self.get_or_create_user(platform, session_id)
             user_id = user["id"]
 
-            # Current timestamp
+            # Get the conversation history entry
+            history_entry = await self.get_conversation_history_entry(user_id)
+
+            if not history_entry:
+                logger.error(
+                    "Failed to get or create conversation history entry"
+                )
+                return False
+
+            # Current timestamp in ISO format (compatible with timestamptz)
             current_time = datetime.now().isoformat()
 
-            # Create user message entry
-            user_message_entry = {
-                "id": str(uuid.uuid4()),
-                "user_id": user_id,
-                "content": {
-                    "type": "user_message",
-                    "text": user_message,
-                    "session_id": session_id,
-                    "platform": platform,
-                    "metadata": metadata or {},
-                },
-                "created_at": current_time,
-                "updated_at": current_time,
+            # Create the new message pair with simplified structure
+            new_message_pair = {
+                "timestamp": current_time,
+                "user_message": user_message,
+                "assistant_response": assistant_response,
             }
 
-            # Create assistant response entry
-            assistant_message_entry = {
-                "id": str(uuid.uuid4()),
-                "user_id": user_id,
-                "content": {
-                    "type": "assistant_response",
-                    "text": assistant_response,
-                    "session_id": session_id,
-                    "platform": platform,
-                    "metadata": metadata or {},
-                },
-                "created_at": current_time,
-                "updated_at": current_time,
-            }
+            # Get current content - directly an array
+            content = history_entry.get("content", [])
 
-            # Insert both messages
-            self.client.table("messages").insert(
-                [user_message_entry, assistant_message_entry]
-            ).execute()
+            # Ensure content is a list (might be null or something else if data corrupt)
+            if not isinstance(content, list):
+                content = []
+
+            # Add new message pair to the content array
+            content.append(new_message_pair)
+
+            # Update the record
+            self.client.table("messages").update(
+                {"content": content, "updated_at": current_time}
+            ).eq("id", history_entry["id"]).execute()
 
             logger.info(
                 f"Added message pair to history for session {session_id}"
@@ -178,10 +230,10 @@ class SupabaseMemory:
     ) -> List[Dict]:
         """
         Retrieve conversation history for a specific session
-        Formats messages from JSONB content in the messages table
+        Returns the most recent 'limit' message pairs
         """
         try:
-            # First, find users with the session_id in any platform field
+            # Find the user with the given platform ID
             platform_fields = [
                 "whatsapp_id",
                 "telegram_id",
@@ -190,7 +242,7 @@ class SupabaseMemory:
             ]
             user = None
 
-            # Try each platform field
+            # Try each platform field to find the user
             for field in platform_fields:
                 response = (
                     self.client.table("users")
@@ -209,69 +261,37 @@ class SupabaseMemory:
 
             user_id = user["id"]
 
-            # Query conversation history from messages table
-            # Filter by content->session_id using Supabase filter syntax
-            response = (
-                self.client.table("messages")
-                .select("*")
-                .eq("user_id", user_id)
-                .filter("content->>session_id", "eq", session_id)
-                .order("created_at", desc=True)
-                .limit(limit * 2)  # Get twice the limit to pair messages
-                .execute()
-            )
+            # Get the conversation history entry
+            history_entry = await self.get_conversation_history_entry(user_id)
 
-            messages = response.data
-            logger.info(
-                f"Retrieved {len(messages)} messages for session {session_id}"
-            )
-
-            # Group messages into user-assistant pairs
-            user_messages = {}
-            assistant_responses = {}
-
-            for msg in messages:
-                content = msg.get("content", {})
-                msg_type = content.get("type")
-                text = content.get("text", "")
-                created_at = msg.get("created_at")
-
-                if msg_type == "user_message":
-                    user_messages[created_at] = text
-                elif msg_type == "assistant_response":
-                    assistant_responses[created_at] = text
-
-            # Match messages into pairs
-            pairs = []
-
-            # Sort timestamps for better matching
-            user_times = sorted(user_messages.keys(), reverse=True)
-            asst_times = sorted(assistant_responses.keys(), reverse=True)
-
-            # Create pairs based on available messages
-            # This is simplified - in a real system you might want a more robust pairing logic
-            for i in range(min(len(user_times), len(asst_times), limit)):
-                user_time = user_times[i]
-                asst_time = asst_times[i]
-
-                pairs.append(
-                    {
-                        "user_message": user_messages[user_time],
-                        "assistant_response": assistant_responses[asst_time],
-                        "timestamp": user_time,
-                    }
+            if not history_entry or "content" not in history_entry:
+                logger.warning(
+                    f"No conversation history found for user_id: {user_id}"
                 )
+                return []
+
+            # Get the content array directly
+            content = history_entry.get("content", [])
+
+            # Ensure content is a list
+            if not isinstance(content, list):
+                logger.warning(f"Content is not a list for user_id: {user_id}")
+                return []
+
+            # Return the most recent 'limit' entries
+            history_filtered = content[-limit:] if content else []
 
             # Log the history for debugging
             logger.debug("\n===== CONVERSATION HISTORY =====")
-            for idx, pair in enumerate(pairs, 1):
+            for idx, pair in enumerate(history_filtered, 1):
                 logger.debug(f"\nMessage Pair {idx}:")
-                logger.debug(f"User: {pair['user_message']}")
-                logger.debug(f"Assistant: {pair['assistant_response']}")
+                logger.debug(f"User: {pair.get('user_message', '')}")
+                logger.debug(f"Assistant: {pair.get('assistant_response', '')}")
                 logger.debug("-" * 40)
             logger.debug("==============================\n")
 
-            return pairs
+            return history_filtered
+
         except Exception as e:
             logger.error(
                 f"Failed to get conversation history: {str(e)}", exc_info=True
@@ -301,7 +321,7 @@ class SupabaseMemory:
                 .limit(1)
                 .execute()
             )
-            logger.info(f"Supabase connection successful - found data")
+            logger.info("Supabase connection successful")
             return True
         except Exception as e:
             logger.error(f"Supabase connection test failed: {str(e)}")
