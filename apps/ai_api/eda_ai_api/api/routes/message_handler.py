@@ -44,14 +44,39 @@ async def message_handler_route(
         # Process attachment if present
         attachment_description = ""
         attachment_metadata = {}
+        attachment_error = None
+
         if attachment:
-            attachment_description, attachment_metadata = (
-                await process_attachment(attachment)
-            )
+            try:
+                attachment_description, attachment_metadata = (
+                    await process_attachment(attachment)
+                )
+            except Exception as e:
+                attachment_error = str(e)
+                logger.error(
+                    f"Failed to process attachment: {attachment_error}"
+                )
+                # Return error response instead of continuing with empty attachment
+                if not text_input:
+                    return MessageHandlerResponse(
+                        result=f"Desculpe, não foi possível processar seu arquivo. Erro: {attachment_error}",
+                        user_platform_id=current_user_id,
+                    )
 
         # Combine text and attachment information
         final_message = "\n".join(
-            filter(None, [text_input, attachment_description])
+            filter(
+                None,
+                [
+                    text_input,
+                    attachment_description,
+                    (
+                        f"[Erro ao processar anexo: {attachment_error}]"
+                        if attachment_error
+                        else None
+                    ),
+                ],
+            )
         )
 
         if not final_message:
@@ -147,10 +172,6 @@ async def message_handler_route(
                 user_message=final_message,
                 assistant_response=response_content,
                 platform=platform,
-                metadata={
-                    "source": "api_request",
-                    "attachment": attachment_metadata if attachment else None,
-                },
             )
             logger.info(f"Conversation stored for user {current_user_id}")
         except Exception as db_error:

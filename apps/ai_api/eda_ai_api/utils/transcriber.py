@@ -1,5 +1,8 @@
 from groq import Groq
 from loguru import logger
+from eda_config.config import ConfigLoader
+
+config = ConfigLoader.get_config()
 
 
 def transcribe_audio(audio_path: str, language: str = "en") -> str:
@@ -14,7 +17,8 @@ def transcribe_audio(audio_path: str, language: str = "en") -> str:
         str: Transcribed text
     """
     try:
-        client = Groq()
+        # Create client with API key from config
+        client = Groq(api_key=config.api_keys.groq)
 
         with open(audio_path, "rb") as file:
             transcription = client.audio.transcriptions.create(
