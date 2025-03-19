@@ -15,10 +15,9 @@ class MessageHistory(BaseModel):
 
 class MessageHandlerRequest(BaseModel):
     message: Optional[str] = None
-    audio: Optional[UploadFile] = None
-    session_id: Optional[str] = None
-    message_history: Optional[List[MessageHistory]] = None
-    platform: Optional[str] = None  # Add platform field
+    attachment: Optional[UploadFile] = None
+    user_platform_id: Optional[str] = None
+    platform: Optional[str] = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -26,4 +25,4 @@ class MessageHandlerRequest(BaseModel):
 
 class MessageHandlerResponse(BaseModel):
     result: str
-    session_id: Optional[str] = None
+    user_platform_id: Optional[str] = None

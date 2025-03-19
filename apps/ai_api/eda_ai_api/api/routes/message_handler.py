@@ -1,7 +1,6 @@
-import json
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 
 from eda_config.config import ConfigLoader
 from fastapi import APIRouter, File, Form, UploadFile
@@ -9,11 +8,8 @@ from loguru import logger
 
 from eda_ai_api.agents.manager import get_agent
 from eda_ai_api.agents.prompts.formatting import get_formatting_guidelines
-from eda_ai_api.models.message_handler import (
-    MessageHandlerResponse,
-    MessageHistory,
-)
-from eda_ai_api.utils.audio_utils import process_audio_file
+from eda_ai_api.models.message_handler import MessageHandlerResponse
+from eda_ai_api.utils.attachment_utils import process_attachment
 from eda_ai_api.utils.memory import SupabaseMemory
 from smolagents.local_python_executor import BASE_BUILTIN_MODULES
 from eda_ai_api.agents.prompts.manager import MANAGER_SYSTEM_PROMPT
@@ -25,103 +21,65 @@ router = APIRouter()
 memory = SupabaseMemory()
 
 
-async def process_input_messages(
-    message: Optional[str], audio: Optional[UploadFile]
-) -> str:
-    """Process user input from text and/or audio"""
-    logger.debug("Processing input messages")
-    combined_message = []
-
-    if audio:
-        logger.debug(f"Processing audio file: {audio.filename}")
-        transcription = await process_audio_file(audio)
-        logger.info(f"Audio transcription result: '{transcription}'")
-        combined_message.append(f'Transcription: "{transcription}"')
-
-    if message:
-        logger.debug(f"Processing text message: '{message}'")
-        combined_message.append(f'Message: "{message}"')
-
-    result = "\n".join(combined_message)
-    logger.debug(f"Combined message: '{result}'")
-    return result
-
-
-async def process_message_history(
-    message_history: Optional[str],
-) -> List[MessageHistory]:
-    """Convert message history JSON to structured objects"""
-    logger.debug("Processing message history")
-    history = []
-    if message_history:
-        try:
-            parsed_history = json.loads(message_history)
-            logger.debug(f"Parsed message history: {parsed_history}")
-            history = [MessageHistory(**msg) for msg in parsed_history]
-            logger.info(f"Processed {len(history)} message history items")
-        except json.JSONDecodeError:
-            logger.warning("Invalid message_history JSON format")
-        except Exception as e:
-            logger.error(f"Error processing message history: {str(e)}")
-    return history
-
-
 @router.post("/handle", response_model=MessageHandlerResponse)
 async def message_handler_route(
     message: Optional[str] = Form(default=None),
-    audio: Optional[UploadFile] = File(default=None),
-    session_id: Optional[str] = Form(default=None),
-    message_history: Optional[str] = Form(default=None),
+    attachment: Optional[UploadFile] = File(default=None),
+    user_platform_id: Optional[str] = Form(default=None),
     platform: Optional[str] = Form(default="whatsapp"),
 ) -> MessageHandlerResponse:
     """Main route handler that processes messages using the manager agent"""
     try:
-        current_session = session_id or str(uuid.uuid4())
-        logger.info(f"New request - Session: {current_session}")
+        current_user_id = user_platform_id or str(uuid.uuid4())
+        logger.info(f"New request - User Platform ID: {current_user_id}")
         logger.info(f"Platform received: {platform}")
         logger.debug(f"Message payload: '{message}'")
-        logger.debug(f"Audio file: {audio.filename if audio else None}")
         logger.debug(
-            f"Message history length: {len(message_history) if message_history else 0}"
+            f"Attachment: {attachment.filename if attachment else None}"
         )
 
-        # Process input messages (text and/or audio)
-        final_message = await process_input_messages(message, audio)
+        # Process text message
+        text_input = message or ""
+
+        # Process attachment if present
+        attachment_description = ""
+        attachment_metadata = {}
+        if attachment:
+            attachment_description, attachment_metadata = (
+                await process_attachment(attachment)
+            )
+
+        # Combine text and attachment information
+        final_message = "\n".join(
+            filter(None, [text_input, attachment_description])
+        )
+
         if not final_message:
             logger.warning("No valid input provided")
             return MessageHandlerResponse(
-                result="Error: No valid input provided",
-                session_id=current_session,
+                result="Error: No valid input provided (message or attachment required)",
+                user_platform_id=current_user_id,
             )
 
-        # Process message history - either from passed JSON or from database
+        # Get conversation history from Supabase
         conversation_history = []
         try:
-            if message_history:
-                # Use provided message history if available
-                history = await process_message_history(message_history)
-                for msg in history:
-                    conversation_history.append(
-                        {
-                            "user": msg.human,
-                            "assistant": msg.ai,
-                        }
-                    )
-            else:
-                # Otherwise retrieve from Supabase
-                db_history = await memory.get_conversation_history(
-                    session_id=current_session,
-                    limit=5,  # Configure this as needed
-                )
-                conversation_history = await memory.format_history_for_context(
-                    db_history
-                )
-
+            # Retrieve from Supabase
+            db_history = await memory.get_conversation_history(
+                session_id=current_user_id,  # Using user_platform_id as the session key
+                limit=5,  # Configure this as needed
+            )
+            conversation_history = await memory.format_history_for_context(
+                db_history
+            )
             logger.debug(
-                f"Conversation history formatted with {len(conversation_history)} entries"
+                f"Conversation history retrieved with {len(conversation_history)} entries"
             )
         except Exception as e:
-            logger.error(f"Error processing history: {str(e)}", exc_info=True)
+            logger.error(
+                f"Error retrieving conversation history: {str(e)}",
+                exc_info=True,
+            )
             # Continue without history if there's an error
 
         # Get current time for message formatting
@@ -134,33 +92,20 @@ async def message_handler_route(
         try:
             agent = get_agent(platform=platform)
             logger.debug(f"Agent created with {len(agent.tools)} tools")
-
-            # Log available tools
-            logger.debug(f"Available tools: {[tool for tool in agent.tools]}")
         except Exception as e:
             logger.error(f"Error creating agent: {str(e)}", exc_info=True)
             return MessageHandlerResponse(
                 result=f"Error: Failed to initialize agent - {str(e)}",
-                session_id=current_session,
+                user_platform_id=current_user_id,
             )
 
         # Set up the custom prompt with all required variables
         logger.debug("Configuring agent prompt")
         try:
-            # Debugging the variables going into the prompt template
-            logger.debug(f"Bot name: {config.services.whatsapp.bot_name}")
-            logger.debug(
-                f"Formatting guidelines available: {bool(get_formatting_guidelines)}"
-            )
-            logger.debug(f"Tools count: {len(agent.tools)}")
-            logger.debug(
-                f"BASE_BUILTIN_MODULES count: {len(BASE_BUILTIN_MODULES)}"
-            )
-
             agent.prompt_templates["system_prompt"] = populate_template(
                 MANAGER_SYSTEM_PROMPT,
                 variables={
-                    "conversation_history": conversation_history,  # Now including conversation history
+                    "conversation_history": conversation_history,
                     "bot_name": config.services.whatsapp.bot_name,
                     "formatting_guidelines": get_formatting_guidelines(
                         platform
@@ -175,7 +120,7 @@ async def message_handler_route(
             logger.error(f"Error configuring prompt: {str(e)}", exc_info=True)
             return MessageHandlerResponse(
                 result=f"Error: Failed to configure agent prompt - {str(e)}",
-                session_id=current_session,
+                user_platform_id=current_user_id,
             )
 
         # Run the agent with the formatted message
@@ -192,42 +137,40 @@ async def message_handler_route(
             logger.error(f"Error running agent: {str(e)}", exc_info=True)
             return MessageHandlerResponse(
                 result=f"Error: Agent execution failed - {str(e)}",
-                session_id=current_session,
+                user_platform_id=current_user_id,
             )
 
         # Store conversation in Supabase
         try:
             await memory.add_message_to_history(
-                session_id=current_session,
+                session_id=current_user_id,  # Using user_platform_id
                 user_message=final_message,
                 assistant_response=response_content,
                 platform=platform,
-                metadata={"source": "api_request"},
+                metadata={
+                    "source": "api_request",
+                    "attachment": attachment_metadata if attachment else None,
+                },
             )
-            logger.info(f"Conversation stored for session {current_session}")
+            logger.info(f"Conversation stored for user {current_user_id}")
         except Exception as db_error:
             logger.error(f"Failed to store conversation: {str(db_error)}")
             # Continue even if storage fails
 
-        # Ensure response content is not None before returning
-        if response_content is None:
-            logger.warning("Agent returned None response")
-            response_content = "Error: No response generated by the agent."
-
         # Return the agent's response
-        logger.info(f"Returning response for session: {current_session}")
+        logger.info(f"Returning response for user: {current_user_id}")
         return MessageHandlerResponse(
             result=(
                 response_content[:2499]
                 if response_content
                 else "Error: No response generated"
-            ),  # Truncate if needed
-            session_id=current_session,
+            ),
+            user_platform_id=current_user_id,
         )
 
     except Exception as e:
         logger.error(f"Error in message handler route: {str(e)}", exc_info=True)
         return MessageHandlerResponse(
             result=f"Error: {str(e)}",
-            session_id=session_id or "error_session",
+            user_platform_id=user_platform_id or "error_session",
         )
