@@ -30,11 +30,14 @@ def get_agent(platform: str = "whatsapp", variables: Optional[Dict] = None):
         variables = {}
 
     # Create a manager agent with the necessary tools
-    # You can add your specific tools here as needed
     manager_agent = CodeAgent(
         tools=[],  # Add your tools here
         model=model,
         max_steps=3,
     )
+
+    # Apply conversation history limit from config
+    history_limit = config.services.ai_api.conversation_history_limit
+    variables["conversation_history_limit"] = history_limit
 
     return manager_agent

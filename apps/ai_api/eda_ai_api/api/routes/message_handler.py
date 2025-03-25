@@ -89,10 +89,16 @@ async def message_handler_route(
         # Get conversation history from Supabase
         conversation_history = []
         try:
+            # Get history limit from config (default to 5 if not specified)
+            history_limit = getattr(
+                config.services.ai_api, "conversation_history_limit", 5
+            )
+            logger.debug(f"Using conversation history limit: {history_limit}")
+
             # Retrieve from Supabase
             db_history = await memory.get_conversation_history(
                 session_id=current_user_id,  # Using user_platform_id as the session key
-                limit=5,  # Configure this as needed
+                limit=history_limit,  # Use the configured value
             )
             conversation_history = await memory.format_history_for_context(
                 db_history

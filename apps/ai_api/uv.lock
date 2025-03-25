@@ -500,7 +500,7 @@ requires-dist = [
 
 [[package]]
 name = "eda-config"
-version = "0.1.29"
+version = "0.1.31"
 source = { directory = "../../packages/config/python" }
 dependencies = [
     { name = "pydantic" },

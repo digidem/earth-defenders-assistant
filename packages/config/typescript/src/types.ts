@@ -161,6 +161,12 @@ const AIModelConfigSchema = z.object({
   description: z.string(),
 });
 
+// Update the AIApiConfig schema to include conversation_history_limit
+const AIApiConfigSchema = z.object({
+  debug: z.boolean(),
+  conversation_history_limit: z.number().default(5), // Add this field with default value
+});
+
 export const ConfigSchema = z.object({
   ports: z.object({
     messaging: z.number(),
@@ -202,9 +208,7 @@ export const ConfigSchema = z.object({
     neo4j: Neo4jConfigSchema,
   }),
   services: z.object({
-    ai_api: z.object({
-      debug: z.boolean(),
-    }),
+    ai_api: AIApiConfigSchema, // Use the schema defined above
     whatsapp: WhatsAppConfigSchema,
     trigger: TriggerConfigSchema,
     resend: ResendConfigSchema,
