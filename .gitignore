@@ -53,9 +53,7 @@ packages/email/public
 storybook-static
 tailwind.css
 
-# Supabase
-.branches
-.temp
+# Pocketbase
 pb_data
 
 # Trigger

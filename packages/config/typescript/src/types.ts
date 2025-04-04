@@ -31,8 +31,14 @@ const RedisConfigSchema = z.object({
   tls_disabled: z.boolean(),
 });
 
+const PocketBaseAdminSchema = z.object({
+  email: z.string(),
+  password: z.string(),
+});
+
 const PocketBaseConfigSchema = z.object({
   url: z.string(),
+  admin: PocketBaseAdminSchema,
 });
 
 // Service Configs

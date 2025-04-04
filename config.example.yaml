@@ -45,6 +45,9 @@ api_keys:
 databases:
   pocketbase:
     url: "http://localhost:8090"
+    admin:
+      email: "admin@example.com"
+      password: "your-secure-password"
 
   langtrace_postgres:
     host: "langtrace-postgres"
@@ -84,6 +87,7 @@ databases:
 services:
   ai_api:
     debug: true
+    conversation_history_limit: 5  # Number of previous exchanges to include in context
 
   whatsapp:
     bot_prefix: "*[BOT]:*"  # Message prefix for bot responses
@@ -116,7 +120,7 @@ services:
       host: "https://us.i.posthog.com"
 
   trigger:
-    project_id: "xxx"
+    project_id: "your-project-id"
     api_url: "http://localhost:3040"
     environment: "production"
     runtime: "docker-compose"
@@ -125,11 +129,11 @@ services:
       org_execution_limit: 300
       env_execution_limit: 100
     auth:
-      magic_link_secret: "xxx"
-      session_secret: "xxx"
-      encryption_key: "xxx"
-      provider_secret: "xxx"
-      coordinator_secret: "xxx"
+      magic_link_secret: "your-magic-link-secret"
+      session_secret: "your-session-secret"
+      encryption_key: "your-encryption-key"
+      provider_secret: "your-provider-secret"
+      coordinator_secret: "your-coordinator-secret"
     deployment:
       worker:
         http_port: 9020
@@ -145,7 +149,7 @@ services:
 
   dashboard:
     auth:
-      nextauth_secret: "xxx"
+      nextauth_secret: "your-nextauth-secret"
       azure:
         client_id: "xxx"
         client_secret: "xxx"

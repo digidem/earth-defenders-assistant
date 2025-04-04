@@ -86,7 +86,7 @@ async def message_handler_route(
                 user_platform_id=current_user_id,
             )
 
-        # Get conversation history from Supabase
+        # Get conversation history from PocketBase
         conversation_history = []
         try:
             # Get history limit from config (default to 5 if not specified)
@@ -95,7 +95,7 @@ async def message_handler_route(
             )
             logger.debug(f"Using conversation history limit: {history_limit}")
 
-            # Retrieve from Supabase
+            # Retrieve from PocketBase
             db_history = await memory.get_conversation_history(
                 session_id=current_user_id,  # Using user_platform_id as the session key
                 limit=history_limit,  # Use the configured value
@@ -171,7 +171,7 @@ async def message_handler_route(
                 user_platform_id=current_user_id,
             )
 
-        # Store conversation in Supabase
+        # Store conversation in PocketBase
         try:
             await memory.add_message_to_history(
                 session_id=current_user_id,  # Using user_platform_id

@@ -22,7 +22,6 @@ dependencies = [
     "langchain>=0.3.21",
     "anthropic>=0.49.0",
     "deepseek>=1.0.0",
-    "supabase>=2.13.0",
     "groq>=0.12.0",
     "neo4j>=5.28.1",
     "rank-bm25>=0.2.2",
