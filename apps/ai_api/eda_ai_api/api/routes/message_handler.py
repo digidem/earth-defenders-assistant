@@ -10,7 +10,7 @@ from eda_ai_api.agents.manager import get_agent
 from eda_ai_api.agents.prompts.formatting import get_formatting_guidelines
 from eda_ai_api.models.message_handler import MessageHandlerResponse
 from eda_ai_api.utils.attachment_utils import process_attachment
-from eda_ai_api.utils.memory import SupabaseMemory
+from eda_ai_api.utils.memory import PocketBaseMemory
 from smolagents.local_python_executor import BASE_BUILTIN_MODULES
 from eda_ai_api.agents.prompts.manager import MANAGER_SYSTEM_PROMPT
 from smolagents.agents import populate_template
@@ -18,7 +18,7 @@ from smolagents.agents import populate_template
 config = ConfigLoader.get_config()
 
 router = APIRouter()
-memory = SupabaseMemory()
+memory = PocketBaseMemory()
 
 
 @router.post("/handle", response_model=MessageHandlerResponse)

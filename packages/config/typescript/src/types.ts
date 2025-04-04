@@ -31,6 +31,10 @@ const RedisConfigSchema = z.object({
   tls_disabled: z.boolean(),
 });
 
+const PocketBaseConfigSchema = z.object({
+  url: z.string(),
+});
+
 // Service Configs
 const WhatsAppConfigSchema = z.object({
   bot_prefix: z.string(),
@@ -128,7 +132,7 @@ const UpstashConfigSchema = z.object({
 });
 
 // API Keys
-const ApiKeysSchema = z.object({
+export const ApiKeysSchema = z.object({
   groq: z.string(),
   huggingface: z.string(),
   serper: z.string(),
@@ -136,21 +140,12 @@ const ApiKeysSchema = z.object({
   trigger: z.string(),
   resend: z.string(),
   openai: z.string(),
-  openrouter: z.string(), // Added OpenRouter API key
-  supabase: z.object({
-    service_key: z.string(),
-    anon_key: z.string(),
-    api_key: z.string(), // Added Supabase API key
-  }),
-  openpanel: z.object({
-    client_id: z.string(),
-    secret: z.string(),
-  }),
+  openrouter: z.string(),
   dub: z.string(),
   sentry: z.object({
     auth_token: z.string(),
   }),
-  deepseek: z.string(), // Added DeepSeek API key
+  deepseek: z.string(),
 });
 
 // AI Models
@@ -192,10 +187,7 @@ export const ConfigSchema = z.object({
   }),
   api_keys: ApiKeysSchema,
   databases: z.object({
-    supabase: z.object({
-      url: z.string(),
-      project_id: z.string(),
-    }),
+    pocketbase: PocketBaseConfigSchema,
     langtrace_postgres: DatabaseConfigSchema,
     langtrace_clickhouse: z.object({
       host: z.string(),

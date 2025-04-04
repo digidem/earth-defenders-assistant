@@ -34,12 +34,6 @@ class DatabaseConfig(BaseModel):
     database: str
 
 
-class SupabaseKeys(BaseModel):
-    service_key: str
-    anon_key: str
-    api_key: str  # Added Supabase API key
-
-
 class OpenPanelKeys(BaseModel):
     client_id: str
     secret: str
@@ -58,8 +52,6 @@ class ApiKeys(BaseModel):
     resend: str
     openai: str
     openrouter: str  # Added OpenRouter API key
-    supabase: SupabaseKeys
-    openpanel: OpenPanelKeys
     dub: str
     sentry: SentryKeys
     deepseek: str  # Added DeepSeek API key
@@ -218,14 +210,21 @@ class ServicesConfig(BaseModel):
     upstash: UpstashConfig
 
 
-# Add this new type for Supabase config
-class SupabaseDbConfig(BaseModel):
+# Add PocketBaseAdmin class
+class PocketBaseAdmin(BaseModel):
+    email: str
+    password: str
+
+
+# Add PocketBaseConfig class after DatabaseConfig class
+class PocketBaseConfig(BaseModel):
     url: str
-    project_id: str
+    admin: PocketBaseAdmin
 
 
+# Update DatabasesConfig class to include PocketBase
 class DatabasesConfig(BaseModel):
-    supabase: SupabaseDbConfig
+    pocketbase: PocketBaseConfig  # Add this line
     langtrace_postgres: DatabaseConfig
     langtrace_clickhouse: DatabaseConfig
     trigger_postgres: DatabaseConfig

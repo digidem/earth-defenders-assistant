@@ -43,9 +43,8 @@ api_keys:
 
 # Database Settings
 databases:
-  supabase:
-    url: "http://localhost:54321"
-    project_id: "create-eda"
+  pocketbase:
+    url: "http://localhost:8090"
 
   langtrace_postgres:
     host: "langtrace-postgres"

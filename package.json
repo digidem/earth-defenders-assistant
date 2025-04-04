@@ -51,6 +51,6 @@
   "private": true,
   "dependencies": {
     "@eda/config": "workspace:*",
-    "supabase": "^2.19.7"
+    "pocketbase": "^0.25.2"
   }
 }
