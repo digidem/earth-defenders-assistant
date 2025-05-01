@@ -23,6 +23,7 @@
     "common-tags": "^1.8.2",
     "dotenv": "^16.4.5",
     "dotenv-expand": "^12.0.1",
+    "libsignal": "^2.0.1",
     "mkdirp": "^3.0.1",
     "pino": "^7.0.0",
     "qrcode-terminal": "^0.12.0"
