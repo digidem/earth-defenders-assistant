@@ -15,12 +15,8 @@ class MessageHistory(BaseModel):
 
 class MessageHandlerRequest(BaseModel):
     message: Optional[str] = None
-    attachment: Optional[UploadFile] = None
     user_platform_id: Optional[str] = None
-    platform: Optional[str] = None
-
-    class Config:
-        arbitrary_types_allowed = True
+    platform: str = "whatsapp"
 
 
 class MessageHandlerResponse(BaseModel):

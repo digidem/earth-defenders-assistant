@@ -1,15 +1,14 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-
-from eda_config.config import ConfigLoader
-from fastapi import APIRouter, File, Form, UploadFile
+from pydantic import BaseModel
+from fastapi import APIRouter
 from loguru import logger
 
+from eda_config.config import ConfigLoader
 from eda_ai_api.agents.manager import get_agent
 from eda_ai_api.agents.prompts.formatting import get_formatting_guidelines
 from eda_ai_api.models.message_handler import MessageHandlerResponse
-from eda_ai_api.utils.attachment_utils import process_attachment
 from eda_ai_api.utils.context_builder import build_enhanced_context
 from eda_ai_api.utils.vector_memory import VectorMemory
 from smolagents.local_python_executor import BASE_BUILTIN_MODULES
@@ -21,69 +20,28 @@ config = ConfigLoader.get_config()
 router = APIRouter()
 memory = VectorMemory()
 
+# New request model
+class MessageRequest(BaseModel):
+    message: Optional[str] = None
+    user_platform_id: Optional[str] = None
+    platform: str = "whatsapp"
 
 @router.post("/handle", response_model=MessageHandlerResponse)
-async def message_handler_route(
-    message: Optional[str] = Form(default=None),
-    attachment: Optional[UploadFile] = File(default=None),
-    user_platform_id: Optional[str] = Form(default=None),
-    platform: Optional[str] = Form(default="whatsapp"),
-) -> MessageHandlerResponse:
+async def message_handler_route(request: MessageRequest) -> MessageHandlerResponse:
     """Main route handler that processes messages using the manager agent"""
     try:
-        current_user_id = user_platform_id or str(uuid.uuid4())
+        current_user_id = request.user_platform_id or str(uuid.uuid4())
         logger.info(f"New request - User Platform ID: {current_user_id}")
-        logger.info(f"Platform received: {platform}")
-        logger.debug(f"Message payload: '{message}'")
-        logger.debug(
-            f"Attachment: {attachment.filename if attachment else None}"
-        )
+        logger.info(f"Platform received: {request.platform}")
+        logger.debug(f"Message payload: '{request.message}'")
 
         # Process text message
-        text_input = message or ""
+        text_input = request.message or ""
 
-        # Process attachment if present
-        attachment_description = ""
-        attachment_metadata = {}
-        attachment_error = None
-
-        if attachment:
-            try:
-                attachment_description, attachment_metadata = (
-                    await process_attachment(attachment)
-                )
-            except Exception as e:
-                attachment_error = str(e)
-                logger.error(
-                    f"Failed to process attachment: {attachment_error}"
-                )
-                # Return error response instead of continuing with empty attachment
-                if not text_input:
-                    return MessageHandlerResponse(
-                        result=f"Desculpe, não foi possível processar seu arquivo. Erro: {attachment_error}",
-                        user_platform_id=current_user_id,
-                    )
-
-        # Combine text and attachment information
-        final_message = "\n".join(
-            filter(
-                None,
-                [
-                    text_input,
-                    attachment_description,
-                    (
-                        f"[Erro ao processar anexo: {attachment_error}]"
-                        if attachment_error
-                        else None
-                    ),
-                ],
-            )
-        )
-
-        if not final_message:
+        if not text_input:
             logger.warning("No valid input provided")
             return MessageHandlerResponse(
-                result="Error: No valid input provided (message or attachment required)",
+                result="Error: No valid input provided (message required)",
                 user_platform_id=current_user_id,
             )
 
@@ -93,16 +51,14 @@ async def message_handler_route(
             # Build enhanced context with both recent and semantically relevant history
             context = await build_enhanced_context(
                 user_platform_id=current_user_id,
-                current_message=final_message,
-                platform=platform,
+                current_message=text_input,
+                platform=request.platform,
                 recent_history_limit=config.services.ai_api.conversation_history_limit,
-                relevant_history_limit=config.services.ai_api.relevant_history_limit,  # Use config value here
-                cross_session=False  # Set to True to enable cross-user memory
+                relevant_history_limit=config.services.ai_api.relevant_history_limit,
+                cross_session=False
             )
 
-            # Use the merged history (recent + relevant) for the conversation context
             conversation_history = context.get("merged_history", [])
-
             logger.debug(
                 f"Enhanced conversation context built with {len(context.get('recent_history', []))} recent "
                 f"and {len(context.get('relevant_history', []))} relevant exchanges"
@@ -112,18 +68,17 @@ async def message_handler_route(
                 f"Error retrieving enhanced conversation history: {str(e)}",
                 exc_info=True,
             )
-            # Continue with empty history if there's an error
             conversation_history = []
 
         # Get current time for message formatting
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        formatted_message = f"[{current_time}] User: {final_message}"
+        formatted_message = f"[{current_time}] User: {text_input}"
         logger.debug(f"Formatted message for agent: '{formatted_message}'")
 
         # Create and configure manager agent
-        logger.debug(f"Creating agent for platform: {platform}")
+        logger.debug(f"Creating agent for platform: {request.platform}")
         try:
-            agent = get_agent(platform=platform)
+            agent = get_agent(platform=request.platform)
             logger.debug(f"Agent created with {len(agent.tools)} tools")
         except Exception as e:
             logger.error(f"Error creating agent: {str(e)}", exc_info=True)
@@ -141,7 +96,7 @@ async def message_handler_route(
                     "conversation_history": conversation_history,
                     "bot_name": config.services.whatsapp.bot_name,
                     "formatting_guidelines": get_formatting_guidelines(
-                        platform
+                        request.platform
                     ),
                     "tools": agent.tools,
                     "authorized_imports": BASE_BUILTIN_MODULES,
@@ -160,12 +115,8 @@ async def message_handler_route(
         logger.info("Running agent with formatted message")
         try:
             response_content = agent.run(formatted_message)
-            logger.info(
-                f"Agent response received - length: {len(response_content)}"
-            )
-            logger.debug(
-                f"Agent response: '{response_content[:100]}...'"
-            )  # Log first 100 chars
+            logger.info(f"Agent response received - length: {len(response_content)}")
+            logger.debug(f"Agent response: '{response_content[:100]}...'")
         except Exception as e:
             logger.error(f"Error running agent: {str(e)}", exc_info=True)
             return MessageHandlerResponse(
@@ -173,18 +124,17 @@ async def message_handler_route(
                 user_platform_id=current_user_id,
             )
 
-        # Store conversation in PocketBase
+        # Store conversation in vector memory
         try:
             await memory.add_message_to_history(
-                session_id=current_user_id,  # Using user_platform_id
-                user_message=final_message,
+                session_id=current_user_id,
+                user_message=text_input,
                 assistant_response=response_content,
-                platform=platform,
+                platform=request.platform,
             )
             logger.info(f"Conversation stored for user {current_user_id}")
         except Exception as db_error:
             logger.error(f"Failed to store conversation: {str(db_error)}")
-            # Continue even if storage fails
 
         # Return the agent's response
         logger.info(f"Returning response for user: {current_user_id}")
@@ -201,5 +151,5 @@ async def message_handler_route(
         logger.error(f"Error in message handler route: {str(e)}", exc_info=True)
         return MessageHandlerResponse(
             result=f"Error: {str(e)}",
-            user_platform_id=user_platform_id or "error_session",
+            user_platform_id=request.user_platform_id or "error_session",
         )

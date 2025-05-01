@@ -1,6 +1,6 @@
 import { config } from "@eda/config";
 import { logger } from "@eda/logger";
-import { type WAMessage, downloadMediaMessage } from "@whiskeysockets/baileys";
+import type { WAMessage } from "@whiskeysockets/baileys";
 import { sock } from "../client";
 import { getPhoneNumber, react } from "../utils";
 
@@ -46,72 +46,12 @@ export async function handleMessage(message: WAMessage) {
     // Format user_platform_id properly with platform prefix
     const platformUserId = `whatsapp_${phoneNumber}`;
 
-    // Create multipart form data for the request
-    const formData = new FormData();
-
-    // Add text message if present
-    if (messageContent) {
-      formData.append("message", messageContent);
-    }
-
-    // Add properly formatted user platform id and platform
-    formData.append("user_platform_id", platformUserId);
-    formData.append("platform", "whatsapp");
-
-    // Handle attachments (images, audio, etc.)
-    if (
-      message.message?.imageMessage ||
-      message.message?.audioMessage ||
-      message.message?.documentMessage ||
-      message.message?.videoMessage
-    ) {
-      try {
-        const media = await downloadMediaMessage(message, "buffer", {});
-
-        // Get mimetype and filename from the message
-        const mimetype =
-          message.message?.imageMessage?.mimetype ||
-          message.message?.audioMessage?.mimetype ||
-          message.message?.documentMessage?.mimetype ||
-          message.message?.videoMessage?.mimetype ||
-          "application/octet-stream";
-
-        // Fix the fileName access by using only document fileName
-        // and generating names for other types
-        let filename = message.message?.documentMessage?.fileName || "";
-
-        // If no filename from document, generate one based on type and timestamp
-        if (!filename) {
-          const timestamp = Date.now();
-          if (message.message?.imageMessage) {
-            filename = `image-${timestamp}${getExtensionFromMimeType(mimetype)}`;
-          } else if (message.message?.videoMessage) {
-            filename = `video-${timestamp}${getExtensionFromMimeType(mimetype)}`;
-          } else if (message.message?.audioMessage) {
-            filename = `audio-${timestamp}${getExtensionFromMimeType(mimetype)}`;
-          } else {
-            filename = `attachment-${timestamp}${getExtensionFromMimeType(mimetype)}`;
-          }
-        }
-
-        // Log attachment information
-        logger.info("Processing attachment", {
-          user_platform_id: platformUserId,
-          mimetype,
-          filename,
-        });
-
-        // Add attachment to form data
-        if (media instanceof Buffer) {
-          const blob = new Blob([media], { type: mimetype });
-          formData.append("attachment", blob, filename);
-        }
-      } catch (attachmentError) {
-        logger.error("Failed to process attachment", {
-          error: attachmentError,
-        });
-      }
-    }
+    // Create payload for JSON request
+    const payload: MessagePayload = {
+      message: messageContent,
+      user_platform_id: platformUserId,
+      platform: "whatsapp",
+    };
 
     // Make API request to AI service
     const controller = new AbortController();
@@ -126,7 +66,10 @@ export async function handleMessage(message: WAMessage) {
 
     const response = await fetch(aiApiUrl, {
       method: "POST",
-      body: formData,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
 
@@ -173,30 +116,4 @@ export async function handleMessage(message: WAMessage) {
 
     await react(message, "error");
   }
-}
-
-// Helper function to get file extension from mimetype
-function getExtensionFromMimeType(mimetype: string): string {
-  const mimeToExt: Record<string, string> = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/gif": ".gif",
-    "audio/mpeg": ".mp3",
-    "audio/ogg": ".ogg",
-    "audio/mp4": ".m4a",
-    "audio/webm": ".webm",
-    "video/mp4": ".mp4",
-    "video/webm": ".webm",
-    "application/pdf": ".pdf",
-    "application/vnd.ms-excel": ".xls",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-      ".xlsx",
-    "application/msword": ".doc",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-      ".docx",
-    "text/plain": ".txt",
-    "application/json": ".json",
-  };
-
-  return mimeToExt[mimetype] || "";
 }
