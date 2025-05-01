@@ -191,12 +191,11 @@ class UpstashConfig(BaseModel):
     redis_token: str
 
 
-# Update AIApiConfig class to include conversation_history_limit
+# Update AIApiConfig class to include conversation_history_limit and relevant_history_limit
 class AIApiConfig(BaseModel):
     debug: bool
-    conversation_history_limit: Optional[int] = (
-        5  # Add this field with default value
-    )
+    conversation_history_limit: Optional[int] = 5 
+    relevant_history_limit: Optional[int] = 3 
 
 
 # Update ServicesConfig class

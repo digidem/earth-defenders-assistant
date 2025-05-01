@@ -37,7 +37,8 @@
     "lint:repo": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions -r packages-without-package-json -r root-package-dependencies",
     "lint:repo:fix": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions -r packages-without-package-json -r root-package-dependencies --fix",
     "typecheck": "turbo typecheck",
-    "build:config": "turbo run build --filter=@eda/config --filter=@eda/config-python"
+    "build:config": "turbo run build --filter=@eda/config --filter=@eda/config-python",
+    "inspect:rag": "cd apps/ai_api && uv run python scripts/inspect_chroma.py"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

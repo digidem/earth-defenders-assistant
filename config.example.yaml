@@ -88,6 +88,7 @@ services:
   ai_api:
     debug: true
     conversation_history_limit: 5  # Number of previous exchanges to include in context
+    relevant_history_limit: 5      # Number of semantically relevant exchanges to retrieve
 
   whatsapp:
     bot_prefix: "*[BOT]:*"  # Message prefix for bot responses

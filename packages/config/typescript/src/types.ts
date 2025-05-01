@@ -162,10 +162,11 @@ const AIModelConfigSchema = z.object({
   description: z.string(),
 });
 
-// Update the AIApiConfig schema to include conversation_history_limit
+// Update the AIApiConfig schema
 const AIApiConfigSchema = z.object({
   debug: z.boolean(),
-  conversation_history_limit: z.number().default(5), // Add this field with default value
+  conversation_history_limit: z.number().default(5),
+  relevant_history_limit: z.number().default(3),
 });
 
 export const ConfigSchema = z.object({

@@ -96,13 +96,13 @@ async def message_handler_route(
                 current_message=final_message,
                 platform=platform,
                 recent_history_limit=config.services.ai_api.conversation_history_limit,
-                relevant_history_limit=3,  # Adjust as needed
+                relevant_history_limit=config.services.ai_api.relevant_history_limit,  # Use config value here
                 cross_session=False  # Set to True to enable cross-user memory
             )
-            
+
             # Use the merged history (recent + relevant) for the conversation context
             conversation_history = context.get("merged_history", [])
-            
+
             logger.debug(
                 f"Enhanced conversation context built with {len(context.get('recent_history', []))} recent "
                 f"and {len(context.get('relevant_history', []))} relevant exchanges"
