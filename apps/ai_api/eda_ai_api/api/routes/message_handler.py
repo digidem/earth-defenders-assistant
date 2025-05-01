@@ -10,7 +10,8 @@ from eda_ai_api.agents.manager import get_agent
 from eda_ai_api.agents.prompts.formatting import get_formatting_guidelines
 from eda_ai_api.models.message_handler import MessageHandlerResponse
 from eda_ai_api.utils.attachment_utils import process_attachment
-from eda_ai_api.utils.memory import PocketBaseMemory
+from eda_ai_api.utils.context_builder import build_enhanced_context
+from eda_ai_api.utils.vector_memory import VectorMemory
 from smolagents.local_python_executor import BASE_BUILTIN_MODULES
 from eda_ai_api.agents.prompts.manager import MANAGER_SYSTEM_PROMPT
 from smolagents.agents import populate_template
@@ -18,7 +19,7 @@ from smolagents.agents import populate_template
 config = ConfigLoader.get_config()
 
 router = APIRouter()
-memory = PocketBaseMemory()
+memory = VectorMemory()
 
 
 @router.post("/handle", response_model=MessageHandlerResponse)
@@ -86,32 +87,33 @@ async def message_handler_route(
                 user_platform_id=current_user_id,
             )
 
-        # Get conversation history from PocketBase
-        conversation_history = []
+        # Get conversation history from vector memory with RAG
+        context = {}
         try:
-            # Get history limit from config (default to 5 if not specified)
-            history_limit = getattr(
-                config.services.ai_api, "conversation_history_limit", 5
+            # Build enhanced context with both recent and semantically relevant history
+            context = await build_enhanced_context(
+                user_platform_id=current_user_id,
+                current_message=final_message,
+                platform=platform,
+                recent_history_limit=config.services.ai_api.conversation_history_limit,
+                relevant_history_limit=3,  # Adjust as needed
+                cross_session=False  # Set to True to enable cross-user memory
             )
-            logger.debug(f"Using conversation history limit: {history_limit}")
-
-            # Retrieve from PocketBase
-            db_history = await memory.get_conversation_history(
-                session_id=current_user_id,  # Using user_platform_id as the session key
-                limit=history_limit,  # Use the configured value
-            )
-            conversation_history = await memory.format_history_for_context(
-                db_history
-            )
+            
+            # Use the merged history (recent + relevant) for the conversation context
+            conversation_history = context.get("merged_history", [])
+            
             logger.debug(
-                f"Conversation history retrieved with {len(conversation_history)} entries"
+                f"Enhanced conversation context built with {len(context.get('recent_history', []))} recent "
+                f"and {len(context.get('relevant_history', []))} relevant exchanges"
             )
         except Exception as e:
             logger.error(
-                f"Error retrieving conversation history: {str(e)}",
+                f"Error retrieving enhanced conversation history: {str(e)}",
                 exc_info=True,
             )
-            # Continue without history if there's an error
+            # Continue with empty history if there's an error
+            conversation_history = []
 
         # Get current time for message formatting
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

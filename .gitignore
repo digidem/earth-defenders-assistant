@@ -70,3 +70,6 @@ observations_db.json
 old
 config.yaml
 !config.example.yaml
+
+# ChromaDB
+chroma_conversation_db/
