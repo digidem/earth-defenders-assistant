@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 from smolagents import CodeAgent, LiteLLMModel
 from eda_config.config import ConfigLoader
-
+from eda_ai_api.agents.tools import ConversationMemoryTool
 from eda_ai_api.agents.prompts.formatting import get_formatting_guidelines
 
 config = ConfigLoader.get_config()
@@ -13,7 +13,6 @@ model = LiteLLMModel(
     api_key=config.api_keys.groq,
     temperature=config.ai_models["standard"].temperature,
 )
-
 
 def get_agent(platform: str = "whatsapp", variables: Optional[Dict] = None):
     """
@@ -29,9 +28,12 @@ def get_agent(platform: str = "whatsapp", variables: Optional[Dict] = None):
     if variables is None:
         variables = {}
 
-    # Create a manager agent with the necessary tools
+    # Initialize tools
+    memory_tool = ConversationMemoryTool()
+
+    # Create a manager agent with the tools
     manager_agent = CodeAgent(
-        tools=[],  # Add your tools here
+        tools=[memory_tool],  # Add memory search tool
         model=model,
         max_steps=3,
     )
