@@ -81,7 +81,7 @@ class VectorMemory(PocketBaseMemory):
             # Create document ID
             doc_id = f"{platform}_{session_id}_{datetime.now().isoformat()}"
 
-            # Prepare metadata
+            # Prepare metadata - flatten nested dictionaries
             doc_metadata = {
                 "type": "conversation",
                 "platform": platform,
@@ -89,8 +89,20 @@ class VectorMemory(PocketBaseMemory):
                 "timestamp": datetime.now().isoformat(),
                 "user_message": user_message,
                 "assistant_response": assistant_response,
-                **(metadata or {})
             }
+
+            # If additional metadata is provided, flatten it
+            if metadata:
+                flattened = {}
+                for key, value in metadata.items():
+                    if isinstance(value, (str, int, float, bool)):
+                        flattened[key] = value
+                    elif isinstance(value, dict):
+                        # Flatten nested dict with dot notation
+                        for k, v in value.items():
+                            if isinstance(v, (str, int, float, bool)):
+                                flattened[f"{key}_{k}"] = v
+                doc_metadata.update(flattened)
 
             # Add to conversation collection
             self.conversation_collection.add(
