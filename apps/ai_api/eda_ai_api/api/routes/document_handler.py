@@ -21,8 +21,7 @@ ALLOWED_DOCUMENT_TYPES = {
 async def upload_document(
     file: UploadFile = File(...),
     ttl_days: Optional[int] = Form(30),
-    metadata: Optional[str] = Form(None),
-    user_platform_id: Optional[str] = Form(None)  # Add this parameter
+    user_platform_id: Optional[str] = Form(None)  # Keep this parameter
 ) -> DocumentUploadResponse:
     """
     Upload a document (currently only PDFs) for processing and storage
@@ -30,7 +29,6 @@ async def upload_document(
     Args:
         file: The document file to upload
         ttl_days: Number of days until document expires (optional, default: 30)
-        metadata: Additional metadata for the document as JSON string (optional)
         user_platform_id: User's platform ID for recording in conversation history
     """
     try:
@@ -50,16 +48,6 @@ async def upload_document(
                 
             raise HTTPException(status_code=400, detail=error_msg)
 
-        # Parse metadata if provided
-        parsed_metadata = {}
-        if metadata:
-            try:
-                parsed_metadata = json.loads(metadata)
-                if not isinstance(parsed_metadata, dict):
-                    raise ValueError("Metadata must be a JSON object")
-            except json.JSONDecodeError:
-                raise HTTPException(status_code=400, detail="Invalid metadata JSON format")
-
         # Create temp file to store upload
         with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ALLOWED_DOCUMENT_TYPES[file.content_type]}") as temp_file:
             content = await file.read()
@@ -67,11 +55,10 @@ async def upload_document(
             temp_path = temp_file.name
 
         try:
-            # Add the document to vector storage
+            # Add the document to vector storage with basic metadata
             doc_metadata = {
                 "filename": file.filename,
-                "content_type": file.content_type,
-                **parsed_metadata
+                "content_type": file.content_type
             }
             
             success = await memory.add_pdf_document(
