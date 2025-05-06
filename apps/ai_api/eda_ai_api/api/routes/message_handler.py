@@ -100,7 +100,7 @@ async def message_handler_route(request: MessageRequest) -> MessageHandlerRespon
                     ),
                     "tools": agent.tools,
                     "authorized_imports": BASE_BUILTIN_MODULES,
-                    "managed_agents": {},
+                    "managed_agents": agent.managed_agents, # Pass the actual managed agents
                 },
             )
             logger.debug("Agent prompt configured successfully")
