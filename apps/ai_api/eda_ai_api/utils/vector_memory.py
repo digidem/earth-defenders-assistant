@@ -348,28 +348,37 @@ class VectorMemory(PocketBaseMemory):
     async def cleanup_expired_documents(self) -> int:
         """Remove expired document chunks from document collection"""
         try:
-            current_time = datetime.now().isoformat()
-            
-            # Get IDs of expired documents
-            results = self.document_collection.query(
-                query_embeddings=[[0] * 384],  # Dummy embedding
-                where={
-                    "$and": [
-                        {"type": "document"},
-                        {"expiration_date": {"$lt": current_time}}
-                    ]
-                },
-                include=['ids']
+            current_time_iso = datetime.now().isoformat()
+            logger.info(f"Running cleanup for documents expired before: {current_time_iso}")
+
+            all_docs = self.document_collection.get(
+                include=["metadatas"] # Only need metadatas to check expiration
             )
-            
-            if results and results.get('ids') and results['ids'][0]:
-                expired_ids = results['ids'][0]
+
+            expired_ids = []
+            if all_docs and all_docs['ids']:
+                for i in range(len(all_docs['ids'])):
+                    doc_id = all_docs['ids'][i]
+                    metadata = all_docs['metadatas'][i]
+                    # Use 'expiration_date' as per your inspect_chroma.py output
+                    if metadata and 'expiration_date' in metadata:
+                        expiration_date_str = metadata['expiration_date']
+                        # Ensure consistent ISO format for comparison
+                        if expiration_date_str < current_time_iso:
+                            expired_ids.append(doc_id)
+                    elif metadata and metadata.get('type') == 'document': # Check type to ensure it's a document chunk
+                        logger.warning(f"Document chunk {doc_id} is missing 'expiration_date' in metadata.")
+
+
+            if expired_ids:
+                logger.info(f"Found {len(expired_ids)} expired document chunks to delete.")
                 self.document_collection.delete(ids=expired_ids)
-                logger.info(f"Removed {len(expired_ids)} expired document chunks")
+                logger.info(f"Successfully deleted {len(expired_ids)} expired document chunks.")
                 return len(expired_ids)
-            
-            return 0
+            else:
+                logger.info("No expired document chunks found to delete.")
+                return 0
 
         except Exception as e:
-            logger.error(f"Error cleaning up expired documents: {str(e)}")
+            logger.error(f"Error during cleanup of expired documents: {str(e)}", exc_info=True)
             return 0
