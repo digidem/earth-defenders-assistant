@@ -25,8 +25,7 @@ def transcribe_audio(audio_path: str, language: str = "en") -> str:
                 file=(audio_path, file.read()),
                 model="whisper-large-v3-turbo",
                 response_format="json",
-                # language=language,
-                temperature=0.0,
+                language=language,  # <--- enable language parameter
             )
 
             logger.info(f"Transcription result: {transcription.text}")

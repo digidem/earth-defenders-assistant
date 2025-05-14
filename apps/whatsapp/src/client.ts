@@ -13,7 +13,6 @@ import { CMD_PREFIX } from "./constants";
 import { handleMessage } from "./message/message";
 import {
   getRemoteJid,
-  isGroupMessage,
   react,
   shouldIgnore,
   shouldIgnoreUnread,

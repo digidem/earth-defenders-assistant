@@ -1,6 +1,9 @@
+import path from "path";
 import { config } from "@eda/config";
 import { logger } from "@eda/logger";
 import type { WAMessage } from "@whiskeysockets/baileys";
+import { downloadMediaMessage } from "@whiskeysockets/baileys";
+import { writeFile } from "fs/promises";
 import { sock } from "../client";
 import { getPhoneNumber, react } from "../utils";
 
@@ -20,6 +23,73 @@ interface MessagePayload {
   platform: string;
 }
 
+export async function handleAudioMessage(
+  message: WAMessage,
+): Promise<string | null> {
+  const audioMsg =
+    message.message?.audioMessage ||
+    message.message?.extendedTextMessage?.contextInfo?.quotedMessage
+      ?.audioMessage;
+  if (!audioMsg) return null;
+
+  const chatId = message.key.remoteJid;
+  if (!chatId) return null;
+
+  // Download audio buffer
+  const stream = await downloadMediaMessage(message, "buffer", {});
+  if (!stream) {
+    await sock.sendMessage(
+      chatId,
+      { text: "Não consegui baixar o áudio." },
+      { quoted: message },
+    );
+    await react(message, "error");
+    return null;
+  }
+
+  // Prepare form data for transcription
+  const formData = new FormData();
+  formData.append("file", new Blob([stream]), "audio.ogg");
+  formData.append("language", "pt"); // or detect/set dynamically
+
+  const transcriptionApiUrl = `http://localhost:${config.ports.ai_api}/api/transcription/transcribe`;
+
+  // Get transcription
+  const transcriptionResponse = await fetch(transcriptionApiUrl, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!transcriptionResponse.ok) {
+    logger.error("Transcription API error", {
+      status: transcriptionResponse.status,
+    });
+    await sock.sendMessage(
+      chatId,
+      { text: "Erro ao transcrever o áudio." },
+      { quoted: message },
+    );
+    await react(message, "error");
+    return null;
+  }
+
+  const transcriptionData = await transcriptionResponse.json();
+
+  if (!transcriptionData.success || !transcriptionData.transcription) {
+    await sock.sendMessage(
+      chatId,
+      {
+        text: `Erro ao transcrever o áudio: ${transcriptionData.error || "desconhecido"}`,
+      },
+      { quoted: message },
+    );
+    await react(message, "error");
+    return null;
+  }
+
+  return transcriptionData.transcription;
+}
+
 export async function handleMessage(message: WAMessage) {
   await react(message, "working");
 
@@ -37,39 +107,50 @@ export async function handleMessage(message: WAMessage) {
   if (!streamingReply) return console.error("No streaming reply");
 
   try {
-    const messageContent =
+    let messageContent =
       message.message?.conversation ||
       message.message?.extendedTextMessage?.text ||
       "";
-    const phoneNumber = getPhoneNumber(message);
 
-    // Format user_platform_id properly with platform prefix
+    // If it's an audio message, get the transcription
+    const audioMsg =
+      message.message?.audioMessage ||
+      message.message?.extendedTextMessage?.contextInfo?.quotedMessage
+        ?.audioMessage;
+
+    if (audioMsg) {
+      const transcription = await handleAudioMessage(message);
+      if (!transcription) return; // Error already handled in handleAudioMessage
+      messageContent = transcription;
+    }
+
+    if (!messageContent.trim()) {
+      throw new Error("No valid input provided");
+    }
+
+    const phoneNumber = getPhoneNumber(message);
     const platformUserId = `whatsapp_${phoneNumber}`;
 
-    // Create payload for JSON request
-    const payload: MessagePayload = {
-      message: messageContent,
-      user_platform_id: platformUserId,
-      platform: "whatsapp",
-    };
+    // Create FormData instead of JSON payload
+    const formData = new FormData();
+    formData.append("message", messageContent);
+    formData.append("user_platform_id", platformUserId);
+    formData.append("platform", "whatsapp");
+    formData.append("language", "pt");
 
-    // Make API request to AI service
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min timeout
 
-    // Construct URL using config
     const aiApiUrl = `http://localhost:${config.ports.ai_api}/api/message_handler/handle`;
 
     logger.info(
       `Sending request to AI API: ${aiApiUrl}, user_platform_id: ${platformUserId}`,
     );
 
+    // Send as FormData
     const response = await fetch(aiApiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+      body: formData,
       signal: controller.signal,
     });
 

@@ -35,12 +35,11 @@ def detect_content_type(file: UploadFile) -> Optional[str]:
     }.get(ext)
 
 
-async def process_audio_file(audio: UploadFile) -> str:
+async def process_audio_file(audio: UploadFile, language: str = "en") -> str:
     content_type = detect_content_type(audio)
     content = await audio.read()
 
     try:
-        # Add null check and default to mp3
         file_format = "mp3"
         if content_type is not None:
             file_format = ALLOWED_FORMATS.get(content_type, "mp3")
@@ -54,7 +53,7 @@ async def process_audio_file(audio: UploadFile) -> str:
                 temp_file.write(content)
                 audio_path = temp_file.name
 
-        return transcribe_audio(audio_path)
+        return transcribe_audio(audio_path, language=language)
     finally:
         if os.path.exists(audio_path):
             os.unlink(audio_path)
