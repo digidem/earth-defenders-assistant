@@ -17,12 +17,15 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@trigger.dev/sdk": "3.2.1",
+    "@trigger.dev/sdk": "3.3.11",
+    "@types/common-tags": "^1.8.4",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "common-tags": "^1.8.2",
     "dotenv": "^16.4.5",
+    "dotenv-expand": "^12.0.1",
+    "libsignal": "^2.0.1",
     "mkdirp": "^3.0.1",
-    "mongoose": "^8.7.1",
-    "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.26.0",
-    "wwebjs-mongo": "^1.1.0"
+    "pino": "^7.0.0",
+    "qrcode-terminal": "^0.12.0"
   }
 }

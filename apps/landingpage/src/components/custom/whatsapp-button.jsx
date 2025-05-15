@@ -1,5 +1,5 @@
-import React from "react";
 import { motion } from "framer-motion";
+import React from "react";
 
 const WhatsAppButton = ({ text, theme }) => {
   const handleClick = () => {
@@ -25,7 +25,10 @@ const WhatsAppButton = ({ text, theme }) => {
         className="w-6 h-6 ml-2"
         viewBox="0 0 48 48"
         xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-labelledby="whatsappIconTitle"
       >
+        <title id="whatsappIconTitle">WhatsApp Icon</title>
         <path
           d="M24.014,5c5.079,0.002,9.845,1.979,13.43,5.566c3.584,3.588,5.558,8.356,5.556,13.428c-0.004,10.465-8.522,18.98-18.986,18.98h-0.008c-3.177-0.001-6.3-0.798-9.073-2.311L4.868,43.303l2.694-9.835C5.9,30.59,5.026,27.324,5.027,23.979C5.032,13.514,13.548,5,24.014,5"
           fill="#fff"

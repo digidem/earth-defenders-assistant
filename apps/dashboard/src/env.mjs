@@ -1,3 +1,4 @@
+import { config } from "@eda/config";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
@@ -7,33 +8,30 @@ export const env = createEnv({
       .string()
       .optional()
       .transform((v) => (v ? `https://${v}` : undefined)),
-    PORT: z.coerce.number().default(3000),
+    PORT: z.coerce.number().default(config.ports.dashboard),
   },
   server: {
-    OPENPANEL_SECRET_KEY: z.string(),
-    RESEND_API_KEY: z.string(),
-    SUPABASE_SERVICE_KEY: z.string(),
-    UPSTASH_REDIS_REST_TOKEN: z.string(),
-    UPSTASH_REDIS_REST_URL: z.string(),
+    OPENPANEL_SECRET_KEY: z.string().default(config.api_keys.openpanel.secret),
+    RESEND_API_KEY: z.string().default(config.api_keys.resend),
+    SUPABASE_SERVICE_KEY: z
+      .string()
+      .default(config.api_keys.supabase.service_key),
+    UPSTASH_REDIS_REST_TOKEN: z
+      .string()
+      .default(config.services.upstash.redis_token),
+    UPSTASH_REDIS_REST_URL: z
+      .string()
+      .default(config.services.upstash.redis_url),
   },
   client: {
-    NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.string(),
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string(),
-    NEXT_PUBLIC_SUPABASE_URL: z.string(),
+    NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z
+      .string()
+      .default(config.api_keys.openpanel.client_id),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: z
+      .string()
+      .default(config.api_keys.supabase.anon_key),
+    NEXT_PUBLIC_SUPABASE_URL: z.string().default(config.databases.supabase.url),
   },
-  runtimeEnv: {
-    NEXT_PUBLIC_OPENPANEL_CLIENT_ID:
-      process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID,
-    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    OPENPANEL_SECRET_KEY: process.env.OPENPANEL_SECRET_KEY,
-    PORT: process.env.PORT,
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
-    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
-    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-    VERCEL_URL: process.env.VERCEL_URL,
-  },
+  runtimeEnv: process.env,
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,
 });

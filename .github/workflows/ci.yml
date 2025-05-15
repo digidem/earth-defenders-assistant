@@ -18,8 +18,16 @@ jobs:
       with:
         bun-version: latest
 
+    - name: Setup UV
+      uses: astral-sh/setup-uv@v3
+
     - name: Install dependencies
       run: bun install
+
+    - name: Setup config
+      run: |
+        cp config.example.yaml config.yaml
+        bun run build:config
 
     - name: Run builds
       run: bun run build

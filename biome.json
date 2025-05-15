@@ -4,21 +4,28 @@
     "enabled": true
   },
   "files": {
-    "ignore": ["src/components/ui"]
+    "ignore": [
+      "src/components/ui",
+      "**/dist/**",
+      "dist",
+      "**/dist",
+      "apps/messaging/dist"
+    ],
+    "maxSize": 3145728
   },
   "linter": {
-    "ignore": ["node_modules", ".next", "packages/tsconfig"],
+    "ignore": [
+      "node_modules",
+      ".next",
+      "packages/tsconfig",
+      "**/dist/**",
+      "dist"
+    ],
     "enabled": true,
     "rules": {
       "recommended": true,
-      "a11y": {
-        "noSvgWithoutTitle": "off"
-      },
       "style": {
-        "noNonNullAssertion": "off"
-      },
-      "correctness": {
-        "useExhaustiveDependencies": "off"
+        "useNodejsImportProtocol": "off"
       }
     }
   },

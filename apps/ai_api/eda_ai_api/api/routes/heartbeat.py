@@ -1,11 +1,12 @@
 from fastapi import APIRouter
 
-from eda_ai_api.models.heartbeat import HearbeatResult
+from eda_ai_api.models.heartbeat import HeartbeatResult
+
 
 router = APIRouter()
 
 
-@router.get("/heartbeat", response_model=HearbeatResult, name="heartbeat")
-def get_hearbeat() -> HearbeatResult:
-    heartbeat = HearbeatResult(is_alive=True)
+@router.get("/heartbeat", response_model=HeartbeatResult, name="heartbeat")
+def get_heartbeat() -> HeartbeatResult:
+    heartbeat = HeartbeatResult(is_alive=True)
     return heartbeat

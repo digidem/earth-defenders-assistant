@@ -1,14 +1,10 @@
+import { config as edaConfig } from "@eda/config";
 import type { TriggerConfig } from "@trigger.dev/sdk/v3";
-import { config as dotenvConfig } from "dotenv";
-
-dotenvConfig();
-
-console.log("TRIGGER_API_URL", process.env.TRIGGER_API_URL);
-console.log("TRIGGER_PROJECT_ID", process.env.TRIGGER_PROJECT_ID);
 
 export const config: TriggerConfig = {
-  project: process.env.TRIGGER_PROJECT_ID ?? "",
+  project: edaConfig.services.trigger.project_id,
   logLevel: "log",
+  maxDuration: 360,
   retries: {
     enabledInDev: true,
     default: {

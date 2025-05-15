@@ -1,0 +1,16 @@
+[project]
+name = "eda-config"
+version = "0.1.42"
+description = "Configuration management for EDA"
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0.1",
+    "pydantic>=2.0.0"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["eda_config"]

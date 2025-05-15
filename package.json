@@ -1,8 +1,14 @@
 {
   "name": "earth-denfeders-assistant",
-  "workspaces": ["packages/*", "apps/*", "tooling/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "tooling/*",
+    "packages/config/typescript",
+    "packages/config/python"
+  ],
   "scripts": {
-    "prepare:db": "lefthook install && turbo run migrate && turbo run seed",
+    "prepare:db": "lefthook install && pocketbase migrate",
     "dev": "turbo dev --filter=@eda/jobs --filter=@eda/simulator --filter=@eda/ai-api",
     "build": "turbo build",
     "clean": "git clean -xdf node_modules",
@@ -10,6 +16,7 @@
     "dev:all": "turbo dev --parallel",
     "dev:api": "turbo dev --filter=@eda/api",
     "dev:ai": "turbo dev --filter=@eda/ai-api",
+    "dev:message": "turbo dev --filter=@eda/messaging",
     "dev:simulator": "turbo dev --filter=@eda/simulator",
     "dev:dashboard": "turbo dev --filter=@eda/dashboard",
     "dev:landingpage": "turbo dev --filter=@eda/landingpage",
@@ -20,15 +27,18 @@
     "dev:docs": "turbo dev --filter=@eda/docs",
     "build:landingpage": "turbo build --filter=@eda/landingpage",
     "clean:workspaces": "turbo clean",
-    "deploy:trigger": "docker compose -f deploy/trigger-stack/docker-compose.yml up -d",
-    "deploy:langtrace": "docker compose -f deploy/langtrace-stack/docker-compose.yml up -d",
+    "deploy:trigger": "cd deploy/trigger-stack && chmod +x deploy.sh && ./deploy.sh",
+    "deploy:langtrace": "cd deploy/langtrace-stack && chmod +x deploy.sh && ./deploy.sh",
+    "deploy:neo4j": "cd deploy/neo4j-stack && chmod +x deploy.sh && ./deploy.sh",
     "status": "bun status",
     "start:dashboard": "turbo start --filter=@eda/dashboard",
     "test": "turbo test --parallel",
     "format": "biome format --write .",
-    "lint:repo": "bunx sherif@latest",
-    "lint:repo:fix": "bunx sherif@latest --fix",
-    "typecheck": "turbo typecheck"
+    "lint:repo": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions -r packages-without-package-json -r root-package-dependencies",
+    "lint:repo:fix": "bunx sherif@latest -r unordered-dependencies -r multiple-dependency-versions -r packages-without-package-json -r root-package-dependencies --fix",
+    "typecheck": "turbo typecheck",
+    "build:config": "turbo run build --filter=@eda/config --filter=@eda/config-python",
+    "inspect:rag": "cd apps/ai_api && uv run python scripts/inspect_chroma.py"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
@@ -39,5 +49,9 @@
     "typescript": "^5.6.3"
   },
   "packageManager": "bun@1.1.34",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@eda/config": "workspace:*",
+    "pocketbase": "^0.25.2"
+  }
 }

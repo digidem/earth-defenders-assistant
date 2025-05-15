@@ -2,9 +2,9 @@
   "name": "@eda/ai-api",
   "version": "0.0.1",
   "scripts": {
-    "dev": "uv run uvicorn --reload eda_ai_api.main:app --port 8083",
-    "start": "uv run uvicorn eda_ai_api.main:app",
-    "lint": "bash ./scripts/linting.sh",
+    "dev": "uv run python -m eda_ai_api.main",
+    "start": "uv run python -m eda_ai_api.main",
+    "lint": "uvx flake8 eda_ai_api --config=setup.cfg",
     "test": "bash ./scripts/test.sh"
   }
 }

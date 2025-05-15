@@ -1,20 +1,7 @@
 {
   "name": "@eda/api",
   "scripts": {
-    "dev": "supabase start",
-    "status": "supabase start",
-    "login": "supabase login",
-    "migrate": "supabase migration up",
-    "seed": "supabase db seed generate && supabase db seed run",
-    "reset": "supabase db reset",
-    "generate": "supabase gen types --lang=typescript --local --schema public > ../../packages/supabase/src/types/db.ts"
-  },
-  "dependencies": {
-    "supabase": "^1.207.9"
-  },
-  "devDependencies": {
-    "@snaplet/copycat": "^5.1.0",
-    "@snaplet/seed": "0.98.0",
-    "postgres": "^3.4.5"
+    "dev": "cd pocketbase && ./pocketbase serve",
+    "status": "cd pocketbase && ./pocketbase health"
   }
 }

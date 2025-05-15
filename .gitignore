@@ -53,9 +53,8 @@ packages/email/public
 storybook-static
 tailwind.css
 
-# Supabase
-.branches
-.temp
+# Pocketbase
+pb_data
 
 # Trigger
 .trigger
@@ -69,3 +68,8 @@ apps/whatsapp-store/message_db.json
 *.zip
 observations_db.json
 old
+config.yaml
+!config.example.yaml
+
+# ChromaDB
+chroma_conversation_db/

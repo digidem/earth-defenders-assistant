@@ -1,8 +1,9 @@
-import "server-only";
-
 import { Redis } from "@upstash/redis";
+import "server-only";
+//@ts-ignore
+import { config } from "@eda/config";
 
 export const client = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  url: config.services.upstash.redis_url,
+  token: config.services.upstash.redis_token,
 });

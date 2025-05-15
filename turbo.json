@@ -8,8 +8,6 @@
     },
     "build": {
       "env": [
-        "SUPABASE_SERVICE_KEY",
-        "SUPABASE_API_KEY",
         "RESEND_API_KEY",
         "LOOPS_ENDPOINT",
         "LOOPS_API_KEY",
@@ -63,6 +61,17 @@
     "seed": {
       "cache": false,
       "dependsOn": ["migrate"]
+    },
+    "build:config": {
+      "dependsOn": ["^build"],
+      "inputs": ["config.yaml", "packages/config/**/src/**"],
+      "outputs": [
+        "packages/config/typescript/dist/**",
+        "packages/config/python/.venv/**",
+        "packages/config/python/config.yaml",
+        "packages/config/typescript/package.json",
+        "packages/config/python/pyproject.toml"
+      ]
     }
   }
 }

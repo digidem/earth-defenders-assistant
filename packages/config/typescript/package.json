@@ -1,0 +1,16 @@
+{
+  "name": "@eda/config",
+  "version": "0.1.38",
+  "main": "dist/config.js",
+  "types": "dist/config.d.ts",
+  "type": "module",
+  "scripts": {
+    "bump": "bun ../scripts/bump-version.ts",
+    "build": "bun run bump && tsc && bun build ./src/config.ts --outdir ./dist --target node",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "yaml": "^2.3.4",
+    "zod": "^3.22.4"
+  }
+}

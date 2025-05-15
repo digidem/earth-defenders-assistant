@@ -1,0 +1,27 @@
+{
+  "name": "@eda/messaging",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "start": "bun run dist/index.js",
+    "test": "bun test",
+    "clean": "rm -rf .turbo node_modules dist",
+    "lint": "biome lint ./src",
+    "format": "biome format --write .",
+    "typecheck": "tsc-files --noEmit"
+  },
+  "dependencies": {
+    "@eda/logger": "workspace:*",
+    "@eda/types": "workspace:*",
+    "@supabase/supabase-js": "^2.45.4",
+    "@elysiajs/swagger": "^0.8.0",
+    "elysia": "^0.8.17",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.0.0"
+  }
+}

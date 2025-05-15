@@ -1,9 +1,6 @@
 name: Deployment Stacks
 
 on:
-  push:
-    paths:
-      - 'deploy/**'
   pull_request:
     paths:
       - 'deploy/**'
@@ -15,70 +12,146 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v3
+
+    - name: Install dependencies
+      run: |
+        bun install
+        uv venv
+        . .venv/bin/activate
+
+    - name: Setup config
+      run: |
+        cp config.example.yaml config.yaml
+        bun run build:config
+
     - name: Create Docker network
       run: docker network create eda-network || true
 
     - name: Find and process deploy directories
       run: |
+        # Create dirs file
+        touch $GITHUB_WORKSPACE/deploy_dirs.txt
+        
         for dir in deploy/*/; do
           if [ -d "$dir" ]; then
             echo "Processing $dir"
             cd "$dir"
             
-            # Copy environment file
-            cp .env.example .env
+            # Generate env from config
+            bun run export-config.ts > .env
             
             # Start containers
             docker compose up -d
             
-            # Store the directory name for later use
+            # Store directory
             echo "${dir%/}" >> $GITHUB_WORKSPACE/deploy_dirs.txt
+            
+            # Wait for containers to be fully up
+            echo "Waiting for containers to initialize..."
+            sleep 15
+            
+            # Check if all containers are healthy
+            docker compose ps --format "{{.Name}} {{.Status}}" | while read -r line; do
+              if [[ ! $line =~ "(healthy)" ]] && [[ ! $line =~ "Up" ]]; then
+                echo "Container not healthy: $line"
+                docker compose logs
+                exit 1
+              fi
+            done
             
             cd $GITHUB_WORKSPACE
           fi
         done
 
-    - name: Wait for services to be ready
-      run: sleep 50
-
     - name: Test endpoints
       run: |
         while IFS= read -r dir; do
-          echo "Testing endpoints for $dir"
+          service_name=$(basename "$dir" | sed 's/-stack//')
+          echo "=== Testing endpoints for service: $service_name ==="
           
-          # Extract the service name from directory path
-          service_name=$(basename "$dir")
+          # Show container status
+          echo "Docker container status:"
+          docker ps -a | grep $service_name || true
           
-          # First check for HEALTHCHECK URL in .env file
-          if [ -f "$dir/.env" ]; then
-            healthcheck_url=$(grep '^HEALTHCHECK=' "$dir/.env" | cut -d '=' -f2)
-            if [ -n "$healthcheck_url" ]; then
-              test_url="$healthcheck_url"
-            else
-              # If no HEALTHCHECK, fall back to PORT
-              port=$(grep '^PORT=' "$dir/.env" | cut -d '=' -f2)
-              if [ -z "$port" ]; then
-                echo "No PORT found in .env for $service_name, using default 3000"
-                port=3000
-              fi
-              test_url="http://localhost:${port}/"
-            fi
-          else
-            echo "No .env file found for $service_name, using default 3000"
-            test_url="http://localhost:3000/"
+          # Show container logs
+          echo "Container logs:"
+          docker logs $service_name 2>&1 || true
+          
+          # Skip config packages
+          if [[ "$service_name" == "config" ]]; then
+            echo "Skipping config package: $service_name"
+            continue
           fi
           
-          # Test the endpoint
-          curl --fail "$test_url" || {
+          # Get and verify port
+          port=$(bun run -b --bun ./tooling/scripts/get-port.ts ${service_name})
+          echo "Retrieved port: $port"
+          
+          if [ -z "$port" ]; then
+            echo "No port found for $service_name in config, skipping..."
+            continue
+          fi
+          
+          # Network connectivity check
+          echo "Testing network connectivity:"
+          nc -zv localhost $port 2>&1 || true
+          
+          test_url="http://localhost:${port}/"
+          echo "Testing URL: $test_url"
+          
+          # More verbose curl
+          curl -v --fail --retry 5 --retry-delay 10 --retry-connrefused "$test_url" || {
+            echo "=== Error Details ==="
             echo "Failed to reach $test_url for $service_name"
+            echo "Container status:"
+            docker ps -a | grep $service_name || true
+            echo "Latest logs:"
+            docker logs --tail 50 ${service_name} 2>&1 || true
+            echo "Network status:"
+            netstat -tulpn | grep $port || true
+            exit 1
+          }
+          
+          echo "=== Test completed for $service_name ==="
+        done < $GITHUB_WORKSPACE/deploy_dirs.txt
+
+    - name: Check service health
+      run: |
+        while IFS= read -r dir; do
+          service_name=$(basename "$dir" | sed 's/-stack//')
+          echo "Checking health for $service_name..."
+          
+          # Get port from config
+          port=$(bun run -b --bun ./tooling/scripts/get-port.ts ${service_name})
+          
+          # Skip if no port found
+          if [ -z "$port" ]; then
+            echo "No port configured for $service_name, skipping..."
+            continue
+          fi
+          
+          # Wait for port to be available
+          timeout 60 bash -c "until nc -z localhost $port; do sleep 2; done" || {
+            echo "Service $service_name not ready on port $port"
+            docker logs ${service_name} || true
             exit 1
           }
         done < $GITHUB_WORKSPACE/deploy_dirs.txt
+
     - name: Cleanup
       if: always()
       run: |
-        while IFS= read -r dir; do
-          cd "$dir"
-          docker compose down
-          cd $GITHUB_WORKSPACE
-        done < $GITHUB_WORKSPACE/deploy_dirs.txt
+        if [ -f "$GITHUB_WORKSPACE/deploy_dirs.txt" ]; then
+          while IFS= read -r dir; do
+            cd "$dir"
+            docker compose down
+            cd $GITHUB_WORKSPACE
+          done < $GITHUB_WORKSPACE/deploy_dirs.txt
+        fi

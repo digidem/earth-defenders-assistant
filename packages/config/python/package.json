@@ -1,0 +1,8 @@
+{
+  "name": "@eda/config-python",
+  "private": true,
+  "scripts": {
+    "build": "bun run bump && uv venv && . .venv/bin/activate && uv pip install -e .",
+    "bump": "bun ../scripts/bump-version.ts"
+  }
+}
