@@ -30,42 +30,21 @@ class MessageRequest(BaseModel):
 
 @router.post("/handle", response_model=MessageHandlerResponse)
 async def message_handler_route(
-    message: Optional[str] = Form(None),
-    user_platform_id: Optional[str] = Form(None),
-    platform: str = Form("whatsapp"),
-    attachment: Optional[UploadFile] = File(None),
-    language: str = Form("pt"),  # Default to Portuguese, adjust as needed
+    request: MessageRequest,
 ) -> MessageHandlerResponse:
     """
-    Main route handler that processes messages and optional attachments using the manager agent.
+    Main route handler that processes messages using the manager agent.
     """
     try:
-        current_user_id = user_platform_id or str(uuid.uuid4())
+        current_user_id = request.user_platform_id or str(uuid.uuid4())
         logger.info(f"New request - User Platform ID: {current_user_id}")
-        logger.info(f"Platform received: {platform}")
-        logger.debug(f"Message payload: '{message}'")
+        logger.info(f"Platform received: {request.platform}")
+        logger.debug(f"Message payload: '{request.message}'")
 
-        # Process attachment if present
-        attachment_description = ""
-        attachment_metadata = {}
-        if attachment:
-            logger.info(
-                f"Processing attachment: {attachment.filename} ({attachment.content_type})"
-            )
-            attachment_description, attachment_metadata = (
-                await process_attachment(attachment)
-            )
-            logger.info(f"Attachment processed: {attachment_description}")
-
-        # Combine text and attachment description for agent input
-        text_input = message or ""
-        if attachment_description:
-            text_input = f"{text_input}\n\n{attachment_description}".strip()
-
-        if not text_input:
-            logger.warning("No valid input provided")
+        if not request.message:
+            logger.warning("No message provided")
             return MessageHandlerResponse(
-                result="Error: No valid input provided (message or attachment required)",
+                result="Error: No message provided",
                 user_platform_id=current_user_id,
             )
 
@@ -74,8 +53,8 @@ async def message_handler_route(
         try:
             context = await build_enhanced_context(
                 user_platform_id=current_user_id,
-                current_message=text_input,
-                platform=platform,
+                current_message=request.message,
+                platform=request.platform,
                 recent_history_limit=config.services.ai_api.conversation_history_limit,
                 relevant_history_limit=config.services.ai_api.relevant_history_limit,
                 cross_session=False,
@@ -87,20 +66,19 @@ async def message_handler_route(
             )
         except Exception as e:
             logger.error(
-                f"Error retrieving enhanced conversation history: {str(e)}",
-                exc_info=True,
+                f"Error retrieving enhanced conversation history: {str(e)}"
             )
             conversation_history = []
 
         # Get current time for message formatting
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        formatted_message = f"[{current_time}] User: {text_input}"
+        formatted_message = f"[{current_time}] User: {request.message}"
         logger.debug(f"Formatted message for agent: '{formatted_message}'")
 
         # Create and configure manager agent
-        logger.debug(f"Creating agent for platform: {platform}")
+        logger.debug(f"Creating agent for platform: {request.platform}")
         try:
-            agent = get_agent(platform=platform)
+            agent = get_agent(platform=request.platform)
             logger.debug(f"Agent created with {len(agent.tools)} tools")
         except Exception as e:
             logger.error(f"Error creating agent: {str(e)}", exc_info=True)
@@ -118,7 +96,7 @@ async def message_handler_route(
                     "conversation_history": conversation_history,
                     "bot_name": config.services.whatsapp.bot_name,
                     "formatting_guidelines": get_formatting_guidelines(
-                        platform
+                        request.platform
                     ),
                     "tools": agent.tools,
                     "authorized_imports": BASE_BUILTIN_MODULES,
@@ -152,10 +130,10 @@ async def message_handler_route(
         try:
             await memory.add_message_to_history(
                 session_id=current_user_id,
-                user_message=text_input,
+                user_message=request.message,
                 assistant_response=response_content,
-                platform=platform,
-                metadata=attachment_metadata if attachment_metadata else None,
+                platform=request.platform,
+                metadata=None,
             )
             logger.info(f"Conversation stored for user {current_user_id}")
         except Exception as db_error:
@@ -176,5 +154,5 @@ async def message_handler_route(
         logger.error(f"Error in message handler route: {str(e)}", exc_info=True)
         return MessageHandlerResponse(
             result=f"Error: {str(e)}",
-            user_platform_id=user_platform_id or "error_session",
+            user_platform_id=request.user_platform_id or "error_session",
         )
