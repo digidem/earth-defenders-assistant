@@ -1,20 +1,20 @@
 import { resolve } from "node:path";
 import { URL, fileURLToPath } from "node:url";
-import { config } from "@eda/config";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+// https://vitejs.dev/config/
 export default defineConfig({
   server: {
     host: "::",
-    port: config.ports.landingpage,
+    port: "8081",
   },
   define: {
-    VITE_OPENPANEL_CLIENT_ID: JSON.stringify(
-      config.api_keys.openpanel.client_id,
+    "process.env.VITE_OPENPANEL_CLIENT_ID": JSON.stringify(
+      process.env.VITE_OPENPANEL_CLIENT_ID,
     ),
   },
-  base: "/",
+  base: process.env.BASE_URL || "/",
   plugins: [react()],
   resolve: {
     alias: [

@@ -1,0 +1,21 @@
+[project]
+name = "proposal_writer"
+version = "0.1.0"
+description = "proposal-writer using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<=3.13"
+dependencies = [
+    "crewai[tools]>=0.76.2,<1.0.0",
+    "langtrace-python-sdk>=3.2.0",
+]
+
+[project.scripts]
+proposal_writer = "proposal_writer.main:run"
+run_crew = "proposal_writer.main:run"
+train = "proposal_writer.main:train"
+replay = "proposal_writer.main:replay"
+test = "proposal_writer.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

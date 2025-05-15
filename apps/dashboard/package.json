@@ -2,12 +2,12 @@
   "name": "@eda/dashboard",
   "version": "0.1.0",
   "scripts": {
-    "dev": "tsx src/server.ts",
+    "dev": "next dev -p 8080",
     "build": "next build",
     "clean": "git clean -xdf .next .turbo node_modules",
     "lint": "biome lint",
     "format": "biome format --write .",
-    "start": "NODE_ENV=production tsx src/server.ts",
+    "start": "next start",
     "typecheck": "tsc-files --noEmit"
   },
   "dependencies": {
@@ -24,7 +24,6 @@
     "nuqs": "^1.18.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tsx": "^4.19.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {

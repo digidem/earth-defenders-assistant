@@ -1,12 +1,14 @@
 "use server";
 
-import { helloWorldTask } from "@eda/jobs/trigger/example";
+import type { helloWorldTask } from "@eda/jobs/trigger/example";
 import { tasks } from "@trigger.dev/sdk/v3";
 
 export async function myTask() {
   try {
-    // Remove task option and pass payload directly
-    const handle = await tasks.trigger("hello-world", "James");
+    const handle = await tasks.trigger<typeof helloWorldTask>(
+      "hello-world",
+      "James",
+    );
 
     return { handle };
   } catch (error) {

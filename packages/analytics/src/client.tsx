@@ -1,4 +1,3 @@
-import { config } from "@eda/config";
 import { logger } from "@eda/logger";
 import {
   OpenPanelComponent,
@@ -10,7 +9,7 @@ const isProd = process?.env.NODE_ENV === "production";
 
 const Provider = () => (
   <OpenPanelComponent
-    clientId={config.api_keys.openpanel.client_id}
+    clientId={process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID!}
     trackAttributes={true}
     trackScreenViews={isProd}
     trackOutgoingLinks={isProd}
@@ -22,10 +21,12 @@ const track = (options: { event: string } & PostEventPayload["properties"]) => {
 
   if (!isProd) {
     logger.info("Track", options);
+
     return;
   }
 
   const { event, ...rest } = options;
+
   openTrack(event, rest);
 };
 

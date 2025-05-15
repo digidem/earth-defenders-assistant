@@ -1,4 +1,3 @@
-import { config } from "@eda/config";
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest, NextResponse } from "next/server";
 
@@ -7,8 +6,8 @@ export const updateSession = async (
   response: NextResponse,
 ) => {
   const supabase = createServerClient(
-    config.databases.supabase.url,
-    config.api_keys.supabase.anon_key,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -27,6 +26,7 @@ export const updateSession = async (
     },
   );
 
+  // This is to ensure the session is updated
   const {
     data: { user },
   } = await supabase.auth.getUser();

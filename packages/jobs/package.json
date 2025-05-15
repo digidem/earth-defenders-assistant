@@ -5,7 +5,7 @@
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "lint": "biome lint ./trigger ./lib",
-    "dev": "bunx trigger.dev dev --skip-update-check",
+    "dev": "bunx trigger.dev dev",
     "format": "biome format --write .",
     "typecheck": "tsc-files --noEmit",
     "test": "vitest"
@@ -13,10 +13,11 @@
   "dependencies": {
     "@eda/supabase": "workspace:*",
     "@eda/types": "workspace:*",
-    "@trigger.dev/sdk": "3.3.11"
+    "@getzep/zep-cloud": "^2.1.1",
+    "@trigger.dev/sdk": "3.2.1"
   },
   "devDependencies": {
-    "@trigger.dev/build": "3.3.11",
+    "@trigger.dev/build": "3.2.1",
     "vitest": "^2.1.5"
   }
 }

@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
-import { Globe, Mic, Server, Shield } from "lucide-react";
 import React from "react";
+import { motion } from "framer-motion";
+import { Mic, Server, Globe, Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const HowItWorksSection = ({ theme, themeColors }) => {
@@ -8,25 +8,21 @@ const HowItWorksSection = ({ theme, themeColors }) => {
 
   const features = [
     {
-      id: "voice",
       icon: <Mic className={`${themeColors[theme].icon} mb-4`} size={48} />,
       title: t("voiceFirstTech"),
       description: t("voiceFirstDesc"),
     },
     {
-      id: "offline",
       icon: <Server className={`${themeColors[theme].icon} mb-4`} size={48} />,
       title: t("offlineFirst"),
       description: t("offlineFirstDesc"),
     },
     {
-      id: "language",
       icon: <Globe className={`${themeColors[theme].icon} mb-4`} size={48} />,
       title: t("languagePreservation"),
       description: t("languagePreservationDesc"),
     },
     {
-      id: "territory",
       icon: <Shield className={`${themeColors[theme].icon} mb-4`} size={48} />,
       title: t("territoryDefense"),
       description: t("territoryDefenseDesc"),
@@ -52,12 +48,12 @@ const HowItWorksSection = ({ theme, themeColors }) => {
           {t("howItWorksTitle")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {features.map((feature) => (
+          {features.map((feature, index) => (
             <motion.div
-              key={feature.id}
+              key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 0.8, delay: index * 0.2 }}
               className={`flex flex-col items-center p-6 rounded-lg ${themeColors[theme].card}`}
             >
               {feature.icon}
@@ -78,10 +74,7 @@ const HowItWorksSection = ({ theme, themeColors }) => {
           viewBox="0 0 1200 120"
           preserveAspectRatio="none"
           className="relative block w-full h-16"
-          role="img"
-          aria-labelledby="howItWorksWaveTitle"
         >
-          <title id="howItWorksWaveTitle">How It Works Section Wave</title>
           <path
             d="M1200 120L0 16.48V0h1200v120z"
             className={`fill-current ${themeColors[theme].textBackground}`}

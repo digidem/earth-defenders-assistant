@@ -1,4 +1,3 @@
-import { config } from "@eda/config";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "../types";
@@ -7,8 +6,8 @@ export const createClient = () => {
   const cookieStore = cookies();
 
   return createServerClient<Database>(
-    config.databases.supabase.url,
-    config.api_keys.supabase.service_key,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {

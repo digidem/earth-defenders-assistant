@@ -111,7 +111,3 @@ ENV/
 # mypy
 .mypy_cache/
 .idea/
-
-# CSV Reports
-*.csv
-report_*.csv
