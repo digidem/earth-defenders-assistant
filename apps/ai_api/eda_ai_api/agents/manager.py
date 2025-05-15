@@ -9,10 +9,11 @@ config = ConfigLoader.get_config()
 
 # Manager agent model (can be premium as before)
 manager_model = LiteLLMModel(
-    model_id=f"{config.ai_models['premium'].provider}/{config.ai_models['premium'].model}",
-    api_key=config.api_keys.openrouter, 
-    temperature=config.ai_models["premium"].temperature,
+    model_id=f"{config.ai_models['standard'].provider}/{config.ai_models['standard'].model}",
+    api_key=config.api_keys.groq,
+    temperature=config.ai_models["standard"].temperature,
 )
+
 
 def get_agent(platform: str = "whatsapp", variables: Optional[Dict] = None):
     """
@@ -31,14 +32,16 @@ def get_agent(platform: str = "whatsapp", variables: Optional[Dict] = None):
     # Initialize specialized agents
     doc_agent = get_document_search_agent()
     mem_agent = get_memory_search_agent()
-    
 
     # Create the manager agent, providing the specialized agents
     manager_agent = CodeAgent(
-        tools=[], 
-        managed_agents=[doc_agent, mem_agent], # List of agents it can delegate to
+        tools=[],
+        managed_agents=[
+            doc_agent,
+            mem_agent,
+        ],  # List of agents it can delegate to
         model=manager_model,
-        max_steps=5, # Increase steps slightly to allow for delegation
+        max_steps=5,  # Increase steps slightly to allow for delegation
     )
 
     # Apply conversation history limit from config (passed to prompt template)
