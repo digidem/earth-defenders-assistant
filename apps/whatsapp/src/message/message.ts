@@ -47,14 +47,13 @@ export async function handleAudioMessage(
     return null;
   }
 
-  // Prepare form data for transcription
+  // First, get transcription from transcription route
   const formData = new FormData();
   formData.append("file", new Blob([stream]), "audio.ogg");
-  formData.append("language", "pt"); // or detect/set dynamically
+  formData.append("language", "pt");
 
   const transcriptionApiUrl = `http://localhost:${config.ports.ai_api}/api/transcription/transcribe`;
 
-  // Get transcription
   const transcriptionResponse = await fetch(transcriptionApiUrl, {
     method: "POST",
     body: formData,
@@ -112,7 +111,7 @@ export async function handleMessage(message: WAMessage) {
       message.message?.extendedTextMessage?.text ||
       "";
 
-    // If it's an audio message, get the transcription
+    // If it's an audio message, get the transcription first
     const audioMsg =
       message.message?.audioMessage ||
       message.message?.extendedTextMessage?.contextInfo?.quotedMessage
@@ -131,26 +130,28 @@ export async function handleMessage(message: WAMessage) {
     const phoneNumber = getPhoneNumber(message);
     const platformUserId = `whatsapp_${phoneNumber}`;
 
-    // Create FormData instead of JSON payload
-    const formData = new FormData();
-    formData.append("message", messageContent);
-    formData.append("user_platform_id", platformUserId);
-    formData.append("platform", "whatsapp");
-    formData.append("language", "pt");
+    // Call message handler with JSON payload
+    const aiApiUrl = `http://localhost:${config.ports.ai_api}/api/message_handler/handle`;
+
+    const payload: MessagePayload = {
+      message: messageContent,
+      user_platform_id: platformUserId,
+      platform: "whatsapp",
+    };
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min timeout
-
-    const aiApiUrl = `http://localhost:${config.ports.ai_api}/api/message_handler/handle`;
 
     logger.info(
       `Sending request to AI API: ${aiApiUrl}, user_platform_id: ${platformUserId}`,
     );
 
-    // Send as FormData
     const response = await fetch(aiApiUrl, {
       method: "POST",
-      body: formData,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
 
