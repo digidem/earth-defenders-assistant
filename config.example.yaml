@@ -30,6 +30,7 @@ api_keys:
   openai: "xxx"
   openrouter: "xxx" # OpenRouter API key
   deepseek: "xxx"  # DeepSeek LLM API
+  google_ai_studio: "xxx"  # Google AI Studio API key
   supabase:
     service_key: "xxx"
     anon_key: "xxx"
@@ -171,8 +172,8 @@ ai_models:
     temperature: 0.5
     description: "High-performance model for complex reasoning and generation"
   standard:
-    provider: "groq"
-    model: "mixtral-8x7b-v1"
+    provider: "gemini"
+    model: "gemini-2.5-flash-preview-05-20"
     temperature: 0.7
     description: "Balanced model for general purpose tasks"
   basic:

@@ -152,6 +152,7 @@ export const ApiKeysSchema = z.object({
     auth_token: z.string(),
   }),
   deepseek: z.string(),
+  google_ai_studio: z.string(), // Added Google AI Studio API key
 });
 
 // AI Models

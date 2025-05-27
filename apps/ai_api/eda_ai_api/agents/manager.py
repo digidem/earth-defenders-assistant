@@ -9,9 +9,9 @@ config = ConfigLoader.get_config()
 
 # Manager agent model (can be premium as before)
 manager_model = LiteLLMModel(
-    model_id=f"{config.ai_models['premium'].provider}/{config.ai_models['premium'].model}",
-    api_key=config.api_keys.openrouter,
-    temperature=config.ai_models["premium"].temperature,
+    model_id=f"{config.ai_models['standard'].provider}/{config.ai_models['standard'].model}",
+    api_key=config.api_keys.google_ai_studio,
+    temperature=config.ai_models["standard"].temperature,
 )
 
 
