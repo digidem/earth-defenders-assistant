@@ -55,6 +55,7 @@ class ApiKeys(BaseModel):
     dub: str
     sentry: SentryKeys
     deepseek: str  # Added DeepSeek API key
+    google_ai_studio: str  # Added Google AI Studio API key
 
 
 class DbPorts(BaseModel):
@@ -194,8 +195,8 @@ class UpstashConfig(BaseModel):
 # Update AIApiConfig class to include conversation_history_limit and relevant_history_limit
 class AIApiConfig(BaseModel):
     debug: bool
-    conversation_history_limit: Optional[int] = 5 
-    relevant_history_limit: Optional[int] = 3 
+    conversation_history_limit: Optional[int] = 5
+    relevant_history_limit: Optional[int] = 3
 
 
 # Update ServicesConfig class
