@@ -43,7 +43,7 @@ export async function handleDocumentMessage(
       documentMsg.fileName ||
         (mimeType.includes("csv") ? "document.csv" : "document.pdf"),
     );
-    formData.append("ttl_days", "30");
+    formData.append("ttl_days", "1"); // Changed from "30" to "1"
     formData.append("user_platform_id", platformUserId);
     formData.append("platform", "whatsapp");
 
@@ -81,7 +81,7 @@ export async function handleDocumentMessage(
     await sock.sendMessage(
       chatId,
       {
-        text: `✅ ${fileType} processado com sucesso!\n\nAgora você pode fazer perguntas sobre o conteúdo deste arquivo diretamente por mensagem.`,
+        text: `✅ ${fileType} processado com sucesso!\n\nAgora você pode fazer perguntas sobre o conteúdo deste arquivo diretamente por mensagem.\n\n⏰ O arquivo será mantido por 1 dia.`,
       },
       { quoted: message },
     );

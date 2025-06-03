@@ -26,16 +26,16 @@ ALLOWED_DOCUMENT_TYPES = {
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
-    ttl_days: Optional[int] = Form(30),
+    ttl_days: Optional[int] = Form(1),  # Changed from 30 to 1
     user_platform_id: Optional[str] = Form(None),
-    platform: Optional[str] = Form("whatsapp"),  # Add platform parameter
+    platform: Optional[str] = Form("whatsapp"),
 ) -> DocumentUploadResponse:
     """
     Upload a document (PDF or CSV) for processing and storage
 
     Args:
         file: The document file to upload
-        ttl_days: Number of days until document expires (optional, default: 30)
+        ttl_days: Number of days until document expires (optional, default: 1)
         user_platform_id: User's platform ID for recording in conversation history
         platform: Platform identifier (default: whatsapp)
     """
