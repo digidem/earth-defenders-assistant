@@ -12,15 +12,6 @@ export async function handleDocumentMessage(
   const documentMsg = message.message?.documentMessage;
   if (!documentMsg || !chatId) return false;
 
-  const mimeType = documentMsg.mimetype;
-  if (
-    mimeType !== "application/pdf" &&
-    mimeType !== "text/csv" &&
-    mimeType !== "application/csv"
-  ) {
-    return false;
-  }
-
   try {
     const fileBuffer = await downloadMediaMessage(message, "buffer", {});
     if (!fileBuffer) {
@@ -36,6 +27,7 @@ export async function handleDocumentMessage(
     const phoneNumber = getPhoneNumber(message);
     const platformUserId = `whatsapp_${phoneNumber}`;
 
+    const mimeType = documentMsg.mimetype || "application/octet-stream";
     const formData = new FormData();
     formData.append(
       "file",
@@ -43,7 +35,7 @@ export async function handleDocumentMessage(
       documentMsg.fileName ||
         (mimeType.includes("csv") ? "document.csv" : "document.pdf"),
     );
-    formData.append("ttl_days", "1"); // Changed from "30" to "1"
+    formData.append("ttl_days", "1");
     formData.append("user_platform_id", platformUserId);
     formData.append("platform", "whatsapp");
 
@@ -56,7 +48,13 @@ export async function handleDocumentMessage(
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText = await response.text();
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorText = errorJson.detail || errorText;
+      } catch {
+        // keep errorText as is
+      }
       logger.error("Document upload error", {
         status: response.status,
         error: errorText,
@@ -64,7 +62,7 @@ export async function handleDocumentMessage(
       });
       await sock.sendMessage(
         chatId,
-        { text: "Erro ao processar o arquivo. Por favor, tente novamente." },
+        { text: `Erro ao processar o arquivo: ${errorText}` },
         { quoted: message },
       );
       await react(message, "error");
