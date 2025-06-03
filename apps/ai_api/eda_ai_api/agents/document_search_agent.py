@@ -7,21 +7,27 @@ config = ConfigLoader.get_config()
 # Use a standard model for this specialized agent
 model = LiteLLMModel(
     model_id=f"{config.ai_models['standard'].provider}/{config.ai_models['standard'].model}",
-    api_key=config.api_keys.groq, # Assuming Groq for standard model based on config
+    api_key=config.api_keys.google_ai_studio,
     temperature=config.ai_models["standard"].temperature,
 )
 
-def get_document_search_agent():
+
+def get_document_search_agent(session_id: str, platform: str = "whatsapp"):
     """
-    Returns a specialized agent for searching documents.
+    Returns a specialized agent for searching documents with user context.
+
+    Args:
+        session_id: User's session/platform ID
+        platform: Platform identifier (e.g., 'whatsapp')
     """
-    document_tool = DocumentSearchTool()
-    
+    # Initialize tool with user context
+    document_tool = DocumentSearchTool(session_id=session_id, platform=platform)
+
     agent = CodeAgent(
         name="document_search_agent",
         description="Specialized agent to search through stored PDF documents based on a query.",
         tools=[document_tool],
         model=model,
-        max_steps=2, # Limit steps as it's a focused task
+        max_steps=2,  # Limit steps as it's a focused task
     )
     return agent

@@ -83,7 +83,10 @@ export async function handleMessage(message: WAMessage) {
     const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min timeout
 
     logger.info(
-      `Sending request to AI API: ${aiApiUrl}, user_platform_id: ${platformUserId}`,
+      `Sending request to AI API: ${aiApiUrl}, user_platform_id: ${platformUserId}, message: "${messageContent.substring(
+        0,
+        50,
+      )}..."`,
     );
 
     const response = await fetch(aiApiUrl, {
@@ -98,9 +101,12 @@ export async function handleMessage(message: WAMessage) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      const errorText = await response.text();
       logger.error("AI API error response", {
         status: response.status,
         statusText: response.statusText,
+        error: errorText,
+        user: platformUserId,
       });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -111,6 +117,10 @@ export async function handleMessage(message: WAMessage) {
       throw new Error("No result from API");
     }
 
+    logger.info(
+      `AI API response received for user: ${platformUserId}, response length: ${data.result.length}`,
+    );
+
     await sock.sendMessage(
       chatId,
       { text: data.result, edit: streamingReply.key },
@@ -119,11 +129,21 @@ export async function handleMessage(message: WAMessage) {
 
     await react(message, "done");
   } catch (error) {
-    logger.error("Error handling message", { error });
+    const phoneNumber = getPhoneNumber(message);
+    const platformUserId = `whatsapp_${phoneNumber}`;
+
+    logger.error("Error handling message", {
+      error,
+      user: platformUserId,
+      message:
+        message.message?.conversation ||
+        message.message?.extendedTextMessage?.text ||
+        "unknown",
+    });
 
     const errorMessage =
       error instanceof Error
-        ? error.message.includes("timeout")
+        ? error.message.includes("timeout") || error.name === "AbortError"
           ? ERROR_MESSAGES.TIMEOUT
           : error.message.includes("HTTP")
             ? ERROR_MESSAGES.HTTP_ERROR

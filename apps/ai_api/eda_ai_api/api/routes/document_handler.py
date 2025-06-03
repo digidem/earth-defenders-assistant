@@ -28,6 +28,7 @@ async def upload_document(
     file: UploadFile = File(...),
     ttl_days: Optional[int] = Form(30),
     user_platform_id: Optional[str] = Form(None),
+    platform: Optional[str] = Form("whatsapp"),  # Add platform parameter
 ) -> DocumentUploadResponse:
     """
     Upload a document (PDF or CSV) for processing and storage
@@ -36,8 +37,16 @@ async def upload_document(
         file: The document file to upload
         ttl_days: Number of days until document expires (optional, default: 30)
         user_platform_id: User's platform ID for recording in conversation history
+        platform: Platform identifier (default: whatsapp)
     """
     try:
+        # Validate required user_platform_id
+        if not user_platform_id:
+            raise HTTPException(
+                status_code=400,
+                detail="user_platform_id is required for document upload",
+            )
+
         # Validate file type
         if file.content_type not in ALLOWED_DOCUMENT_TYPES:
             error_msg = f"Unsupported file type. Allowed types: {list(ALLOWED_DOCUMENT_TYPES.keys())}"
@@ -66,15 +75,17 @@ async def upload_document(
             temp_path = temp_file.name
 
         try:
-            # Add the document to vector storage with basic metadata
+            # Add the document to user-specific vector storage
             doc_metadata = {
                 "filename": file.filename,
                 "content_type": file.content_type,
             }
 
             success = await memory.add_document(
+                session_id=user_platform_id,  # Pass user session
                 file_path=temp_path,
                 content_type=file.content_type,
+                platform=platform,  # Pass platform
                 ttl_days=ttl_days,
                 metadata=doc_metadata,
             )
@@ -145,6 +156,8 @@ async def upload_document(
 @router.get("/search", response_model=DocumentSearchResponse)
 async def search_documents(
     query: str,
+    user_platform_id: str,  # Make this required
+    platform: Optional[str] = "whatsapp",  # Add platform parameter
     limit: Optional[int] = 3,
 ) -> DocumentSearchResponse:
     """
@@ -152,10 +165,17 @@ async def search_documents(
 
     Args:
         query: The search query
+        user_platform_id: User's platform ID to search their documents
+        platform: Platform identifier (default: whatsapp)
         limit: Maximum number of results to return (optional, default: 3)
     """
     try:
-        results = memory.search_documents(query=query, limit=limit)
+        results = memory.search_documents(
+            session_id=user_platform_id,  # Pass user session
+            query=query,
+            platform=platform,  # Pass platform
+            limit=limit,
+        )
 
         return DocumentSearchResponse(success=True, results=results)
 

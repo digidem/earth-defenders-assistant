@@ -21,35 +21,74 @@ export async function handleDocumentMessage(
     return false;
   }
 
-  const fileBuffer = await downloadMediaMessage(message, "buffer", {});
-  if (!fileBuffer) {
+  try {
+    const fileBuffer = await downloadMediaMessage(message, "buffer", {});
+    if (!fileBuffer) {
+      await sock.sendMessage(
+        chatId,
+        { text: "Não foi possível baixar o arquivo." },
+        { quoted: message },
+      );
+      await react(message, "error");
+      return true;
+    }
+
+    const phoneNumber = getPhoneNumber(message);
+    const platformUserId = `whatsapp_${phoneNumber}`;
+
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new Blob([fileBuffer], { type: mimeType }),
+      documentMsg.fileName ||
+        (mimeType.includes("csv") ? "document.csv" : "document.pdf"),
+    );
+    formData.append("ttl_days", "30");
+    formData.append("user_platform_id", platformUserId);
+    formData.append("platform", "whatsapp");
+
+    logger.info(`Uploading document for user: ${platformUserId}`);
+
+    const uploadApiUrl = `http://localhost:${config.ports.ai_api}/api/documents/upload`;
+    const response = await fetch(uploadApiUrl, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error("Document upload error", {
+        status: response.status,
+        error: errorText,
+        user: platformUserId,
+      });
+      await sock.sendMessage(
+        chatId,
+        { text: "Erro ao processar o arquivo. Por favor, tente novamente." },
+        { quoted: message },
+      );
+      await react(message, "error");
+      return true;
+    }
+
+    const result = await response.json();
+    logger.info(
+      `Document upload successful for user: ${platformUserId}`,
+      result,
+    );
+
+    const fileType = mimeType.includes("csv") ? "CSV" : "PDF";
     await sock.sendMessage(
       chatId,
-      { text: "Não foi possível baixar o arquivo." },
+      {
+        text: `✅ ${fileType} processado com sucesso!\n\nAgora você pode fazer perguntas sobre o conteúdo deste arquivo diretamente por mensagem.`,
+      },
       { quoted: message },
     );
-    await react(message, "error");
+    await react(message, "done");
     return true;
-  }
-
-  const formData = new FormData();
-  formData.append(
-    "file",
-    new Blob([fileBuffer], { type: mimeType }),
-    documentMsg.fileName ||
-      (mimeType.includes("csv") ? "document.csv" : "document.pdf"),
-  );
-  formData.append("ttl_days", "30");
-  formData.append("user_platform_id", `whatsapp_${getPhoneNumber(message)}`);
-
-  const uploadApiUrl = `http://localhost:${config.ports.ai_api}/api/documents/upload`;
-  const response = await fetch(uploadApiUrl, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    logger.error("Document upload error", { status: response.status });
+  } catch (error) {
+    logger.error("Error in document upload:", error);
     await sock.sendMessage(
       chatId,
       { text: "Erro ao processar o arquivo. Por favor, tente novamente." },
@@ -58,15 +97,4 @@ export async function handleDocumentMessage(
     await react(message, "error");
     return true;
   }
-
-  const fileType = mimeType.includes("csv") ? "CSV" : "PDF";
-  await sock.sendMessage(
-    chatId,
-    {
-      text: `✅ ${fileType} processado com sucesso!\n\nAgora você pode fazer perguntas sobre o conteúdo deste arquivo diretamente por mensagem.`,
-    },
-    { quoted: message },
-  );
-  await react(message, "done");
-  return true;
 }
