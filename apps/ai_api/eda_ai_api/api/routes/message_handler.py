@@ -75,10 +75,13 @@ async def message_handler_route(
         formatted_message = f"[{current_time}] User: {request.message}"
         logger.debug(f"Formatted message for agent: '{formatted_message}'")
 
-        # Create and configure manager agent
+        # Create and configure manager agent with user context
         logger.debug(f"Creating agent for platform: {request.platform}")
         try:
-            agent = get_agent(platform=request.platform)
+            agent = get_agent(
+                platform=request.platform,
+                session_id=current_user_id,  # Pass the user session
+            )
             logger.debug(f"Agent created with {len(agent.tools)} tools")
         except Exception as e:
             logger.error(f"Error creating agent: {str(e)}", exc_info=True)

@@ -15,12 +15,17 @@ manager_model = LiteLLMModel(
 )
 
 
-def get_agent(platform: str = "whatsapp", variables: Optional[Dict] = None):
+def get_agent(
+    platform: str = "whatsapp",
+    session_id: str = None,
+    variables: Optional[Dict] = None,
+):
     """
     Returns the manager agent configured with specialized sub-agents.
 
     Args:
         platform: The platform name (e.g., "whatsapp", "telegram")
+        session_id: User's session/platform ID for scoping tools
         variables: Optional variables to pass to the agent
 
     Returns:
@@ -29,9 +34,18 @@ def get_agent(platform: str = "whatsapp", variables: Optional[Dict] = None):
     if variables is None:
         variables = {}
 
-    # Initialize specialized agents
-    doc_agent = get_document_search_agent()
-    mem_agent = get_memory_search_agent()
+    if not session_id:
+        raise ValueError(
+            "session_id is required to initialize user-specific agents"
+        )
+
+    # Initialize specialized agents with user context
+    doc_agent = get_document_search_agent(
+        session_id=session_id, platform=platform
+    )
+    mem_agent = get_memory_search_agent(
+        session_id=session_id, platform=platform
+    )
 
     # Create the manager agent, providing the specialized agents
     manager_agent = CodeAgent(

@@ -12,11 +12,18 @@ model = LiteLLMModel(
 )
 
 
-def get_memory_search_agent():
+def get_memory_search_agent(session_id: str, platform: str = "whatsapp"):
     """
-    Returns a specialized agent for searching conversation history.
+    Returns a specialized agent for searching conversation history with user context.
+
+    Args:
+        session_id: User's session/platform ID
+        platform: Platform identifier (e.g., 'whatsapp')
     """
-    memory_tool = ConversationMemoryTool()
+    # Initialize tool with user context
+    memory_tool = ConversationMemoryTool(
+        session_id=session_id, platform=platform
+    )
 
     agent = CodeAgent(
         name="memory_search_agent",

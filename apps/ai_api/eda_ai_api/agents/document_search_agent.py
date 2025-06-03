@@ -12,11 +12,16 @@ model = LiteLLMModel(
 )
 
 
-def get_document_search_agent():
+def get_document_search_agent(session_id: str, platform: str = "whatsapp"):
     """
-    Returns a specialized agent for searching documents.
+    Returns a specialized agent for searching documents with user context.
+
+    Args:
+        session_id: User's session/platform ID
+        platform: Platform identifier (e.g., 'whatsapp')
     """
-    document_tool = DocumentSearchTool()
+    # Initialize tool with user context
+    document_tool = DocumentSearchTool(session_id=session_id, platform=platform)
 
     agent = CodeAgent(
         name="document_search_agent",

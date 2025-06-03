@@ -18,7 +18,7 @@ config = ConfigLoader.get_config()
 
 
 class VectorMemory(PocketBaseMemory):
-    """Enhanced memory manager for conversations and documents with TTL"""
+    """Enhanced memory manager for conversations and documents with TTL - user-specific collections"""
 
     def __init__(self):
         """Initialize PocketBase and ChromaDB clients"""
@@ -38,21 +38,6 @@ class VectorMemory(PocketBaseMemory):
                 f"ChromaDB client initialized with persistence directory: {persist_directory}"
             )
 
-            # Create separate collections for conversations and documents
-            self.conversation_collection = (
-                self.chroma_client.get_or_create_collection(
-                    name="conversation_history",
-                    metadata={"hnsw:space": "cosine", "type": "conversation"},
-                )
-            )
-
-            self.document_collection = (
-                self.chroma_client.get_or_create_collection(
-                    name="document_chunks",
-                    metadata={"hnsw:space": "cosine", "type": "document"},
-                )
-            )
-
             # Initialize text splitter for documents
             self.text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=500,
@@ -61,7 +46,7 @@ class VectorMemory(PocketBaseMemory):
             )
 
             logger.info(
-                "VectorMemory initialized successfully with separate collections"
+                "VectorMemory initialized successfully with user-specific collection support"
             )
 
         except Exception as e:
@@ -69,6 +54,58 @@ class VectorMemory(PocketBaseMemory):
             raise RuntimeError(
                 f"Vector memory initialization error: {str(e)}"
             ) from e
+
+    def _get_user_collection_names(
+        self, session_id: str, platform: str = "whatsapp"
+    ) -> Tuple[str, str]:
+        """Generate user-specific collection names"""
+        # Create a consistent user identifier
+        user_id = (
+            f"{platform}_{session_id}".replace("-", "_")
+            .replace("@", "_at_")
+            .replace(".", "_dot_")
+        )
+        # Ensure collection names are valid (alphanumeric + underscore)
+        user_id = "".join(
+            c if c.isalnum() or c == "_" else "_" for c in user_id
+        )
+
+        conversation_collection_name = f"conv_{user_id}"
+        document_collection_name = f"docs_{user_id}"
+
+        return conversation_collection_name, document_collection_name
+
+    def _get_user_collections(
+        self, session_id: str, platform: str = "whatsapp"
+    ):
+        """Get or create user-specific collections"""
+        conv_name, doc_name = self._get_user_collection_names(
+            session_id, platform
+        )
+
+        # Get or create conversation collection for this user
+        conversation_collection = self.chroma_client.get_or_create_collection(
+            name=conv_name,
+            metadata={
+                "hnsw:space": "cosine",
+                "type": "conversation",
+                "user": session_id,
+                "platform": platform,
+            },
+        )
+
+        # Get or create document collection for this user
+        document_collection = self.chroma_client.get_or_create_collection(
+            name=doc_name,
+            metadata={
+                "hnsw:space": "cosine",
+                "type": "document",
+                "user": session_id,
+                "platform": platform,
+            },
+        )
+
+        return conversation_collection, document_collection
 
     async def add_message_to_history(
         self,
@@ -78,7 +115,7 @@ class VectorMemory(PocketBaseMemory):
         platform: str = "whatsapp",
         metadata: Optional[Dict] = None,
     ) -> bool:
-        """Store a message exchange in both PocketBase and conversation vector database"""
+        """Store a message exchange in both PocketBase and user-specific conversation vector database"""
         # First, store in PocketBase using parent method
         result = await super().add_message_to_history(
             session_id, user_message, assistant_response, platform, metadata
@@ -89,6 +126,11 @@ class VectorMemory(PocketBaseMemory):
             return False
 
         try:
+            # Get user-specific collections
+            conversation_collection, _ = self._get_user_collections(
+                session_id, platform
+            )
+
             # Create combined text for embedding
             combined_text = (
                 f"USER: {user_message}\nASSISTANT: {assistant_response}"
@@ -123,8 +165,8 @@ class VectorMemory(PocketBaseMemory):
                                 flattened[f"{key}_{k}"] = v
                 doc_metadata.update(flattened)
 
-            # Add to conversation collection
-            self.conversation_collection.add(
+            # Add to user-specific conversation collection
+            conversation_collection.add(
                 ids=[doc_id],
                 embeddings=[embedding],
                 metadatas=[doc_metadata],
@@ -132,7 +174,7 @@ class VectorMemory(PocketBaseMemory):
             )
 
             logger.info(
-                f"Added message pair to conversation collection for session {session_id}"
+                f"Added message pair to user-specific conversation collection for session {session_id}"
             )
             return True
 
@@ -148,18 +190,22 @@ class VectorMemory(PocketBaseMemory):
         limit: int = 5,
         filter_by_session: bool = True,
     ) -> List[Dict[str, Any]]:
-        """Search conversation history using semantic similarity"""
+        """Search conversation history using semantic similarity in user-specific collection"""
         try:
+            # Get user-specific collections
+            conversation_collection, _ = self._get_user_collections(
+                session_id, platform
+            )
+
             # Generate embedding for the query
             query_embedding = self.embedding_model.encode(query).tolist()
 
-            # Prepare metadata filter if filtering by session
-            where_filter = {"$and": [{"type": "conversation"}]}
-            if filter_by_session:
-                where_filter["$and"].append({"session_id": session_id})
+            # Since we're using user-specific collections, we don't need session filtering
+            # but we can still filter by type for consistency
+            where_filter = {"type": "conversation"}
 
-            # Execute search query on conversation collection
-            results = self.conversation_collection.query(
+            # Execute search query on user-specific conversation collection
+            results = conversation_collection.query(
                 query_embeddings=[query_embedding],
                 n_results=limit,
                 where=where_filter,
@@ -179,7 +225,7 @@ class VectorMemory(PocketBaseMemory):
                     formatted_results.append(result)
 
             logger.info(
-                f"Semantic search returned {len(formatted_results)} results for {session_id}"
+                f"Semantic search returned {len(formatted_results)} results for user {session_id}"
             )
             return formatted_results
 
@@ -196,26 +242,26 @@ class VectorMemory(PocketBaseMemory):
         cross_session: bool = False,
     ) -> List[Dict]:
         """
-        Get conversation history relevant to the current query
+        Get conversation history relevant to the current query from user-specific collection
 
         Args:
             session_id: User's platform ID
             current_query: The current user message
             platform: Platform identifier
             limit: Maximum number of relevant items to return
-            cross_session: Whether to search across all sessions
+            cross_session: Whether to search across all sessions (ignored since collections are user-specific)
 
         Returns:
             List of relevant conversation exchanges in formatted context
         """
         try:
-            # Get semantically relevant conversation snippets
+            # Get semantically relevant conversation snippets from user-specific collection
             relevant_items = await self.semantic_search(
                 session_id=session_id,
                 query=current_query,
                 platform=platform,
                 limit=limit,
-                filter_by_session=not cross_session,
+                filter_by_session=True,  # This doesn't matter since collection is user-specific
             )
 
             # Format for context
@@ -249,7 +295,7 @@ class VectorMemory(PocketBaseMemory):
         self, session_id: str, platform: str = "whatsapp"
     ) -> bool:
         """
-        Remove all vectorized conversation history for a specific session
+        Remove all vectorized conversation history for a specific user
 
         Args:
             session_id: User's platform ID
@@ -259,50 +305,80 @@ class VectorMemory(PocketBaseMemory):
             bool: Success status
         """
         try:
-            self.conversation_collection.delete(
-                where={"session_id": session_id, "platform": platform}
+            # Get user-specific collection names
+            conv_name, doc_name = self._get_user_collection_names(
+                session_id, platform
             )
-            logger.info(f"Cleared vector history for session {session_id}")
+
+            # Delete the entire user-specific conversation collection
+            try:
+                self.chroma_client.delete_collection(name=conv_name)
+                logger.info(
+                    f"Cleared vector history collection for user {session_id}"
+                )
+            except Exception as e:
+                # Collection might not exist, which is fine
+                logger.info(
+                    f"No conversation collection found for user {session_id}"
+                )
+
             return True
         except Exception as e:
             logger.error(f"Error clearing vector history: {str(e)}")
             return False
 
-    async def add_pdf_document(
-        self, pdf_path: str, ttl_days: int = 30, metadata: Optional[Dict] = None
+    async def add_document(
+        self,
+        session_id: str,
+        file_path: str,
+        content_type: str,
+        platform: str = "whatsapp",
+        ttl_days: int = 30,
+        metadata: Optional[Dict] = None,
     ) -> bool:
-        """Process and store PDF document with TTL in document collection"""
+        """Generic document processor that handles both PDF and CSV for specific user"""
         try:
-            # Read PDF
-            pdf = PdfReader(pdf_path)
+            # Get user-specific collections
+            _, document_collection = self._get_user_collections(
+                session_id, platform
+            )
 
-            # Extract text from each page
-            texts = []
-            for page_num, page in enumerate(pdf.pages):
-                text = page.extract_text()
-                if text.strip():
-                    texts.append({"content": text, "page": page_num + 1})
-
-            # Split texts into chunks
             all_chunks = []
-            for text_item in texts:
-                chunks = self.text_splitter.split_text(text_item["content"])
-                for chunk in chunks:
-                    all_chunks.append(
-                        {"content": chunk, "page": text_item["page"]}
-                    )
-
-            # Calculate expiration timestamp
             expiration_date = datetime.now() + timedelta(days=ttl_days)
+            # Store as numeric timestamp for ChromaDB queries
+            expiration_timestamp = expiration_date.timestamp()
+
+            if content_type == "application/pdf":
+                # PDF processing
+                pdf = PdfReader(file_path)
+                for page_num, page in enumerate(pdf.pages):
+                    text = page.extract_text()
+                    if text.strip():
+                        chunks = self.text_splitter.split_text(text)
+                        for chunk in chunks:
+                            all_chunks.append(
+                                {"content": chunk, "page": page_num + 1}
+                            )
+
+            elif content_type in ["text/csv", "application/csv"]:
+                # CSV processing
+                with open(file_path, "r", encoding="utf-8") as f:
+                    csv_content = f.read()
+                all_chunks = self._process_csv_content(csv_content)
 
             # Prepare document chunks for storage
             chunk_ids = []
             chunk_texts = []
             chunk_embeddings = []
-            chunk_metadata = []
+            chunk_metadatas = []
 
             for chunk in all_chunks:
-                chunk_id = f"pdf_{pdf_path}_{chunk['page']}_{datetime.now().isoformat()}"
+                chunk_id = f"doc_{session_id}_{uuid.uuid4()}"
+                if "page" in chunk:
+                    chunk_id += f"_page_{chunk['page']}"
+                elif "row" in chunk:
+                    chunk_id += f"_row_{chunk['row']}"
+
                 chunk_ids.append(chunk_id)
                 chunk_texts.append(chunk["content"])
 
@@ -313,56 +389,91 @@ class VectorMemory(PocketBaseMemory):
                 chunk_embeddings.append(embedding)
 
                 # Prepare metadata
-                chunk_metadata.append(
-                    {
-                        "type": "document",
-                        "document_type": "pdf",
-                        "page": chunk["page"],
-                        "source": pdf_path,
-                        "expiration_date": expiration_date.isoformat(),
-                        **(metadata or {}),
+                chunk_metadata = {
+                    "type": "document",
+                    "source": file_path,
+                    "session_id": session_id,
+                    "platform": platform,
+                    "expiration_timestamp": expiration_timestamp,  # Numeric timestamp for queries
+                    "document_type": (
+                        "pdf" if content_type == "application/pdf" else "csv"
+                    ),
+                }
+
+                # Add specific metadata for CSV/PDF
+                if "row" in chunk:
+                    chunk_metadata.update(
+                        {
+                            "row": str(chunk["row"]),
+                            "columns": chunk["columns"],
+                        }
+                    )
+                elif "page" in chunk:
+                    chunk_metadata.update({"page": str(chunk["page"])})
+
+                # Add any additional metadata
+                if metadata:
+                    # Convert any non-string/number values to strings
+                    sanitized_metadata = {
+                        k: (
+                            str(v)
+                            if not isinstance(v, (str, int, float, bool))
+                            else v
+                        )
+                        for k, v in metadata.items()
                     }
+                    chunk_metadata.update(sanitized_metadata)
+
+                chunk_metadatas.append(chunk_metadata)
+
+            # Store in user-specific document collection
+            if chunk_ids:
+                document_collection.add(
+                    ids=chunk_ids,
+                    documents=chunk_texts,
+                    embeddings=chunk_embeddings,
+                    metadatas=chunk_metadatas,
                 )
 
-            # Store in document collection
-            self.document_collection.add(
-                ids=chunk_ids,
-                documents=chunk_texts,
-                embeddings=chunk_embeddings,
-                metadatas=chunk_metadata,
-            )
-
-            logger.info(
-                f"Added PDF document with {len(chunk_ids)} chunks and {ttl_days} days TTL"
-            )
-            return True
+                logger.info(
+                    f"Added document with {len(chunk_ids)} chunks for user {session_id} with {ttl_days} days TTL"
+                )
+                return True
+            return False
 
         except Exception as e:
-            logger.error(f"Error adding PDF document: {str(e)}")
+            logger.error(f"Error adding document: {str(e)}")
             return False
 
     def search_documents(
         self,
+        session_id: str,
         query: str,
+        platform: str = "whatsapp",
         limit: int = 3,
     ) -> List[Dict[str, Any]]:
-        """Search document chunks with TTL filtering"""
+        """Search document chunks with TTL filtering in user-specific collection"""
         try:
+            # Get user-specific collections
+            _, document_collection = self._get_user_collections(
+                session_id, platform
+            )
+
             # Generate query embedding
             query_embedding = self.embedding_model.encode(query).tolist()
 
             # Current timestamp for TTL checking
-            current_time = datetime.now().isoformat()
+            current_timestamp = datetime.now().timestamp()
 
-            # Search in document collection with TTL filter
-            results = self.document_collection.query(
+            # Search in user-specific document collection with TTL filter
+            results = document_collection.query(
                 query_embeddings=[query_embedding],
                 n_results=limit
                 * 2,  # Get extra results in case some are expired
                 where={
                     "$and": [
                         {"type": "document"},
-                        {"expiration_date": {"$gt": current_time}},
+                        {"expiration_timestamp": {"$gt": current_timestamp}},
                     ]
                 },
                 include=["metadatas", "documents", "distances"],
@@ -382,54 +493,102 @@ class VectorMemory(PocketBaseMemory):
 
             # Sort by similarity and limit results
             formatted_results.sort(key=lambda x: x["similarity"], reverse=True)
+            logger.info(
+                f"Document search returned {len(formatted_results[:limit])} results for user {session_id}"
+            )
             return formatted_results[:limit]
 
         except Exception as e:
             logger.error(f"Error searching documents: {str(e)}")
             return []
 
-    async def cleanup_expired_documents(self) -> int:
-        """Remove expired document chunks from document collection"""
+    async def cleanup_expired_documents(
+        self, session_id: str = None, platform: str = "whatsapp"
+    ) -> int:
+        """Remove expired document chunks from user-specific or all document collections"""
         try:
-            current_time_iso = datetime.now().isoformat()
-            logger.info(
-                f"Running cleanup for documents expired before: {current_time_iso}"
-            )
+            current_timestamp = datetime.now().timestamp()
+            total_removed = 0
 
-            all_docs = self.document_collection.get(
-                include=["metadatas"]  # Only need metadatas to check expiration
-            )
+            if session_id:
+                # Clean up for specific user
+                logger.info(
+                    f"Running cleanup for user {session_id} documents expired before timestamp: {current_timestamp}"
+                )
 
-            expired_ids = []
-            if all_docs and all_docs["ids"]:
-                for i in range(len(all_docs["ids"])):
-                    doc_id = all_docs["ids"][i]
-                    metadata = all_docs["metadatas"][i]
-                    # Use 'expiration_date' as per your inspect_chroma.py output
-                    if metadata and "expiration_date" in metadata:
-                        expiration_date_str = metadata["expiration_date"]
-                        # Ensure consistent ISO format for comparison
-                        if expiration_date_str < current_time_iso:
+                _, document_collection = self._get_user_collections(
+                    session_id, platform
+                )
+
+                all_docs = document_collection.get(include=["metadatas"])
+
+                expired_ids = []
+                if all_docs and all_docs["ids"]:
+                    for i in range(len(all_docs["ids"])):
+                        doc_id = all_docs["ids"][i]
+                        metadata = all_docs["metadatas"][i]
+
+                        if (
+                            metadata
+                            and "expiration_timestamp" in metadata
+                            and metadata["expiration_timestamp"]
+                            < current_timestamp
+                        ):
                             expired_ids.append(doc_id)
-                    elif (
-                        metadata and metadata.get("type") == "document"
-                    ):  # Check type to ensure it's a document chunk
-                        logger.warning(
-                            f"Document chunk {doc_id} is missing 'expiration_date' in metadata."
-                        )
 
-            if expired_ids:
-                logger.info(
-                    f"Found {len(expired_ids)} expired document chunks to delete."
-                )
-                self.document_collection.delete(ids=expired_ids)
-                logger.info(
-                    f"Successfully deleted {len(expired_ids)} expired document chunks."
-                )
-                return len(expired_ids)
+                if expired_ids:
+                    document_collection.delete(ids=expired_ids)
+                    logger.info(
+                        f"Successfully deleted {len(expired_ids)} expired document chunks for user {session_id}"
+                    )
+                    total_removed = len(expired_ids)
             else:
-                logger.info("No expired document chunks found to delete.")
-                return 0
+                # Clean up for all users
+                logger.info(
+                    f"Running system-wide cleanup for documents expired before timestamp: {current_timestamp}"
+                )
+
+                all_collections = self.chroma_client.list_collections()
+
+                for collection_info in all_collections:
+                    collection_name = collection_info.name
+                    if collection_name.startswith("docs_"):
+                        try:
+                            collection = self.chroma_client.get_collection(
+                                collection_name
+                            )
+                            all_docs = collection.get(include=["metadatas"])
+
+                            expired_ids = []
+                            if all_docs and all_docs["ids"]:
+                                for i in range(len(all_docs["ids"])):
+                                    doc_id = all_docs["ids"][i]
+                                    metadata = all_docs["metadatas"][i]
+
+                                    if (
+                                        metadata
+                                        and "expiration_timestamp" in metadata
+                                        and metadata["expiration_timestamp"]
+                                        < current_timestamp
+                                    ):
+                                        expired_ids.append(doc_id)
+
+                            if expired_ids:
+                                collection.delete(ids=expired_ids)
+                                logger.info(
+                                    f"Deleted {len(expired_ids)} expired documents from {collection_name}"
+                                )
+                                total_removed += len(expired_ids)
+
+                        except Exception as e:
+                            logger.warning(
+                                f"Error cleaning up collection {collection_name}: {str(e)}"
+                            )
+
+            logger.info(
+                f"Total cleanup completed. Removed {total_removed} expired document chunks."
+            )
+            return total_removed
 
         except Exception as e:
             logger.error(
@@ -458,9 +617,7 @@ class VectorMemory(PocketBaseMemory):
                     {
                         "content": row_text,
                         "row": index,
-                        "columns": ",".join(
-                            columns
-                        ),  # Convert columns list to string
+                        "columns": ",".join(columns),
                     }
                 )
 
@@ -470,113 +627,12 @@ class VectorMemory(PocketBaseMemory):
             logger.error(f"Error processing CSV content: {str(e)}")
             raise
 
-    async def add_document(
-        self,
-        file_path: str,
-        content_type: str,
-        ttl_days: int = 30,
-        metadata: Optional[Dict] = None,
+    # Keep the old method for backward compatibility but mark it as deprecated
+    async def add_pdf_document(
+        self, pdf_path: str, ttl_days: int = 30, metadata: Optional[Dict] = None
     ) -> bool:
-        """Generic document processor that handles both PDF and CSV"""
-        try:
-            all_chunks = []
-            expiration_date = datetime.now() + timedelta(days=ttl_days)
-
-            if content_type == "application/pdf":
-                # Existing PDF processing
-                pdf = PdfReader(file_path)
-                for page_num, page in enumerate(pdf.pages):
-                    text = page.extract_text()
-                    if text.strip():
-                        chunks = self.text_splitter.split_text(text)
-                        for chunk in chunks:
-                            all_chunks.append(
-                                {"content": chunk, "page": page_num + 1}
-                            )
-
-            elif content_type in ["text/csv", "application/csv"]:
-                # CSV processing
-                with open(file_path, "r", encoding="utf-8") as f:
-                    csv_content = f.read()
-                all_chunks = self._process_csv_content(csv_content)
-
-            # Prepare document chunks for storage
-            chunk_ids = []
-            chunk_texts = []
-            chunk_embeddings = []
-            chunk_metadatas = []
-
-            for chunk in all_chunks:
-                chunk_id = f"doc_{file_path}_{datetime.now().isoformat()}"
-                if "page" in chunk:
-                    chunk_id += f"_page_{chunk['page']}"
-                elif "row" in chunk:
-                    chunk_id += f"_row_{chunk['row']}"
-
-                chunk_ids.append(chunk_id)
-                chunk_texts.append(chunk["content"])
-
-                # Generate embedding
-                embedding = self.embedding_model.encode(
-                    chunk["content"]
-                ).tolist()
-                chunk_embeddings.append(embedding)
-
-                # Prepare metadata
-                chunk_metadata = {
-                    "type": "document",
-                    "source": file_path,
-                    "expiration_date": expiration_date.isoformat(),
-                    "document_type": (
-                        "pdf" if content_type == "application/pdf" else "csv"
-                    ),
-                }
-
-                # Add specific metadata for CSV/PDF
-                if "row" in chunk:
-                    chunk_metadata.update(
-                        {
-                            "row": str(chunk["row"]),  # Convert to string
-                            "columns": chunk[
-                                "columns"
-                            ],  # Already a string from _process_csv_content
-                        }
-                    )
-                elif "page" in chunk:
-                    chunk_metadata.update(
-                        {"page": str(chunk["page"])}  # Convert to string
-                    )
-
-                # Add any additional metadata
-                if metadata:
-                    # Convert any non-string/number values to strings
-                    sanitized_metadata = {
-                        k: (
-                            str(v)
-                            if not isinstance(v, (str, int, float, bool))
-                            else v
-                        )
-                        for k, v in metadata.items()
-                    }
-                    chunk_metadata.update(sanitized_metadata)
-
-                chunk_metadatas.append(chunk_metadata)
-
-            # Store in document collection
-            if chunk_ids:
-                self.document_collection.add(
-                    ids=chunk_ids,
-                    documents=chunk_texts,
-                    embeddings=chunk_embeddings,
-                    metadatas=chunk_metadatas,
-                )
-
-                logger.info(
-                    f"Added document with {len(chunk_ids)} chunks and {ttl_days} days TTL"
-                )
-                return True
-            return False
-
-        except Exception as e:
-            logger.error(f"Error adding document: {str(e)}")
-            return False
+        """DEPRECATED: Use add_document with session_id instead"""
+        logger.warning(
+            "add_pdf_document is deprecated. Use add_document with session_id parameter."
+        )
+        return False
