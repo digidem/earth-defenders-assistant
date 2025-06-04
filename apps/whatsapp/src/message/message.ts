@@ -19,12 +19,6 @@ const ERROR_MESSAGES = {
   UNKNOWN: "Ocorreu um erro inesperado. Pode tentar novamente?",
 };
 
-interface MessagePayload {
-  message?: string;
-  user_platform_id: string;
-  platform: string;
-}
-
 export async function handleMessage(message: WAMessage) {
   await react(message, "working");
 
@@ -50,6 +44,7 @@ export async function handleMessage(message: WAMessage) {
     let messageContent =
       message.message?.conversation ||
       message.message?.extendedTextMessage?.text ||
+      message.message?.imageMessage?.caption ||
       "";
 
     const audioMsg =
@@ -63,21 +58,53 @@ export async function handleMessage(message: WAMessage) {
       messageContent = transcription;
     }
 
-    if (!messageContent.trim()) {
+    // 3. Handle image messages
+    const images: Buffer[] = [];
+    const imageMsg = message.message?.imageMessage;
+    if (imageMsg) {
+      try {
+        const imageBuffer = await downloadMediaMessage(message, "buffer", {});
+        if (imageBuffer) {
+          images.push(imageBuffer);
+          logger.info("Downloaded image for processing");
+        }
+      } catch (error) {
+        logger.error("Error downloading image:", error);
+      }
+    }
+
+    // If no text but image exists, set a default message
+    if (!messageContent.trim() && images.length > 0) {
+      messageContent = "Imagem recebida";
+    }
+
+    if (!messageContent.trim() && images.length === 0) {
       throw new Error("No valid input provided");
     }
 
     const phoneNumber = getPhoneNumber(message);
     const platformUserId = `whatsapp_${phoneNumber}`;
 
-    // Call message handler with JSON payload
+    // Call message handler with FormData
     const aiApiUrl = `http://localhost:${config.ports.ai_api}/api/message_handler/handle`;
 
-    const payload: MessagePayload = {
-      message: messageContent,
-      user_platform_id: platformUserId,
-      platform: "whatsapp",
-    };
+    // Create FormData payload
+    const formData = new FormData();
+
+    if (messageContent.trim()) {
+      formData.append("message", messageContent);
+    }
+
+    formData.append("user_platform_id", platformUserId);
+    formData.append("platform", "whatsapp");
+
+    // Add images if present
+    if (images.length > 0) {
+      for (let i = 0; i < images.length; i++) {
+        const imageBlob = new Blob([images[i]], { type: "image/jpeg" });
+        formData.append("images", imageBlob, `image_${i}.jpg`);
+      }
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min timeout
@@ -86,15 +113,12 @@ export async function handleMessage(message: WAMessage) {
       `Sending request to AI API: ${aiApiUrl}, user_platform_id: ${platformUserId}, message: "${messageContent.substring(
         0,
         50,
-      )}..."`,
+      )}...", images: ${images.length}`,
     );
 
     const response = await fetch(aiApiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+      body: formData,
       signal: controller.signal,
     });
 
