@@ -1,8 +1,12 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+import json
+from typing import Optional, List
 from pydantic import BaseModel
 from fastapi import APIRouter, UploadFile, File, Form
+from PIL import Image
+import io
+
 from loguru import logger
 
 from eda_config.config import ConfigLoader
@@ -30,16 +34,45 @@ class MessageRequest(BaseModel):
 
 @router.post("/handle", response_model=MessageHandlerResponse)
 async def message_handler_route(
-    request: MessageRequest,
+    message: Optional[str] = Form(None),
+    user_platform_id: Optional[str] = Form(None),
+    platform: str = Form("whatsapp"),
+    images: List[UploadFile] = File(None),
 ) -> MessageHandlerResponse:
     """
     Main route handler that processes messages using the manager agent.
+    Now supports image inputs for vision capabilities.
     """
     try:
+        # Create MessageRequest from form fields
+        request = MessageRequest(
+            message=message,
+            user_platform_id=user_platform_id,
+            platform=platform,
+        )
+
         current_user_id = request.user_platform_id or str(uuid.uuid4())
         logger.info(f"New request - User Platform ID: {current_user_id}")
         logger.info(f"Platform received: {request.platform}")
         logger.debug(f"Message payload: '{request.message}'")
+
+        # Process uploaded images
+        processed_images = []
+        if images:
+            logger.info(f"Processing {len(images)} uploaded images")
+            for img_file in images:
+                try:
+                    # Read and convert image
+                    image_bytes = await img_file.read()
+                    pil_image = Image.open(io.BytesIO(image_bytes)).convert(
+                        "RGB"
+                    )
+                    processed_images.append(pil_image)
+                    logger.debug(f"Processed image: {img_file.filename}")
+                except Exception as e:
+                    logger.error(
+                        f"Error processing image {img_file.filename}: {str(e)}"
+                    )
 
         if not request.message:
             logger.warning("No message provided")
@@ -114,10 +147,15 @@ async def message_handler_route(
                 user_platform_id=current_user_id,
             )
 
-        # Run the agent with the formatted message
-        logger.info("Running agent with formatted message")
+        # Run the agent with the formatted message and images
+        logger.info("Running agent with formatted message and images")
         try:
-            response_content = agent.run(formatted_message)
+            response_content = agent.run(
+                formatted_message,
+                images=(
+                    processed_images if processed_images else None
+                ),  # Pass images to agent
+            )
             logger.info(
                 f"Agent response received - length: {len(response_content)}"
             )
