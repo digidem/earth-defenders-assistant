@@ -7,7 +7,7 @@ from eda_ai_api.agents.prompts.formatting import get_formatting_guidelines
 
 config = ConfigLoader.get_config()
 
-# Manager agent model (can be premium as before)
+# Use a vision-capable model for the manager (since it needs to process images)
 manager_model = LiteLLMModel(
     model_id=f"{config.ai_models['standard'].provider}/{config.ai_models['standard'].model}",
     api_key=config.api_keys.google_ai_studio,
@@ -47,15 +47,15 @@ def get_agent(
         session_id=session_id, platform=platform
     )
 
-    # Create the manager agent, providing the specialized agents
+    # Create the manager agent with vision capabilities
     manager_agent = CodeAgent(
         tools=[],
         managed_agents=[
             doc_agent,
             mem_agent,
-        ],  # List of agents it can delegate to
-        model=manager_model,
-        max_steps=5,  # Increase steps slightly to allow for delegation
+        ],
+        model=manager_model,  # Vision-capable model
+        max_steps=5,
     )
 
     # Apply conversation history limit from config (passed to prompt template)
