@@ -73,3 +73,9 @@ config.yaml
 
 # ChromaDB
 chroma_conversation_db/
+
+# Credentials - ignore all files but keep folder structure
+credentials/**/*
+!credentials/**/.gitkeep
+!credentials/**/README.md
+!credentials/**/.gitignore

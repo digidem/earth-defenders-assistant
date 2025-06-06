@@ -96,6 +96,7 @@ services:
     cmd_prefix: "!"         # Command prefix for users
     bot_name: "Sydney"
     enable_reactions: true
+    enable_tts: true  # Add TTS enable flag
     reactions:
       queued: "🔁"
       working: "⚙️" 
@@ -163,6 +164,16 @@ services:
   upstash:
     redis_url: "xxx"
     redis_token: "xxx"
+
+  tts:
+    provider: "google"
+    language_code: "pt-BR"
+    voice_name: "pt-BR-Chirp3-HD-Achernar"
+    audio_encoding: "LINEAR16"
+    effects_profile_id: ["handset-class-device"]
+    pitch: 0
+    speaking_rate: 1
+    output_format: "wav"  # For LINEAR16 encoding
 
 # AI Models Configuration
 ai_models:

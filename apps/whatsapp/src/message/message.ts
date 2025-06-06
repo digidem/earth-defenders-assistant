@@ -8,6 +8,7 @@ import { sock } from "../client";
 import { handleAudioMessage } from "../handlers/audioHandler";
 import { handleDocumentMessage } from "../handlers/documentHandler";
 import { getPhoneNumber, react } from "../utils";
+import { generateTTSAudio, shouldUseTTS } from "../utils/tts";
 
 const WAITING_MSG =
   "Estou analisando sua mensagem... Como preciso pensar com cuidado, pode demorar alguns minutos.";
@@ -145,11 +146,69 @@ export async function handleMessage(message: WAMessage) {
       `AI API response received for user: ${platformUserId}, response length: ${data.result.length}`,
     );
 
+    // Add debugging for TTS decision
+    console.log("=== TTS Processing Debug ===");
+    console.log("Response text:", data.result);
+    console.log("Response length:", data.result.length);
+
+    // Generate TTS audio if enabled and appropriate
+    let audioBuffer: Buffer | null = null;
+    const shouldGenerateTTS = shouldUseTTS(data.result.length);
+    console.log("Should generate TTS:", shouldGenerateTTS);
+
+    if (shouldGenerateTTS) {
+      try {
+        console.log("Starting TTS generation...");
+        logger.info("Generating TTS audio for response");
+        audioBuffer = await generateTTSAudio({
+          text: data.result,
+          audio_encoding: "OGG_OPUS", // Always use OGG_OPUS for WhatsApp
+        });
+        console.log(
+          "TTS generation completed. Buffer:",
+          audioBuffer ? `${audioBuffer.length} bytes` : "null",
+        );
+      } catch (error) {
+        console.error("TTS generation failed:", error);
+        logger.error("Failed to generate TTS audio:", error);
+        // Continue without audio if TTS fails
+      }
+    } else {
+      console.log("Skipping TTS generation (conditions not met)");
+    }
+
+    // Send the text response (edit the waiting message)
     await sock.sendMessage(
       chatId,
       { text: data.result, edit: streamingReply.key },
       { quoted: message },
     );
+
+    // Send audio if generated - WhatsApp only cares about OGG
+    if (audioBuffer) {
+      try {
+        console.log("Sending TTS audio to WhatsApp...");
+        logger.info("Sending TTS audio to user");
+
+        await sock.sendMessage(
+          chatId,
+          {
+            audio: audioBuffer,
+            mimetype: "audio/ogg; codecs=opus", // Always OGG for WhatsApp
+            ptt: true, // Send as voice note
+          },
+          { quoted: message },
+        );
+        console.log("TTS audio sent successfully to WhatsApp!");
+        logger.info("TTS audio sent successfully");
+      } catch (audioError) {
+        console.error("Failed to send TTS audio to WhatsApp:", audioError);
+        logger.error("Failed to send TTS audio:", audioError);
+        // Don't fail the whole operation if audio sending fails
+      }
+    } else {
+      console.log("No audio buffer to send");
+    }
 
     await react(message, "done");
   } catch (error) {

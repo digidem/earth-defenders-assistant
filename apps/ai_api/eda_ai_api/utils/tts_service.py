@@ -1,0 +1,192 @@
+import tempfile
+import os
+from typing import Optional
+from google.cloud import texttospeech
+from google.oauth2 import service_account
+from loguru import logger
+from eda_config.config import ConfigLoader
+
+config = ConfigLoader.get_config()
+
+
+class TTSService:
+    """Text-to-Speech service using Google Cloud TTS"""
+
+    def __init__(self):
+        self.client = None
+        self.tts_config = config.services.tts
+        self.credentials_available = self._check_credentials()
+
+    def _check_credentials(self) -> bool:
+        """Check if Google Cloud credentials are available"""
+        try:
+            # First try to use service account from config
+            service_account_path = (
+                config.api_keys.google_cloud.service_account_path
+            )
+            if service_account_path and os.path.exists(service_account_path):
+                return True
+
+            # Fallback to default credentials
+            import google.auth
+
+            google.auth.default()
+            return True
+        except Exception as e:
+            logger.warning(f"Google Cloud credentials not available: {str(e)}")
+            return False
+
+    def _get_client(self):
+        """Lazy initialization of the TTS client"""
+        if not self.credentials_available:
+            raise RuntimeError(
+                "Google Cloud credentials not configured. Please set up authentication."
+            )
+
+        if self.client is None:
+            try:
+                # Try to use service account from config first
+                service_account_path = (
+                    config.api_keys.google_cloud.service_account_path
+                )
+                if service_account_path and os.path.exists(
+                    service_account_path
+                ):
+                    credentials = (
+                        service_account.Credentials.from_service_account_file(
+                            service_account_path
+                        )
+                    )
+                    self.client = texttospeech.TextToSpeechClient(
+                        credentials=credentials
+                    )
+                    logger.info(
+                        "Google Cloud TTS client initialized with service account"
+                    )
+                else:
+                    # Fallback to default credentials
+                    self.client = texttospeech.TextToSpeechClient()
+                    logger.info(
+                        "Google Cloud TTS client initialized with default credentials"
+                    )
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to initialize Google Cloud TTS client: {str(e)}"
+                )
+                raise RuntimeError(f"TTS service unavailable: {str(e)}")
+        return self.client
+
+    def _get_encoding_and_extension(self, encoding_name: str):
+        """Get the proper encoding enum and file extension"""
+        encoding_map = {
+            "LINEAR16": (texttospeech.AudioEncoding.LINEAR16, ".wav"),
+            "MP3": (texttospeech.AudioEncoding.MP3, ".mp3"),
+            "OGG_OPUS": (texttospeech.AudioEncoding.OGG_OPUS, ".ogg"),
+            "MULAW": (texttospeech.AudioEncoding.MULAW, ".wav"),
+            "ALAW": (texttospeech.AudioEncoding.ALAW, ".wav"),
+        }
+
+        return encoding_map.get(
+            encoding_name, (texttospeech.AudioEncoding.MP3, ".mp3")
+        )
+
+    async def text_to_speech(
+        self,
+        text: str,
+        language_code: Optional[str] = None,
+        voice_name: Optional[str] = None,
+        audio_encoding: Optional[
+            str
+        ] = None,  # Changed to string for easier API usage
+        pitch: Optional[float] = None,
+        speaking_rate: Optional[float] = None,
+        effects_profile_id: Optional[list] = None,
+    ) -> str:
+        """
+        Convert text to speech and return path to audio file
+
+        Args:
+            text: Text to convert to speech
+            language_code: Language code (defaults to config)
+            voice_name: Specific voice to use (defaults to config)
+            audio_encoding: Output audio format string (defaults to config)
+            pitch: Voice pitch adjustment (defaults to config)
+            speaking_rate: Speech rate adjustment (defaults to config)
+            effects_profile_id: Audio effects profile (defaults to config)
+
+        Returns:
+            str: Path to generated audio file
+        """
+        try:
+            client = self._get_client()
+
+            # Use config defaults if not specified
+            language_code = language_code or self.tts_config.language_code
+            voice_name = voice_name or self.tts_config.voice_name
+            pitch = pitch if pitch is not None else self.tts_config.pitch
+            speaking_rate = (
+                speaking_rate
+                if speaking_rate is not None
+                else self.tts_config.speaking_rate
+            )
+            effects_profile_id = (
+                effects_profile_id or self.tts_config.effects_profile_id
+            )
+
+            # Set audio encoding based on config or parameter
+            encoding_name = audio_encoding or self.tts_config.audio_encoding
+            audio_encoding_enum, file_extension = (
+                self._get_encoding_and_extension(encoding_name)
+            )
+
+            logger.info(
+                f"Using audio encoding: {encoding_name} -> {audio_encoding_enum} with extension {file_extension}"
+            )
+
+            # Construct the request
+            input_text = texttospeech.SynthesisInput(text=text)
+
+            voice = texttospeech.VoiceSelectionParams(
+                language_code=language_code, name=voice_name
+            )
+
+            audio_config = texttospeech.AudioConfig(
+                audio_encoding=audio_encoding_enum,
+                pitch=pitch,
+                speaking_rate=speaking_rate,
+                effects_profile_id=effects_profile_id,
+            )
+
+            # Perform the text-to-speech request
+            response = client.synthesize_speech(
+                input=input_text, voice=voice, audio_config=audio_config
+            )
+
+            # Save to temporary file with correct extension
+            with tempfile.NamedTemporaryFile(
+                suffix=file_extension, delete=False
+            ) as temp_file:
+                temp_file.write(response.audio_content)
+                audio_path = temp_file.name
+
+            logger.info(
+                f"TTS audio generated: {audio_path} (format: {encoding_name})"
+            )
+            return audio_path
+
+        except Exception as e:
+            logger.error(f"TTS generation failed: {str(e)}")
+            raise RuntimeError(f"TTS failed: {str(e)}") from e
+
+    def get_available_voices(self, language_code: str = None):
+        """Get list of available voices"""
+        try:
+            client = self._get_client()
+            voices = client.list_voices(language_code=language_code)
+            return [
+                (voice.name, voice.ssml_gender.name) for voice in voices.voices
+            ]
+        except Exception as e:
+            logger.error(f"Failed to get voices: {str(e)}")
+            return []

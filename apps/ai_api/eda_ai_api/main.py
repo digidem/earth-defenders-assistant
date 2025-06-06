@@ -13,7 +13,32 @@ def get_app() -> FastAPI:
         title=APP_NAME,
         version=APP_VERSION,
         debug=config.services.ai_api.debug,
+        description="""
+        ## Earth Defenders Assistant AI API
+        
+        A comprehensive API for AI-powered chat, document processing, and audio services.
+        
+        ### Features:
+        - **AI Chat**: Intelligent conversation with context and memory
+        - **Document Processing**: Upload and search through PDFs and CSVs
+        - **Audio Transcription**: Convert speech to text
+        - **Text-to-Speech**: Generate natural-sounding audio from text
+        
+        ### Audio Formats Supported:
+        - **OGG_OPUS**: High quality, efficient compression (recommended for WhatsApp)
+        - **MP3**: Good quality, widely compatible
+        - **LINEAR16**: High quality WAV format
+        - **MULAW/ALAW**: Low quality formats for specific use cases
+        """,
+        contact={
+            "name": "Earth Defenders Assistant Team",
+            "email": "support@earthdefenders.ai",
+        },
+        license_info={
+            "name": "MIT License",
+        },
     )
+
     fast_app.include_router(api_router, prefix=API_PREFIX)
 
     fast_app.add_event_handler("startup", start_app_handler(fast_app))
@@ -38,7 +63,9 @@ def run_server() -> None:
     if allow_external:
         host = "0.0.0.0"  # nosec B104 # Explicitly allowed in config
 
-    uvicorn.run("eda_ai_api.main:app", host=host, port=config.ports.ai_api, reload=True)
+    uvicorn.run(
+        "eda_ai_api.main:app", host=host, port=config.ports.ai_api, reload=True
+    )
 
 
 if __name__ == "__main__":

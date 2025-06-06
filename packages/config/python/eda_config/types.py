@@ -43,6 +43,10 @@ class SentryKeys(BaseModel):
     auth_token: str
 
 
+class GoogleCloudKeys(BaseModel):
+    service_account_path: str
+
+
 class ApiKeys(BaseModel):
     groq: str
     huggingface: str
@@ -56,6 +60,7 @@ class ApiKeys(BaseModel):
     sentry: SentryKeys
     deepseek: str  # Added DeepSeek API key
     google_ai_studio: str  # Added Google AI Studio API key
+    google_cloud: GoogleCloudKeys  # Added Google Cloud credentials
 
 
 class DbPorts(BaseModel):
@@ -99,6 +104,7 @@ class WhatsappConfig(BaseModel):
     cmd_prefix: str
     bot_name: str
     enable_reactions: bool
+    enable_tts: bool  # Add TTS enable flag
     reactions: WhatsappReactions
     puppeteer_path: str
     ignore_messages_warning: bool
@@ -192,6 +198,18 @@ class UpstashConfig(BaseModel):
     redis_token: str
 
 
+# Add TTSConfig class
+class TTSConfig(BaseModel):
+    provider: str
+    language_code: str
+    voice_name: str
+    audio_encoding: str
+    effects_profile_id: List[str]
+    pitch: float
+    speaking_rate: float
+    output_format: str
+
+
 # Update AIApiConfig class to include conversation_history_limit and relevant_history_limit
 class AIApiConfig(BaseModel):
     debug: bool
@@ -199,7 +217,7 @@ class AIApiConfig(BaseModel):
     relevant_history_limit: Optional[int] = 3
 
 
-# Update ServicesConfig class
+# Update ServicesConfig class to include TTS
 class ServicesConfig(BaseModel):
     ai_api: AIApiConfig  # Change from Dict to AIApiConfig
     whatsapp: WhatsappConfig
@@ -208,6 +226,7 @@ class ServicesConfig(BaseModel):
     langtrace: LangTraceConfig
     dashboard: DashboardConfig
     upstash: UpstashConfig
+    tts: TTSConfig  # Add TTS configuration
 
 
 # Add PocketBaseAdmin class

@@ -9,6 +9,7 @@ import {
   BOT_PREFIX,
   CMD_PREFIX,
   ENABLE_REACTIONS,
+  ENABLE_TTS, // Add TTS import
   IGNORE_MESSAGES_WARNING,
 } from "./constants";
 

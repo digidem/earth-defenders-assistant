@@ -47,6 +47,7 @@ const WhatsAppConfigSchema = z.object({
   cmd_prefix: z.string(),
   bot_name: z.string(),
   enable_reactions: z.boolean(),
+  enable_tts: z.boolean(), // Add TTS enable flag
   reactions: z.object({
     queued: z.string(),
     working: z.string(),
@@ -137,6 +138,18 @@ const UpstashConfigSchema = z.object({
   redis_token: z.string(),
 });
 
+// Add TTS Config Schema
+const TTSConfigSchema = z.object({
+  provider: z.string(),
+  language_code: z.string(),
+  voice_name: z.string(),
+  audio_encoding: z.string(),
+  effects_profile_id: z.array(z.string()),
+  pitch: z.number(),
+  speaking_rate: z.number(),
+  output_format: z.string(),
+});
+
 // API Keys
 export const ApiKeysSchema = z.object({
   groq: z.string(),
@@ -153,6 +166,9 @@ export const ApiKeysSchema = z.object({
   }),
   deepseek: z.string(),
   google_ai_studio: z.string(), // Added Google AI Studio API key
+  google_cloud: z.object({
+    service_account_path: z.string(),
+  }),
 });
 
 // AI Models
@@ -215,6 +231,7 @@ export const ConfigSchema = z.object({
     langtrace: LangTraceConfigSchema,
     dashboard: DashboardConfigSchema,
     upstash: UpstashConfigSchema,
+    tts: TTSConfigSchema, // Add TTS configuration
   }),
   ai_models: z.object({
     premium: AIModelConfigSchema,
