@@ -6,6 +6,7 @@ from eda_ai_api.api.routes import (
     document_handler,
     transcription_handler,
     tts_handler,
+    global_knowledge_handler,
 )
 
 api_router = APIRouter()
@@ -21,6 +22,13 @@ api_router.include_router(
 # Document processing endpoints
 api_router.include_router(
     document_handler.router, tags=["Documents"], prefix="/documents"
+)
+
+# Global knowledge base endpoints
+api_router.include_router(
+    global_knowledge_handler.router,
+    tags=["Global Knowledge"],
+    prefix="/global_knowledge",
 )
 
 # Audio processing endpoints

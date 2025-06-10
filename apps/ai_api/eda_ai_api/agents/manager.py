@@ -3,6 +3,7 @@ from smolagents import CodeAgent, LiteLLMModel
 from eda_config.config import ConfigLoader
 from eda_ai_api.agents.document_search_agent import get_document_search_agent
 from eda_ai_api.agents.memory_search_agent import get_memory_search_agent
+from eda_ai_api.agents.global_knowledge_agent import get_global_knowledge_agent
 from eda_ai_api.agents.prompts.formatting import get_formatting_guidelines
 
 config = ConfigLoader.get_config()
@@ -47,12 +48,16 @@ def get_agent(
         session_id=session_id, platform=platform
     )
 
+    # Initialize global knowledge agent (no user context needed)
+    global_knowledge_agent = get_global_knowledge_agent()
+
     # Create the manager agent with vision capabilities
     manager_agent = CodeAgent(
         tools=[],
         managed_agents=[
             doc_agent,
             mem_agent,
+            global_knowledge_agent,  # Add the global knowledge agent
         ],
         model=manager_model,  # Vision-capable model
         max_steps=5,
