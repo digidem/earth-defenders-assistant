@@ -1,6 +1,7 @@
 import { config } from "@eda/config";
 import { logger } from "@eda/logger";
 import type { proto } from "@whiskeysockets/baileys";
+import { downloadMediaMessage } from "@whiskeysockets/baileys";
 import { getPhoneNumber, getRemoteJid } from "../utils";
 
 export async function storeGroupMessage(message: proto.IWebMessageInfo) {
@@ -11,37 +12,56 @@ export async function storeGroupMessage(message: proto.IWebMessageInfo) {
       message.message?.imageMessage?.caption ||
       "";
 
-    // Skip empty messages or messages from the bot itself
-    if (!messageText.trim()) return;
-
     const senderNumber = getPhoneNumber(message);
-    const botNumber = message.key.fromMe ? "bot" : null;
 
     // Don't store bot's own messages
     if (message.key.fromMe) return;
 
     const groupId = getRemoteJid(message);
     const platformUserId = `whatsapp_${senderNumber}`;
-
-    // Get sender name
     const senderName = message.pushName || senderNumber;
 
-    // Call the AI API to store the message
-    const aiApiUrl = `http://localhost:${config.ports.ai_api}/api/message_handler/store-group-message`;
-
-    const requestBody = {
-      user_platform_id: platformUserId,
-      platform: "whatsapp",
-      message: messageText,
-      group_id: groupId,
-      sender_name: senderName,
-      timestamp: new Date().toISOString(),
-    };
-
-    logger.info(
-      `Storing group message from ${senderName} (${platformUserId}) in group ${groupId}`,
+    // Handle different types of messages
+    await handleTextMessage(
+      messageText,
+      platformUserId,
+      groupId,
+      senderName,
+      message,
     );
+    await handleDocumentMessage(message, platformUserId, groupId, senderName);
+    await handleAudioMessage(message, platformUserId, groupId, senderName);
+  } catch (error) {
+    logger.error("Error storing group message:", error);
+  }
+}
 
+async function handleTextMessage(
+  messageText: string,
+  platformUserId: string,
+  groupId: string,
+  senderName: string,
+  message: proto.IWebMessageInfo,
+) {
+  // Only store text messages that have content
+  if (!messageText.trim()) return;
+
+  const aiApiUrl = `http://localhost:${config.ports.ai_api}/api/message_handler/store-group-message`;
+
+  const requestBody = {
+    user_platform_id: platformUserId,
+    platform: "whatsapp",
+    message: messageText,
+    group_id: groupId,
+    sender_name: senderName,
+    timestamp: new Date().toISOString(),
+  };
+
+  logger.info(
+    `Storing group text message from ${senderName} (${platformUserId}) in group ${groupId}`,
+  );
+
+  try {
     const response = await fetch(aiApiUrl, {
       method: "POST",
       headers: {
@@ -59,9 +79,159 @@ export async function storeGroupMessage(message: proto.IWebMessageInfo) {
         group: groupId,
       });
     } else {
-      logger.debug(`Group message stored successfully for ${platformUserId}`);
+      logger.debug(
+        `Group text message stored successfully for ${platformUserId}`,
+      );
     }
   } catch (error) {
-    logger.error("Error storing group message:", error);
+    logger.error("Error storing group text message:", error);
+  }
+}
+
+async function handleDocumentMessage(
+  message: proto.IWebMessageInfo,
+  platformUserId: string,
+  groupId: string,
+  senderName: string,
+) {
+  const documentMsg = message.message?.documentMessage;
+  if (!documentMsg) return;
+
+  try {
+    logger.info(
+      `Processing document from ${senderName} in group ${groupId}: ${documentMsg.fileName}`,
+    );
+
+    const fileBuffer = await downloadMediaMessage(message, "buffer", {});
+    if (!fileBuffer) {
+      logger.error("Failed to download document");
+      return;
+    }
+
+    const mimeType = documentMsg.mimetype || "application/octet-stream";
+
+    // Only process PDF and CSV files
+    if (!mimeType.includes("pdf") && !mimeType.includes("csv")) {
+      logger.info(`Skipping unsupported document type: ${mimeType}`);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new Blob([fileBuffer], { type: mimeType }),
+      documentMsg.fileName ||
+        (mimeType.includes("csv") ? "document.csv" : "document.pdf"),
+    );
+    formData.append("ttl_days", "7"); // Keep group documents longer
+    formData.append("user_platform_id", platformUserId);
+    formData.append("platform", "whatsapp");
+    formData.append("group_id", groupId); // Add group context
+    formData.append("sender_name", senderName); // Add sender context
+
+    const uploadApiUrl = `http://localhost:${config.ports.ai_api}/api/documents/upload`;
+    const response = await fetch(uploadApiUrl, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error("Document upload error", {
+        status: response.status,
+        error: errorText,
+        user: platformUserId,
+        group: groupId,
+        filename: documentMsg.fileName,
+      });
+      return;
+    }
+
+    const result = await response.json();
+    logger.info(
+      `Document uploaded successfully for ${senderName} in group ${groupId}: ${documentMsg.fileName}`,
+    );
+  } catch (error) {
+    logger.error("Error processing group document:", {
+      error,
+      user: platformUserId,
+      group: groupId,
+      filename: documentMsg?.fileName,
+    });
+  }
+}
+
+async function handleAudioMessage(
+  message: proto.IWebMessageInfo,
+  platformUserId: string,
+  groupId: string,
+  senderName: string,
+) {
+  const audioMsg = message.message?.audioMessage;
+  if (!audioMsg) return;
+
+  try {
+    logger.info(`Processing audio from ${senderName} in group ${groupId}`);
+
+    const audioBuffer = await downloadMediaMessage(message, "buffer", {});
+    if (!audioBuffer) {
+      logger.error("Failed to download audio");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", new Blob([audioBuffer]), "audio.ogg");
+    formData.append("language", "pt"); // Adjust language as needed
+
+    const transcriptionApiUrl = `http://localhost:${config.ports.ai_api}/api/transcription/transcribe`;
+
+    const transcriptionResponse = await fetch(transcriptionApiUrl, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!transcriptionResponse.ok) {
+      const errorText = await transcriptionResponse.text();
+      logger.error("Transcription API error", {
+        status: transcriptionResponse.status,
+        error: errorText,
+        user: platformUserId,
+        group: groupId,
+      });
+      return;
+    }
+
+    const transcriptionData = await transcriptionResponse.json();
+
+    if (!transcriptionData.success || !transcriptionData.transcription) {
+      logger.error("Transcription failed", {
+        response: transcriptionData,
+        user: platformUserId,
+        group: groupId,
+      });
+      return;
+    }
+
+    logger.info(
+      `Audio transcribed successfully for ${senderName} in group ${groupId}: "${transcriptionData.transcription.substring(
+        0,
+        50,
+      )}..."`,
+    );
+
+    // Store the transcription as a text message
+    await handleTextMessage(
+      `[AUDIO TRANSCRIPTION]: ${transcriptionData.transcription}`,
+      platformUserId,
+      groupId,
+      senderName,
+      message,
+    );
+  } catch (error) {
+    logger.error("Error processing group audio:", {
+      error,
+      user: platformUserId,
+      group: groupId,
+    });
   }
 }

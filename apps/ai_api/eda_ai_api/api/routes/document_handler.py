@@ -26,9 +26,11 @@ ALLOWED_DOCUMENT_TYPES = {
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
-    ttl_days: Optional[int] = Form(1),  # Changed from 30 to 1
+    ttl_days: Optional[int] = Form(1),
     user_platform_id: Optional[str] = Form(None),
     platform: Optional[str] = Form("whatsapp"),
+    group_id: Optional[str] = Form(None),  # Add group_id parameter
+    sender_name: Optional[str] = Form(None),  # Add sender_name parameter
 ) -> DocumentUploadResponse:
     """
     Upload a document (PDF or CSV) for processing and storage
@@ -38,6 +40,8 @@ async def upload_document(
         ttl_days: Number of days until document expires (optional, default: 1)
         user_platform_id: User's platform ID for recording in conversation history
         platform: Platform identifier (default: whatsapp)
+        group_id: Group ID if this is from a group message (optional)
+        sender_name: Name of the sender if this is from a group message (optional)
     """
     try:
         # Validate required user_platform_id
@@ -57,10 +61,12 @@ async def upload_document(
                     session_id=user_platform_id,
                     user_message=f"[SYSTEM] Attempted to upload file: {file.filename}",
                     assistant_response=f"[SYSTEM] Upload failed: {error_msg}",
-                    platform="whatsapp",
+                    platform=platform,
                     metadata={
                         "event_type": "document_upload",
                         "status": "failed",
+                        "group_id": group_id,
+                        "sender_name": sender_name,
                     },
                 )
 
@@ -79,6 +85,9 @@ async def upload_document(
             doc_metadata = {
                 "filename": file.filename,
                 "content_type": file.content_type,
+                "group_id": group_id,
+                "sender_name": sender_name,
+                "source_type": "group_upload" if group_id else "direct_upload",
             }
 
             success = await memory.add_document(
@@ -99,10 +108,12 @@ async def upload_document(
                         session_id=user_platform_id,
                         user_message=f"[SYSTEM] Attempted to upload document: {file.filename}",
                         assistant_response=f"[SYSTEM] Document processing failed: {error_msg}",
-                        platform="whatsapp",
+                        platform=platform,
                         metadata={
                             "event_type": "document_upload",
                             "status": "failed",
+                            "group_id": group_id,
+                            "sender_name": sender_name,
                         },
                     )
 
@@ -110,15 +121,22 @@ async def upload_document(
 
             # Record successful upload in conversation history
             if user_platform_id:
+                upload_message = f"[DOCUMENT UPLOADED]: {file.filename}"
+                if group_id and sender_name:
+                    upload_message = f"{sender_name}: {upload_message}"
+
                 await memory.add_message_to_history(
                     session_id=user_platform_id,
-                    user_message=f"[SYSTEM] User uploaded document: {file.filename}",
-                    assistant_response=f"[SYSTEM] Document successfully processed and stored",
-                    platform="whatsapp",
+                    user_message=upload_message,
+                    assistant_response="",  # No response for passive storage
+                    platform=platform,
                     metadata={
                         "event_type": "document_upload",
                         "status": "success",
                         "document_metadata": doc_metadata,
+                        "group_id": group_id,
+                        "sender_name": sender_name,
+                        "message_type": "group_passive" if group_id else "direct",
                     },
                 )
 
@@ -145,8 +163,13 @@ async def upload_document(
                 session_id=user_platform_id,
                 user_message=f"[SYSTEM] Attempted to upload document: {file.filename}",
                 assistant_response=f"[SYSTEM] Unexpected error: {error_msg}",
-                platform="whatsapp",
-                metadata={"event_type": "document_upload", "status": "error"},
+                platform=platform,
+                metadata={
+                    "event_type": "document_upload", 
+                    "status": "error",
+                    "group_id": group_id,
+                    "sender_name": sender_name,
+                },
             )
 
         logger.error(f"Error processing document upload: {str(e)}")
