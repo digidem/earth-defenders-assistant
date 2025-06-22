@@ -1,5 +1,5 @@
 {
-  "name": "earth-denfeders-assistant",
+  "name": "earth-defenders-assistant",
   "workspaces": [
     "packages/*",
     "apps/*",
@@ -15,6 +15,7 @@
     "lint": "turbo lint && bun lint:repo",
     "dev:all": "turbo dev --parallel",
     "dev:api": "turbo dev --filter=@eda/api",
+    "dev:api_arm": "turbo run dev:arm --filter=@eda/api",
     "dev:ai": "turbo dev --filter=@eda/ai-api",
     "dev:message": "turbo dev --filter=@eda/messaging",
     "dev:simulator": "turbo dev --filter=@eda/simulator",

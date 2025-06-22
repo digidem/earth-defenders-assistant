@@ -2,6 +2,7 @@
   "name": "@eda/api",
   "scripts": {
     "dev": "cd pocketbase && ./pocketbase serve",
+    "dev:arm": "cd pocketbase && ./pocketbase_arm serve --http=0.0.0.0:8090",
     "status": "cd pocketbase && ./pocketbase health"
   }
 }
