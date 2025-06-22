@@ -1,6 +1,6 @@
 {
   "name": "@eda/config",
-  "version": "0.1.43",
+  "version": "0.1.44",
   "main": "dist/config.js",
   "types": "dist/config.d.ts",
   "type": "module",
