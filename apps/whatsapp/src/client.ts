@@ -12,12 +12,15 @@ import { handleCommand } from "./commands/commands_index";
 import { CMD_PREFIX } from "./constants";
 import { handleMessage } from "./message/message";
 import {
+  getPhoneNumber,
   getRemoteJid,
+  isGroupMessage,
   react,
   shouldIgnore,
   shouldIgnoreUnread,
   shouldReply,
 } from "./utils";
+import { storeGroupMessage } from "./utils/message-storage";
 
 const messageQueue: { [key: string]: proto.IWebMessageInfo[] } = {};
 let isProcessingMessage = false;
@@ -97,14 +100,17 @@ async function startSock() {
 
     if (events["messages.upsert"]) {
       const upsert = events["messages.upsert"];
-      //console.log("recv messages ", JSON.stringify(upsert, undefined, 2));
 
-      // Update the message processing code
       if (upsert.type === "notify") {
         for (const message of upsert.messages) {
           try {
             const chatId = getRemoteJid(message);
             const unreadCount = unreadCounts[chatId] || 0;
+
+            // Store all group messages in database regardless of bot mention
+            if (isGroupMessage(message)) {
+              await storeGroupMessage(message);
+            }
 
             if (await shouldIgnore(message)) continue;
             if (!(await shouldReply(message))) continue;
