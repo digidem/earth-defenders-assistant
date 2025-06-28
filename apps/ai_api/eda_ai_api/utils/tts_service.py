@@ -1,46 +1,69 @@
 import tempfile
 import os
-from typing import Optional
+from typing import Optional, List, Tuple
 from google.cloud import texttospeech
 from google.oauth2 import service_account
 from loguru import logger
+
 from eda_config.config import ConfigLoader
+from eda_ai_api.utils.exceptions import (
+    TTSGenerationError,
+    ServiceUnavailableError,
+    ValidationError,
+)
 
 config = ConfigLoader.get_config()
 
 
 class TTSService:
-    """Text-to-Speech service using Google Cloud TTS"""
+    """Text-to-Speech service using Google Cloud TTS with improved error handling"""
 
     def __init__(self):
+        """Initialize TTS service with configuration"""
         self.client = None
         self.tts_config = config.services.tts
         self.credentials_available = self._check_credentials()
 
     def _check_credentials(self) -> bool:
-        """Check if Google Cloud credentials are available"""
+        """
+        Check if Google Cloud credentials are available
+
+        Returns:
+            bool: True if credentials are available, False otherwise
+        """
         try:
             # First try to use service account from config
             service_account_path = (
                 config.api_keys.google_cloud.service_account_path
             )
             if service_account_path and os.path.exists(service_account_path):
+                logger.debug("Google Cloud service account found")
                 return True
 
             # Fallback to default credentials
             import google.auth
 
             google.auth.default()
+            logger.debug("Google Cloud default credentials found")
             return True
         except Exception as e:
             logger.warning(f"Google Cloud credentials not available: {str(e)}")
             return False
 
-    def _get_client(self):
-        """Lazy initialization of the TTS client"""
+    def _get_client(self) -> texttospeech.TextToSpeechClient:
+        """
+        Get or create TTS client with lazy initialization
+
+        Returns:
+            TextToSpeechClient: Configured TTS client
+
+        Raises:
+            ServiceUnavailableError: If TTS service is not available
+        """
         if not self.credentials_available:
-            raise RuntimeError(
-                "Google Cloud credentials not configured. Please set up authentication."
+            raise ServiceUnavailableError(
+                "Google Cloud TTS",
+                "Google Cloud credentials not configured. Please set up authentication.",
             )
 
         if self.client is None:
@@ -74,11 +97,22 @@ class TTSService:
                 logger.error(
                     f"Failed to initialize Google Cloud TTS client: {str(e)}"
                 )
-                raise RuntimeError(f"TTS service unavailable: {str(e)}")
+                raise ServiceUnavailableError("Google Cloud TTS", str(e))
+
         return self.client
 
-    def _get_encoding_and_extension(self, encoding_name: str):
-        """Get the proper encoding enum and file extension"""
+    def _get_encoding_and_extension(
+        self, encoding_name: str
+    ) -> Tuple[texttospeech.AudioEncoding, str]:
+        """
+        Get the proper encoding enum and file extension for audio format
+
+        Args:
+            encoding_name: Audio encoding name string
+
+        Returns:
+            Tuple of (AudioEncoding enum, file extension)
+        """
         encoding_map = {
             "LINEAR16": (texttospeech.AudioEncoding.LINEAR16, ".wav"),
             "MP3": (texttospeech.AudioEncoding.MP3, ".mp3"),
@@ -87,21 +121,23 @@ class TTSService:
             "ALAW": (texttospeech.AudioEncoding.ALAW, ".wav"),
         }
 
-        return encoding_map.get(
-            encoding_name, (texttospeech.AudioEncoding.MP3, ".mp3")
-        )
+        if encoding_name not in encoding_map:
+            logger.warning(
+                f"Unknown encoding '{encoding_name}', defaulting to MP3"
+            )
+            encoding_name = "MP3"
+
+        return encoding_map[encoding_name]
 
     async def text_to_speech(
         self,
         text: str,
         language_code: Optional[str] = None,
         voice_name: Optional[str] = None,
-        audio_encoding: Optional[
-            str
-        ] = None,  # Changed to string for easier API usage
+        audio_encoding: Optional[str] = None,
         pitch: Optional[float] = None,
         speaking_rate: Optional[float] = None,
-        effects_profile_id: Optional[list] = None,
+        effects_profile_id: Optional[List[str]] = None,
     ) -> str:
         """
         Convert text to speech and return path to audio file
@@ -117,8 +153,21 @@ class TTSService:
 
         Returns:
             str: Path to generated audio file
+
+        Raises:
+            TTSGenerationError: If TTS generation fails
+            ValidationError: If input parameters are invalid
         """
         try:
+            # Validate input text
+            if not text or not text.strip():
+                raise ValidationError("Text cannot be empty", "text")
+
+            if len(text) > 5000:
+                raise ValidationError(
+                    "Text too long. Maximum 5000 characters", "text"
+                )
+
             client = self._get_client()
 
             # Use config defaults if not specified
@@ -140,8 +189,16 @@ class TTSService:
                 self._get_encoding_and_extension(encoding_name)
             )
 
-            logger.info(
-                f"Using audio encoding: {encoding_name} -> {audio_encoding_enum} with extension {file_extension}"
+            logger.debug(
+                f"TTS parameters configured",
+                extra={
+                    "language_code": language_code,
+                    "voice_name": voice_name,
+                    "encoding": encoding_name,
+                    "pitch": pitch,
+                    "speaking_rate": speaking_rate,
+                    "text_length": len(text),
+                },
             )
 
             # Construct the request
@@ -171,22 +228,57 @@ class TTSService:
                 audio_path = temp_file.name
 
             logger.info(
-                f"TTS audio generated: {audio_path} (format: {encoding_name})"
+                f"TTS audio generated successfully",
+                extra={
+                    "audio_path": audio_path,
+                    "format": encoding_name,
+                    "file_size": len(response.audio_content),
+                    "text_length": len(text),
+                },
             )
+
             return audio_path
 
+        except ValidationError:
+            raise
+        except ServiceUnavailableError:
+            raise
         except Exception as e:
-            logger.error(f"TTS generation failed: {str(e)}")
-            raise RuntimeError(f"TTS failed: {str(e)}") from e
+            logger.error(f"TTS generation failed: {str(e)}", exc_info=True)
+            raise TTSGenerationError(
+                f"TTS generation failed: {str(e)}", len(text)
+            )
 
-    def get_available_voices(self, language_code: str = None):
-        """Get list of available voices"""
+    def get_available_voices(
+        self, language_code: Optional[str] = None
+    ) -> List[Tuple[str, str]]:
+        """
+        Get list of available voices
+
+        Args:
+            language_code: Optional language code to filter voices
+
+        Returns:
+            List of (voice_name, gender) tuples
+        """
         try:
             client = self._get_client()
             voices = client.list_voices(language_code=language_code)
-            return [
+
+            voice_list = [
                 (voice.name, voice.ssml_gender.name) for voice in voices.voices
             ]
+
+            logger.info(
+                f"Retrieved available voices",
+                extra={
+                    "language_code": language_code,
+                    "voice_count": len(voice_list),
+                },
+            )
+
+            return voice_list
+
         except Exception as e:
-            logger.error(f"Failed to get voices: {str(e)}")
+            logger.error(f"Failed to get voices: {str(e)}", exc_info=True)
             return []
