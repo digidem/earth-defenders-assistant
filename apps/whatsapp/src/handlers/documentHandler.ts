@@ -17,7 +17,10 @@ export async function handleDocumentMessage(
     if (!fileBuffer) {
       await sock.sendMessage(
         chatId,
-        { text: "Não foi possível baixar o arquivo." },
+        {
+          text: config.services.whatsapp.error_messages
+            .DOCUMENT_DOWNLOAD_FAILED,
+        },
         { quoted: message },
       );
       await react(message, "error");
@@ -35,13 +38,16 @@ export async function handleDocumentMessage(
       documentMsg.fileName ||
         (mimeType.includes("csv") ? "document.csv" : "document.pdf"),
     );
-    formData.append("ttl_days", "1");
+    formData.append(
+      "ttl_days",
+      config.services.whatsapp.private_document_ttl_days.toString(),
+    );
     formData.append("user_platform_id", platformUserId);
     formData.append("platform", "whatsapp");
 
     logger.info(`Uploading document for user: ${platformUserId}`);
 
-    const uploadApiUrl = `http://localhost:${config.ports.ai_api}/api/documents/upload`;
+    const uploadApiUrl = `${config.services.whatsapp.ai_api_base_url}:${config.ports.ai_api}/api/documents/upload`;
     const response = await fetch(uploadApiUrl, {
       method: "POST",
       body: formData,
@@ -76,11 +82,18 @@ export async function handleDocumentMessage(
     );
 
     const fileType = mimeType.includes("csv") ? "CSV" : "PDF";
+    const successMessage =
+      config.services.whatsapp.success_messages.DOCUMENT_PROCESSED.replace(
+        "{file_type}",
+        fileType,
+      ).replace(
+        "{ttl_days}",
+        config.services.whatsapp.private_document_ttl_days.toString(),
+      );
+
     await sock.sendMessage(
       chatId,
-      {
-        text: `✅ ${fileType} processado com sucesso!\n\nAgora você pode fazer perguntas sobre o conteúdo deste arquivo diretamente por mensagem.\n\n⏰ O arquivo será mantido por 1 dia.`,
-      },
+      { text: successMessage },
       { quoted: message },
     );
     await react(message, "done");
@@ -89,7 +102,10 @@ export async function handleDocumentMessage(
     logger.error("Error in document upload:", error);
     await sock.sendMessage(
       chatId,
-      { text: "Erro ao processar o arquivo. Por favor, tente novamente." },
+      {
+        text: config.services.whatsapp.error_messages
+          .DOCUMENT_PROCESSING_FAILED,
+      },
       { quoted: message },
     );
     await react(message, "error");

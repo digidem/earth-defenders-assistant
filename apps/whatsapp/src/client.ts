@@ -1,3 +1,4 @@
+import { config } from "@eda/config";
 import type { Boom } from "@hapi/boom";
 import {
   DisconnectReason,
@@ -155,7 +156,12 @@ async function reconnect() {
       connected = true;
     } catch (error) {
       console.log("Reconnection failed, retrying in 5 seconds...", error);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) =>
+        setTimeout(
+          resolve,
+          config.services.whatsapp.reconnection_delay_seconds * 1000,
+        ),
+      );
     }
   }
 }
