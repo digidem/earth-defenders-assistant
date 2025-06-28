@@ -1,11 +1,12 @@
 <h1 align="center">Development</h1>
 
 <p align="center">
-    Welcome to the <strong>Earth Defenders Assistant</strong> development documentation. This guide provides essential information for developers contributing to our platform, which leverages <a href="https://wwebjs.dev/">whatsapp-web.js</a> for creating customizable WhatsApp bots. Our system employs a flexible plugin architecture to support a wide range of applications, enabling the deployment of personalized bots tailored to diverse community needs.
+    Welcome to the <strong>Earth Defenders Assistant</strong> development documentation. This guide provides essential information for developers contributing to our platform, which leverages <a href="https://github.com/whiskeysockets/baileys">Baileys</a> for WhatsApp integration and a flexible AI agent architecture. Our system employs a modular design to support a wide range of applications, enabling the deployment of personalized AI assistants tailored to diverse community needs.
     <br />
     <br />
     <a href="#getting-started"><strong>Getting Started</strong></a> ·
     <a href="#architecture"><strong>Architecture</strong></a> ·
+    <a href="#development-workflow"><strong>Development Workflow</strong></a> ·
     <a href="#contributing"><strong>Contributing</strong></a> ·
     <a href="#deployment"><strong>Deployment</strong></a>
 </p>
@@ -13,6 +14,7 @@
 ## Getting Started
 
 This project uses [Turborepo](https://turbo.build/repo/docs) as a monorepo architecture to manage multiple packages and applications. The codebase is split between TypeScript (for core processing, database interactions, and frontend applications) and Python (for AI/ML services and natural language processing).
+
 ### Prerequisites
 
 - **Node.js** (v20 or later)
@@ -22,26 +24,32 @@ This project uses [Turborepo](https://turbo.build/repo/docs) as a monorepo archi
 - **Git**
 - **Docker** (optional, for containerized deployment)
 
-**Installing**
+**Installing Development Tools**
 
 Make sure you have the necessary dependencies. The following commands will install the required development tools:
 
 ```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash # install Node Version Manager
-curl -fsSL https://bun.sh/install | bash # Install Bun NodeJS package manager and runtime
-curl -LsSf https://astral.sh/uv/install.sh | sh # Install uv Python package manager
+# Install Node Version Manager
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+
+# Install Bun NodeJS package manager and runtime
+curl -fsSL https://bun.sh/install | bash
+
+# Install uv Python package manager
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 Install Node.js v20 and pin it using nvm:
 
-```
+```bash
 nvm install 20
 nvm use 20
 nvm alias default 20
 ```
 
 And Python 3.11 and pin it using uv:
-```
+
+```bash
 uv python install 3.11
 uv python pin 3.11
 ```
@@ -52,8 +60,8 @@ The platform's core services can be run either locally or accessed via cloud pro
 
 | Service                             | Purpose                                | Required   |
 | ----------------------------------- | -------------------------------------- | ---------- |
-| [Supabase](https://supabase.com/)   | Backend-as-a-Service (BaaS) platform   | Yes        |
-| [Trigger.dev](https://trigger.dev/) | Workflow automation and job scheduling | Yes        |
+| [PocketBase](https://pocketbase.io/) | Backend-as-a-Service (BaaS) platform   | Yes        |
+| [Trigger.dev](https://trigger.dev/) | Workflow automation and job scheduling | Optional   |
 | [Langtrace](https://langtrace.ai/)  | LLM observability and monitoring       | For AI Dev |
 
 ### Optional Monitoring Services
@@ -69,101 +77,112 @@ The platform's core services can be run either locally or accessed via cloud pro
 Clone this repo locally with the following command:
 
 ```bash
-git clone https://github.com/digidem/earth-defender-assistant.git
+git clone https://github.com/digidem/earth-defenders-assistant.git
 cd earth-defenders-assistant
 ```
 
 1. Install dependencies using bun:
 
-```sh
-bun i
+```bash
+bun install
 ```
 
-2. Copy `.env.example` to `.env` and update the variables.
+2. Copy configuration files:
 
-```sh
-# Copy .env.example to .env for each app
-cp packages/simulator/.env.example packages/simulator/.env
-cp packages/jobs/.env.example packages/jobs/.env
-cp apps/api/.env.example apps/api/.env
-cp apps/ai_api/.env.example apps/ai_api/.env
-cp apps/dashboard/.env.example apps/dashboard/.env
-cp apps/landingpage/.env.example apps/landingpage/.env
-cp apps/whatsapp/.env.example apps/whatsapp/.env
-cp deploy/trigger-stack/.env.example deploy/trigger-stack/.env
-cp deploy/langtrace-stack/.env.example deploy/langtrace-stack/.env
+```bash
+# Copy config files
+cp config.example.yaml config.yaml
 ```
 
-3. Before starting the development server, ensure you have the required environmental variables in place:
+3. Configure your environment:
 
-- Connect to Trigger instance by setting the correct `TRIGGER_PROJECT_ID` and `TRIGGER_API_URL` variables in the `packages/jobs/.env` file from [Local Trigger](http://localhost:3040/) or [Cloud Trigger](https://cloud.trigger.dev)
-- Add the correct `TRIGGER_SECRET_KEY` to `apps/whatsapp/.env` and `packages/simulator/.env` from [Local Trigger](http://localhost:3040/) or [Cloud Trigger](https://cloud.trigger.dev) ([docs](https://trigger.dev/docs/apikeys))
-- Add the correct `SUPABASE_SERVICE_ROLE_KEY` to the `packages/jobs/.env` from [Local Supabase](http://localhost:54323/project/default/settings/api) or [Cloud Supabase](https://supabase.com/dashboard/)
-- Add valid `CEREBRAS_API_KEY` or `OPENAI_API_KEY` to `apps/ai_api/.env` from [Cerebras](https://cloud.cerebras.ai/platform) or [OpenAI](https://platform.openai.com/api-keys)
-- (optional) Add the correct `LANGTRACE_API_KEY` to the `.env` in `apps/ai_api/.env` and `packages/simulator/.env`
-- Add a valid `GROQ_API_KEY` to `packages/simulator/.env` from [Groq Console](https://console.groq.com/keys)
-- Add the correct `SERPER_API_KEY` to the `apps/ai_api/.env`
+Edit `config.yaml` with your service credentials and settings. Key sections to configure:
 
-4. Finally start the development server from either bun or turbo:
+- **API Keys**: Add your AI model API keys (OpenAI, Google AI Studio, etc.)
+- **Services**: Configure database URLs, ports, and service endpoints
+- **Access Control**: Set up allowed/blocked users for WhatsApp
+- **AI Models**: Configure model providers and settings
 
-```ts
-// Basic development
-bun prepare:db // prepares database and pre-commit hooks
-bun dev // starts simulator, Supabase api and Trigger.dev jobs
-// Other available commands
-bun dev:all // starts all services in development mode
-bun dev:simulator // starts a user simulation using a LLM
-bun dev:api // starts the Supabase API service in development mode
-bun dev:jobs // starts the Trigger.dev service in development mode
-bun dev:ai // starts the AI API service in development mode (uses Python uv)
-bun dev:whatsapp // starts the WhatsApp service in development mode
-bun dev:dashboard // starts the dashboard in development mode
-bun dev:landingpage // starts the landing page in development mode
-bun dev:email // starts the email service in development mode
-bun dev:docs // starts the documentation service in development mode
-bun deploy:trigger // deploys local Trigger.dev instance using Docker
-bun deploy:langtrace // deploys local LangTrace instance using Docker
-// Database
-bun migrate // run Supabase migrations
-bun seed // run Supabase seed
+4. Start the development services:
+
+```bash
+# Start all core services
+bun dev:api      # Starts PocketBase API service
+bun dev:ai       # Starts AI API service (Python FastAPI)
+bun dev:whatsapp # Starts WhatsApp client
 ```
 
-5. Running `bun dev` starts three key development services in parallel:
+## Development Workflow
 
-- The simulator (@eda/simulator) which simulates a community member interacting with the system
-- The API service (@eda/api) which handles core backend functionality using Supabase (will run a local Supabase instance using Docker)
-- The jobs service (@eda/jobs) which processes background tasks using Trigger.dev
-- The AI API service (@eda/ai-api) which handles AI-related functionality exposing plugins through a [FastAPI](https://fastapi.tiangolo.com/) server.
+### Core Development Commands
 
-**Access the Applications:**
+The project uses a simplified development workflow with three main services:
 
-- **Dashboard**: Visit [http://localhost:8080](http://localhost:8080) to access the main dashboard interface.
-- **Landing Page**: Visit [http://localhost:8081](http://localhost:8081) to view the landing page.
-- **Documentation**: Visit [http://localhost:8082](http://localhost:8082) to browse the documentation.
-- **AI API**: Visit [http://localhost:8083/docs](http://localhost:8083/docs) to access the API documentation.
-- **Supabase Studio**: Visit [http://localhost:54323](http://localhost:54323) to manage your database, view API documentation, and perform backend tasks.
-- **Trigger.dev Dashboard**: Visit [http://localhost:3040](http://localhost:3040) to manage jobs. Use `docker logs -f trigger-webapp` to view the magic link in the logs.
+```bash
+# Install dependencies
+bun install
 
-Development should be done primarily through the simulator, which creates realistic scenarios of community members interacting with the system. The simulator enables testing conversations between two AI agents - one representing a community member and another representing the assistant.
+# Start core services
+bun dev:api      # PocketBase backend (port 8090)
+bun dev:ai       # AI API service (port 8083)
+bun dev:whatsapp # WhatsApp client
 
-If using a local Trigger.dev instance for job processing, first run `bun deploy:trigger` before `bun dev`. For local LangTrace observability, deploy with `bun deploy:langtrace`.
+# Additional development commands
+bun dev:all      # Start all services in parallel
+bun dev:dashboard # Start dashboard (port 8080)
+bun dev:landingpage # Start landing page (port 8081)
+bun dev:docs     # Start documentation (port 8082)
+bun dev:jobs     # Start Trigger.dev jobs
+bun dev:email    # Start email service
+bun dev:simulator # Start AI simulator for testing
+```
+
+### Service Access Points
+
+When running in development mode, you can access:
+
+- **Dashboard**: [http://localhost:8080](http://localhost:8080)
+- **Landing Page**: [http://localhost:8081](http://localhost:8081)
+- **Documentation**: [http://localhost:8082](http://localhost:8082)
+- **AI API Docs**: [http://localhost:8083/docs](http://localhost:8083/docs)
+- **PocketBase Admin**: [http://localhost:8090/_/](http://localhost:8090/_/)
+
+### WhatsApp Development
+
+For WhatsApp development:
+
+1. Start the WhatsApp service: `bun dev:whatsapp`
+2. Scan the QR code that appears in the terminal
+3. The bot will be ready to receive messages
+4. Test with commands like `!help` and `!ping`
+
+### AI Development
+
+The AI API service provides:
+
+- **Agent Management**: Multi-agent system with specialized tools
+- **Memory Systems**: Conversation history and semantic search
+- **Document Processing**: PDF/CSV upload and analysis
+- **Text-to-Speech**: Voice generation for responses
+- **Audio Transcription**: Voice message processing
 
 ## Architecture
 
 This project follows a modular architecture, organized as a Turborepo monorepo. Key components include:
 
-- **Apps:** Front-end applications such as the landingpage, user dashboard and WhatsApp web interface.
-- **Packages:** Shared libraries and utilities used across applications, including analytics, email templates, background jobs, key-value storage, logging, simulation tools, database clients, TypeScript types, and UI components.
-- **Plugins:** Extensible AI service modules and plugins that can be integrated into the core applications, currently including grant analysis and evaluation tools with potential for additional domain-specific plugins.
-- **Deploy:** Utilize Docker Compose and scripts for deploying services used by the applications.
+- **Apps:** Front-end applications such as the landing page, user dashboard, WhatsApp client, and AI API.
+- **Packages:** Shared libraries and utilities used across applications, including configuration management, logging, TypeScript types, and UI components.
+- **AI Agents:** Extensible AI service modules with specialized tools for different tasks.
+- **Deploy:** Docker Compose and scripts for deploying supporting services.
 
 ### Tech Stack
 
 [Turborepo](https://turbo.build) - Build system<br>
 [Biome](https://biomejs.dev) - Linter, formatter<br>
-[Supabase](https://supabase.com/) - Authentication, database, storage<br>
+[PocketBase](https://pocketbase.io/) - Backend-as-a-Service (database, auth, storage)<br>
 [Trigger.dev](https://trigger.dev/) - Background jobs<br>
 [FastAPI](https://fastapi.tiangolo.com/) - Python web framework<br>
+[Baileys](https://github.com/whiskeysockets/baileys) - WhatsApp Web API<br>
 [Langtrace](https://www.langtrace.ai/) - LLM monitoring and evaluation<br>
 [Starlight](https://starlight.astro.build/) - Documentation<br>
 [Upstash](https://upstash.com/) - Cache and rate limiting<br>
@@ -176,40 +195,57 @@ This project follows a modular architecture, organized as a Turborepo monorepo. 
 ```
 .
 ├── apps                         # App workspace
-│    ├── ai_api                  # Python FastAPI for exposing and calling AI plugins
-│    ├── api                     # Supabase (API, Auth, Storage, Realtime, Edge Functions)
+│    ├── ai_api                  # Python FastAPI for AI services and agents
+│    ├── api                     # PocketBase backend service
 │    ├── dashboard               # User dashboard
 │    ├── landingpage             # Product Landing Page
-│    ├── whatsapp                # Whatsapp Web instance
+│    ├── whatsapp                # WhatsApp client using Baileys
 │    └── docs                    # Product Documentation
 ├── packages                     # Shared packages between apps
 │    ├── analytics               # OpenPanel analytics
+│    ├── config                  # Centralized configuration management
 │    ├── email                   # React email library
 │    ├── jobs                    # Trigger.dev background jobs
 │    ├── kv                      # Upstash rate-limited key-value storage
 │    ├── logger                  # Logger library
-│    ├── simulator               # Simulates scrapping and user interactions
-│    ├── supabase                # Supabase - Queries, Mutations, Clients
+│    ├── simulator               # Simulates user interactions
+│    ├── supabase                # Database queries and clients
 │    ├── types                   # Shared TypeScript type definitions
 │    ├── typescript-config       # Shared TypeScript configuration
 │    └── ui                      # Shared UI components (Shadcn)
 ├── deploy                       # Deploy workspace
 │    ├── langtrace               # Langtrace stack
-│    ├── briefer-stack           # Briefer stack components
-│    ├── supabase-stack          # Supabase (API, Auth, Storage, Realtime, Edge Functions)
-│    ├── training-stack          # LLM-training framework stack
 │    ├── trigger-stack           # Trigger.dev stack components
-│    └── zep-stack               # Zep stack components
+│    └── supabase-stack          # PocketBase stack components
 ├── plugins                      # Plugin workspace
 │    └── grant_plugin            # The AI grant plugin for EDA
-├── tooling                      # Shared configuration that are used by the apps and packages
+├── tooling                      # Shared configuration
 │    └── typescript              # Shared TypeScript configuration
 ├── .cursorrules                 # Cursor rules specific to this project
 ├── biome.json                   # Biome configuration
 ├── turbo.json                   # Turbo configuration
+├── config.yaml                  # Centralized configuration
+├── config.example.yaml          # Configuration template
 ├── LICENSE
 └── README.md
 ```
+
+### AI Agent Architecture
+
+The AI system uses a multi-agent architecture with specialized tools:
+
+#### Core Agents
+- **Manager Agent**: Orchestrates other agents and handles multi-modal input
+- **Document Search Agent**: Searches through uploaded documents
+- **Memory Search Agent**: Performs semantic search on conversation history
+- **Global Knowledge Agent**: Searches shared knowledge base
+- **Conversation Summary Agent**: Generates conversation summaries
+
+#### Tools
+- **ConversationMemoryTool**: Semantic search in conversation history
+- **DocumentSearchTool**: Search through stored documents
+- **GlobalKnowledgeSearchTool**: Search global knowledge base
+- **ConversationHistoryTool**: Retrieve conversation history by date
 
 ### Project Diagram
 
@@ -234,80 +270,135 @@ This project follows a modular architecture, organized as a Turborepo monorepo. 
         Bot["Earth Defenders Assistant"]:::botStyle
     end
 
-    %% Orchestration & Processing
-    subgraph Orchestration["Orchestration & Processing"]
+    %% Core Services
+    subgraph CoreServices["Core Services"]
         direction TB
-        MessageProcessor["Message Processor"]:::processStyle
-        TriggerDev["Trigger.dev<br>(Events Monitoring)"]:::externalAppStyle
-
-        subgraph Supabase["Supabase DB"]
-            direction TB
-            receivedMessages["receivedMessages"]:::databaseStyle
-            toSendMessages["toSendMessages"]:::databaseStyle
-            MemoryDB["Graph Memory<br>(Supabase DB)"]:::databaseStyle
-        end
+        AIAPI["AI API<br>(FastAPI)"]:::serviceStyle
+        PocketBase["PocketBase<br>(Database)"]:::databaseStyle
+        TriggerDev["Trigger.dev<br>(Jobs)"]:::externalAppStyle
     end
 
-    %% Memory Management
-    subgraph MemoryLayer["Long Term Memory"]
+    %% AI Agents
+    subgraph AIAgents["AI Agent System"]
         direction TB
-        Zep["Zep"]:::externalAppStyle
+        ManagerAgent["Manager Agent"]:::processStyle
+        DocumentAgent["Document Search Agent"]:::processStyle
+        MemoryAgent["Memory Search Agent"]:::processStyle
+        KnowledgeAgent["Global Knowledge Agent"]:::processStyle
+        SummaryAgent["Conversation Summary Agent"]:::processStyle
     end
 
-    %% LLMTraining
-    subgraph LLMTraining["Training and Fine-Tuning"]
+    %% Tools
+    subgraph Tools["AI Tools"]
         direction TB
-        LLM-training["LLM-training"]:::externalAppStyle
+        MemoryTool["ConversationMemoryTool"]:::llmStyle
+        DocumentTool["DocumentSearchTool"]:::llmStyle
+        KnowledgeTool["GlobalKnowledgeSearchTool"]:::llmStyle
+        HistoryTool["ConversationHistoryTool"]:::llmStyle
     end
 
-
-    %% Plugins
-    subgraph LLMProcessing["Plugins"]
+    %% External Services
+    subgraph ExternalServices["External Services"]
         direction TB
-        Plugins["Plugins<br>(Intent Classification,<br>Tool Calling)"]:::processStyle
-        LLMOperations["LLM Operations"]:::llmStyle
-        Tools["Tools"]:::serviceStyle
-        Briefer["Briefer<br>(Human Readable DB)"]:::externalAppStyle
-        ExternalTools["External Tools"]:::serviceStyle
-        Langtrace["Langtrace<br>(Monitoring and Evaluation)"]:::externalAppStyle
+        Langtrace["Langtrace<br>(Monitoring)"]:::externalAppStyle
+        TTS["Text-to-Speech"]:::externalAppStyle
+        Transcription["Audio Transcription"]:::externalAppStyle
     end
 
     %% Connections
     User -->|Communicates| WhatsApp
     WhatsApp -->|Routes| Bot
-    Bot -->|Orchestrates| TriggerDev
-    TriggerDev -->|Adds Messages to| receivedMessages
-    receivedMessages -->|Read by| MessageProcessor
-    MessageProcessor -->|Processes| Plugins
-    Plugins -->|Call| LLMOperations
-    Plugins -->|Call| Tools
-    LLMOperations -->|Call| Tools
-    LLMOperations -->|Feedback to| Langtrace
-    MessageProcessor -->|Memory Update| Zep
-    Zep <-->|Stores and Retrieves| MemoryDB
-    Zep -->|Add to prompt|LLMOperations
-    LLM-training -->|Inference|LLMOperations
-    Tools -->|Call|Briefer
-    Tools <-->|Call|ExternalTools
-    Tools -->|Queue message|toSendMessages
-    Briefer -->|Feed data|LLM-training
-    Langtrace -->|Feed data| LLM-training
-    Bot -->|Responds| WhatsApp
-    WhatsApp -->|Delivers| User
+    Bot -->|API Calls| AIAPI
+    AIAPI -->|Orchestrates| ManagerAgent
+    ManagerAgent -->|Manages| DocumentAgent
+    ManagerAgent -->|Manages| MemoryAgent
+    ManagerAgent -->|Manages| KnowledgeAgent
+    ManagerAgent -->|Manages| SummaryAgent
+    
+    DocumentAgent -->|Uses| DocumentTool
+    MemoryAgent -->|Uses| MemoryTool
+    KnowledgeAgent -->|Uses| KnowledgeTool
+    SummaryAgent -->|Uses| HistoryTool
+    
+    AIAPI -->|Stores Data| PocketBase
+    AIAPI -->|Processes Audio| Transcription
+    AIAPI -->|Generates Voice| TTS
+    AIAPI -->|Monitors| Langtrace
+    
+    TriggerDev -->|Background Jobs| PocketBase
+    TriggerDev -->|Scheduled Tasks| AIAPI
 ```
 
 ## Contributing
 
 We welcome contributions from the community. To get started:
 
-1. Fork the repository.
-2. Create a new feature branch (`git checkout -b feature/your-feature-name`).
-3. Commit your changes (`git commit -m 'Add your feature message'`).
-4. Push to the branch (`git push origin feature/your-feature-name`).
-5. Open a [Pull Request](https://github.com/digidem/earth-defenders-assistant/pulls).
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/your-feature-name`
+3. **Make your changes**: Follow the coding standards below
+4. **Test your changes**: Ensure all services work correctly
+5. **Commit your changes**: `git commit -m 'Add your feature message'`
+6. **Push to the branch**: `git push origin feature/your-feature-name`
+7. **Open a Pull Request**: [Create PR](https://github.com/digidem/earth-defenders-assistant/pulls)
 
-Please adhere to the project's [Code of Conduct](./CODE_OF_CONDUCT.md) and ensure all tests pass before submitting your pull request.
+### Coding Standards
+
+#### TypeScript/JavaScript
+- Use TypeScript with strict type checking
+- Follow Biome formatting and linting rules
+- Use descriptive variable and function names
+- Add proper error handling and logging
+- Write meaningful commit messages
+
+#### Python
+- Follow PEP 8 style guidelines
+- Use type hints for all functions
+- Add docstrings for public functions
+- Use async/await for I/O operations
+- Implement proper error handling
+
+#### Configuration
+- Use the centralized `config.yaml` system
+- Add new configuration options to both YAML and TypeScript types
+- Document new configuration options
+- Provide sensible defaults
+
+#### Testing
+- Test your changes locally before submitting
+- Ensure all services start correctly
+- Test the WhatsApp integration if applicable
+- Verify AI agent functionality
+
+### Development Best Practices
+
+1. **Start Small**: Begin with simple changes and gradually add complexity
+2. **Test Locally**: Always test your changes in the local development environment
+3. **Use Configuration**: Leverage the centralized config system for all settings
+4. **Follow Patterns**: Study existing code to understand the project patterns
+5. **Document Changes**: Update documentation when adding new features
+6. **Error Handling**: Implement proper error handling and user feedback
 
 ## Deployment
 
 For detailed deployment instructions, please refer to our comprehensive [Deployment Guide](./deploy/README.md). This guide provides step-by-step instructions for setting up and deploying each component of our stack.
+
+### Quick Deployment
+
+For basic deployment:
+
+1. **Configure Environment**: Set up `config.yaml` with production values
+2. **Build Applications**: `bun build`
+3. **Deploy Services**: Use the deployment scripts in the `deploy/` directory
+4. **Monitor**: Set up monitoring and logging for production
+
+### Production Considerations
+
+- **Security**: Ensure all API keys and secrets are properly secured
+- **Scaling**: Configure services for expected load
+- **Monitoring**: Set up comprehensive monitoring and alerting
+- **Backup**: Implement regular database backups
+- **SSL**: Use HTTPS for all external communications
+
+---
+
+For more information about the Earth Defenders Assistant platform and its components, please refer to the main project documentation and the [ROADMAP](./ROADMAP.md) for future development plans.
