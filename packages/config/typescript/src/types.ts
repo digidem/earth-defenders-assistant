@@ -238,6 +238,7 @@ const AIModelConfigSchema = z.object({
 // Update the AIApiConfig schema
 const AIApiConfigSchema = z.object({
   debug: z.boolean(),
+  allow_external: z.boolean().default(false), // Allow external connections (production setting)
   conversation_history_limit: z.number().default(5),
   relevant_history_limit: z.number().default(3),
 

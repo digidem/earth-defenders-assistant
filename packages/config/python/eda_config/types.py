@@ -61,6 +61,7 @@ class ApiKeys(BaseModel):
     deepseek: str  # Added DeepSeek API key
     google_ai_studio: str  # Added Google AI Studio API key
     google_cloud: GoogleCloudKeys  # Added Google Cloud credentials
+    openpanel: OpenPanelKeys  # Added OpenPanel keys
 
 
 class DbPorts(BaseModel):
@@ -264,6 +265,9 @@ class TTSConfig(BaseModel):
 # Update AIApiConfig class to include all constants from constants.py
 class AIApiConfig(BaseModel):
     debug: bool
+    allow_external: bool = (
+        False  # Allow external connections (production setting)
+    )
     conversation_history_limit: Optional[int] = 5
     relevant_history_limit: Optional[int] = 3
 
