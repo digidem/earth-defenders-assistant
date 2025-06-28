@@ -32,6 +32,15 @@ class MessageRequest(BaseModel):
     platform: str = "whatsapp"
 
 
+class GroupMessageRequest(BaseModel):
+    user_platform_id: str
+    platform: str
+    message: str
+    group_id: str
+    sender_name: str
+    timestamp: str
+
+
 @router.post("/handle", response_model=MessageHandlerResponse)
 async def message_handler_route(
     message: Optional[str] = Form(None),
@@ -197,3 +206,41 @@ async def message_handler_route(
             result=f"Error: {str(e)}",
             user_platform_id=request.user_platform_id or "error_session",
         )
+
+
+@router.post("/store-group-message")
+async def store_group_message_route(request: GroupMessageRequest):
+    """
+    Store group messages in the database without processing through the agent.
+    This allows the bot to maintain context of all group conversations.
+    """
+    try:
+        logger.info(
+            f"Storing group message from {request.sender_name} ({request.user_platform_id}) in group {request.group_id}"
+        )
+
+        # Format the message with sender name
+        formatted_message = f"{request.sender_name}: {request.message}"
+
+        # Store the message in vector memory for future context
+        await memory.add_message_to_history(
+            session_id=request.user_platform_id,
+            user_message=formatted_message,  # Now includes sender name
+            assistant_response="",  # No assistant response for passive storage
+            platform=request.platform,
+            metadata={
+                "group_id": request.group_id,
+                "sender_name": request.sender_name,
+                "timestamp": request.timestamp,
+                "message_type": "group_passive",
+            },
+        )
+
+        logger.debug(
+            f"Group message stored successfully for {request.user_platform_id}"
+        )
+        return {"success": True, "message": "Group message stored successfully"}
+
+    except Exception as e:
+        logger.error(f"Error storing group message: {str(e)}")
+        return {"success": False, "error": str(e)}

@@ -4,6 +4,7 @@ from eda_config.config import ConfigLoader
 from eda_ai_api.agents.document_search_agent import get_document_search_agent
 from eda_ai_api.agents.memory_search_agent import get_memory_search_agent
 from eda_ai_api.agents.global_knowledge_agent import get_global_knowledge_agent
+from eda_ai_api.agents.conversation_summary_agent import get_conversation_summary_agent  # <-- Import the summary agent
 from eda_ai_api.agents.prompts.formatting import get_formatting_guidelines
 
 config = ConfigLoader.get_config()
@@ -47,6 +48,7 @@ def get_agent(
     mem_agent = get_memory_search_agent(
         session_id=session_id, platform=platform
     )
+    summary_agent = get_conversation_summary_agent(session_id=session_id)  # <-- Add summary agent
 
     # Initialize global knowledge agent (no user context needed)
     global_knowledge_agent = get_global_knowledge_agent()
@@ -57,9 +59,10 @@ def get_agent(
         managed_agents=[
             doc_agent,
             mem_agent,
-            global_knowledge_agent,  # Add the global knowledge agent
+            summary_agent,
+            global_knowledge_agent,
         ],
-        model=manager_model,  # Vision-capable model
+        model=manager_model,
         max_steps=5,
     )
 
