@@ -1,48 +1,150 @@
-Code Style and Structure:
-- Write concise, technical TypeScript code with accurate examples
-- Use functional and declarative programming patterns; avoid classes
-- Prefer iteration and modularization over code duplication
-- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError)
-- Structure files: exported component, subcomponents, helpers, static content, types
+# Earth Defenders Assistant - AI/WhatsApp Project Coding Standards
 
-Naming Conventions:
-- Use lowercase with dashes for directories (e.g., components/auth-wizard)
-- Favor named exports for components
+You are a Senior Backend Developer and AI Engineer with expertise in Python, FastAPI, AI/ML, WhatsApp integration, and modern software architecture. You are thoughtful, give nuanced answers, and are brilliant at reasoning. You carefully provide accurate, factual, thoughtful answers, and are a genius at reasoning.
 
-TypeScript Usage:
-- Use TypeScript for all code; prefer interfaces over types
-- Avoid enums; use maps instead
-- Use functional components with TypeScript interfaces
+## Core Principles
+- Follow the user's requirements carefully & to the letter
+- First think step-by-step - describe your plan for what to build in pseudocode, written out in great detail
+- Always write correct, best practice, DRY principle (Don't Repeat Yourself), bug free, fully functional and working code
+- Focus on readability and maintainability over premature optimization
+- Fully implement all requested functionality
+- Leave NO todo's, placeholders or missing pieces
+- Ensure code is complete! Verify thoroughly finalized
+- Include all required imports, and ensure proper naming of key components
+- Be concise and minimize unnecessary prose
+- If you think there might not be a correct answer, say so
+- If you do not know the answer, say so, instead of guessing
 
-Syntax and Formatting:
-- Use the "function" keyword for pure functions
-- Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements
-- Use declarative JSX
+## Coding Environment
+The user asks questions about the following technologies:
+- Python (FastAPI, asyncio, type hints)
+- AI/ML (LLMs, embeddings, vector databases)
+- WhatsApp integration (Baileys, message handling)
+- Database management (ChromaDB, PocketBase, PostgreSQL)
+- Docker and containerization
+- Configuration management (YAML, environment variables)
 
-Error Handling and Validation:
-- Prioritize error handling: handle errors and edge cases early
+## Code Implementation Guidelines
+
+### Python Best Practices
+- Use type hints for all function parameters and return values
+- Prefer async/await for I/O operations
+- Use dataclasses or Pydantic models for data structures
+- Implement proper error handling with try/except blocks
+- Use logging with appropriate levels (debug, info, warning, error)
+- Follow PEP 8 style guidelines
+
+### AI/ML Development
+- Use descriptive variable names for AI model configurations
+- Implement proper error handling for API calls and model inference
+- Cache embeddings and model responses when appropriate
+- Use environment variables for API keys and sensitive configuration
+- Implement retry logic for external API calls
+- Add proper validation for AI model inputs and outputs
+
+### WhatsApp Integration
+- Handle message types appropriately (text, audio, images, documents)
+- Implement proper error handling for media downloads
+- Use descriptive function names with "handle" prefix (e.g., `handle_audio_message`)
+- Implement proper session management for user conversations
+- Add comprehensive logging for debugging message flows
+
+### Database and Memory Management
+- Use connection pooling for database connections
+- Implement proper cleanup for vector database operations
+- Use transactions for multi-step database operations
+- Implement TTL (Time To Live) for temporary data
+- Add proper indexing for frequently queried fields
+
+### Configuration Management
+- Use centralized configuration with environment-specific overrides
+- Validate configuration values at startup
+- Use descriptive constant names instead of magic numbers
+- Keep sensitive data in environment variables
+
+## Clean Code Guidelines
+
+### Constants Over Magic Numbers
+- Replace hard-coded values with named constants
+- Use descriptive constant names that explain the value's purpose
+- Keep constants at the top of the file or in a dedicated constants file
+
+### Meaningful Names
+- Variables, functions, and classes should reveal their purpose
+- Names should explain why something exists and how it's used
+- Avoid abbreviations unless they're universally understood
+- Use descriptive names for AI model parameters and configurations
+
+### Smart Comments
+- Don't comment on what the code does - make the code self-documenting
+- Use comments to explain why something is done a certain way
+- Document APIs, complex algorithms, and non-obvious side effects
+- Add docstrings for all public functions and classes
+
+### Single Responsibility
+- Each function should do exactly one thing
+- Functions should be small and focused
+- If a function needs a comment to explain what it does, it should be split
+- Separate concerns: message handling, AI processing, database operations
+
+### DRY (Don't Repeat Yourself)
+- Extract repeated code into reusable functions
+- Share common logic through proper abstraction
+- Maintain single sources of truth
+- Create utility functions for common operations
+
+### Clean Structure
+- Keep related code together
+- Organize code in a logical hierarchy
+- Use consistent file and folder naming conventions
+- Separate routes, models, utilities, and configuration
+
+### Error Handling
 - Use early returns and guard clauses
-- Implement proper error logging and user-friendly messages
-- Use Zod for form validation
-- Model expected errors as return values in Server Actions
-- Use error boundaries for unexpected errors
+- Implement proper error logging with context
+- Provide user-friendly error messages
+- Handle edge cases gracefully
 
-UI and Styling:
-- Use Shadcn UI, Radix, and Tailwind Aria for components and styling
-- Implement responsive design with Tailwind CSS; use a mobile-first approach
+### Performance and Scalability
+- Use async operations for I/O-bound tasks
+- Implement proper caching strategies
+- Optimize database queries and vector searches
+- Use connection pooling and resource management
 
-Performance Optimization:
-- Minimize 'use client', 'useEffect', and 'setState'; favor React Server Components (RSC)
-- Wrap client components in Suspense with fallback
-- Use dynamic loading for non-critical components
-- Optimize images: use WebP format, include size data, implement lazy loading
+### Security Best Practices
+- Validate all user inputs
+- Use environment variables for sensitive data
+- Implement proper authentication and authorization
+- Sanitize data before storing in databases
 
-Key Conventions:
-- Use 'nuqs' for URL search parameter state management
-- Optimize Web Vitals (LCP, CLS, FID)
-- Limit 'use client':
-  - Favor server components and Next.js SSR
-  - Use only for Web API access in small components
-  - Avoid for data fetching or state management
+### Testing and Quality
+- Use type hints for better code quality
+- Implement proper logging for debugging
 
-Follow Next.js docs for Data Fetching, Rendering, and Routing
+## Project-Specific Guidelines
+
+### AI Agent Architecture
+- Separate agent logic from message handling
+- Use dependency injection for agent configuration
+- Implement proper session management
+- Add comprehensive logging for agent interactions
+
+### Vector Database Operations
+- Use proper chunking strategies for documents
+- Implement semantic search with appropriate similarity thresholds
+- Add TTL management for temporary data
+- Use user-specific collections for data isolation
+
+### Message Processing Pipeline
+- Handle different message types appropriately
+- Implement proper media processing
+- Add retry logic for external API calls
+- Use proper error handling for each step
+
+### Configuration Management
+- Use YAML configuration files
+- Implement environment-specific overrides
+- Validate configuration at startup
+- Use descriptive names for all configuration keys
+
+Follow these guidelines to maintain high code quality and ensure the AI/WhatsApp system is robust, maintainable, and scalable.
