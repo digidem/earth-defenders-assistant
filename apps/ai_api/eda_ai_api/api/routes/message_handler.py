@@ -16,9 +16,6 @@ from eda_ai_api.models.message_handler import MessageHandlerResponse
 from eda_ai_api.utils.context_builder import build_enhanced_context
 from eda_ai_api.utils.memory_manager import get_vector_memory
 from eda_ai_api.utils.attachment_utils import process_attachment
-from smolagents.local_python_executor import BASE_BUILTIN_MODULES
-from eda_ai_api.agents.prompts.manager import MANAGER_SYSTEM_PROMPT
-from smolagents.agents import populate_template
 
 config = ConfigLoader.get_config()
 
@@ -123,36 +120,13 @@ async def message_handler_route(
             agent = get_agent(
                 platform=request.platform,
                 session_id=current_user_id,  # Pass the user session
+                conversation_history=conversation_history,  # Pass conversation history
             )
             logger.debug(f"Agent created with {len(agent.tools)} tools")
         except Exception as e:
             logger.error(f"Error creating agent: {str(e)}", exc_info=True)
             return MessageHandlerResponse(
                 result=f"Error: Failed to initialize agent - {str(e)}",
-                user_platform_id=current_user_id,
-            )
-
-        # Set up the custom prompt with all required variables
-        logger.debug("Configuring agent prompt")
-        try:
-            agent.prompt_templates["system_prompt"] = populate_template(
-                MANAGER_SYSTEM_PROMPT,
-                variables={
-                    "conversation_history": conversation_history,
-                    "bot_name": config.services.whatsapp.bot_name,
-                    "formatting_guidelines": get_formatting_guidelines(
-                        request.platform
-                    ),
-                    "tools": agent.tools,
-                    "authorized_imports": BASE_BUILTIN_MODULES,
-                    "managed_agents": agent.managed_agents,
-                },
-            )
-            logger.debug("Agent prompt configured successfully")
-        except Exception as e:
-            logger.error(f"Error configuring prompt: {str(e)}", exc_info=True)
-            return MessageHandlerResponse(
-                result=f"Error: Failed to configure agent prompt - {str(e)}",
                 user_platform_id=current_user_id,
             )
 
