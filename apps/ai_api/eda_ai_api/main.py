@@ -8,6 +8,7 @@ from eda_ai_api.api.routes.router import api_router
 from eda_ai_api.core.config import API_PREFIX, APP_NAME, APP_VERSION
 from eda_ai_api.core.event_handlers import start_app_handler, stop_app_handler
 from eda_ai_api.utils.logger import setup_logger
+from eda_ai_api.utils.memory_manager import MemoryManager
 from eda_ai_api.utils.error_handler import (
     handle_aiapi_exception,
     handle_validation_error,
@@ -25,6 +26,11 @@ setup_logger(log_level=log_level)
 from loguru import logger
 
 logger.info(f"Starting {APP_NAME} v{APP_VERSION} with log level: {log_level}")
+
+# Pre-initialize memory instances to prevent expensive initializations during requests
+logger.info("Pre-initializing memory instances...")
+MemoryManager.initialize()
+logger.info("Memory instances initialized successfully")
 
 
 def get_app() -> FastAPI:

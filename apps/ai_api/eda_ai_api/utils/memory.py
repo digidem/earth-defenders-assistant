@@ -12,8 +12,22 @@ config = ConfigLoader.get_config()
 class PocketBaseMemory:
     """Memory manager using PocketBase for conversation storage and retrieval"""
 
+    # Singleton instance
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        """Implement singleton pattern to prevent multiple expensive initializations"""
+        if cls._instance is None:
+            cls._instance = super(PocketBaseMemory, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
-        """Initialize PocketBase client with configuration"""
+        """Initialize PocketBase client with configuration - only once due to singleton pattern"""
+        # Prevent multiple initializations
+        if self._initialized:
+            return
+
         try:
             self.pocketbase_url = config.databases.pocketbase.url
             self.client = PocketBase(self.pocketbase_url)
@@ -27,6 +41,10 @@ class PocketBaseMemory:
             logger.info(
                 "PocketBaseMemory initialized and authenticated successfully"
             )
+
+            # Mark as initialized to prevent re-initialization
+            self._initialized = True
+
         except Exception as e:
             logger.error(f"Failed to initialize PocketBaseMemory: {str(e)}")
             raise RuntimeError(

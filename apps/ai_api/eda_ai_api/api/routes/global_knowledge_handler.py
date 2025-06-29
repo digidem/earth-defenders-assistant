@@ -11,10 +11,10 @@ from eda_ai_api.models.global_knowledge_handler import (
     GlobalKnowledgeDeleteResponse,
     GlobalKnowledgeDocument,
 )
-from eda_ai_api.utils.vector_memory import VectorMemory
+from eda_ai_api.utils.memory_manager import get_vector_memory
 
 router = APIRouter()
-memory = VectorMemory()
+memory = get_vector_memory()
 
 ALLOWED_GLOBAL_KNOWLEDGE_TYPES = {
     "application/pdf": "pdf",

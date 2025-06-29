@@ -10,11 +10,11 @@ from eda_ai_api.models.document_handler import (
     DocumentUploadResponse,
     DocumentSearchResponse,
 )
-from eda_ai_api.utils.vector_memory import VectorMemory
+from eda_ai_api.utils.memory_manager import get_vector_memory
 
 config = ConfigLoader.get_config()
 router = APIRouter()
-memory = VectorMemory()
+memory = get_vector_memory()
 
 ALLOWED_DOCUMENT_TYPES = {
     "application/pdf": "pdf",
@@ -136,7 +136,9 @@ async def upload_document(
                         "document_metadata": doc_metadata,
                         "group_id": group_id,
                         "sender_name": sender_name,
-                        "message_type": "group_passive" if group_id else "direct",
+                        "message_type": (
+                            "group_passive" if group_id else "direct"
+                        ),
                     },
                 )
 
@@ -165,7 +167,7 @@ async def upload_document(
                 assistant_response=f"[SYSTEM] Unexpected error: {error_msg}",
                 platform=platform,
                 metadata={
-                    "event_type": "document_upload", 
+                    "event_type": "document_upload",
                     "status": "error",
                     "group_id": group_id,
                     "sender_name": sender_name,
