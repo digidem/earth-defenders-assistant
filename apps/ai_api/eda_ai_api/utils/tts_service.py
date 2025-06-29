@@ -22,7 +22,19 @@ class TTSService:
         """Initialize TTS service with configuration"""
         self.client = None
         self.tts_config = config.services.tts
-        self.credentials_available = self._check_credentials()
+        self.whatsapp_config = config.services.whatsapp
+        # Don't check credentials immediately - do it lazily when needed
+        self._credentials_checked = False
+        self._credentials_available = False
+
+    def _is_tts_enabled(self) -> bool:
+        """
+        Check if TTS is enabled in the configuration
+
+        Returns:
+            bool: True if TTS is enabled, False otherwise
+        """
+        return self.whatsapp_config.enable_tts
 
     def _check_credentials(self) -> bool:
         """
@@ -31,6 +43,9 @@ class TTSService:
         Returns:
             bool: True if credentials are available, False otherwise
         """
+        if self._credentials_checked:
+            return self._credentials_available
+
         try:
             # First try to use service account from config
             service_account_path = (
@@ -38,6 +53,8 @@ class TTSService:
             )
             if service_account_path and os.path.exists(service_account_path):
                 logger.debug("Google Cloud service account found")
+                self._credentials_available = True
+                self._credentials_checked = True
                 return True
 
             # Fallback to default credentials
@@ -45,9 +62,13 @@ class TTSService:
 
             google.auth.default()
             logger.debug("Google Cloud default credentials found")
+            self._credentials_available = True
+            self._credentials_checked = True
             return True
         except Exception as e:
             logger.warning(f"Google Cloud credentials not available: {str(e)}")
+            self._credentials_available = False
+            self._credentials_checked = True
             return False
 
     def _get_client(self) -> texttospeech.TextToSpeechClient:
@@ -60,7 +81,14 @@ class TTSService:
         Raises:
             ServiceUnavailableError: If TTS service is not available
         """
-        if not self.credentials_available:
+        # Check if TTS is enabled first
+        if not self._is_tts_enabled():
+            raise ServiceUnavailableError(
+                "Google Cloud TTS",
+                "TTS is disabled in configuration. Set enable_tts: true to enable.",
+            )
+
+        if not self._check_credentials():
             raise ServiceUnavailableError(
                 "Google Cloud TTS",
                 "Google Cloud credentials not configured. Please set up authentication.",
@@ -159,6 +187,16 @@ class TTSService:
             ValidationError: If input parameters are invalid
         """
         try:
+            # Early return if TTS is disabled
+            if not self._is_tts_enabled():
+                logger.debug(
+                    "TTS is disabled in configuration, skipping generation"
+                )
+                raise ServiceUnavailableError(
+                    "Google Cloud TTS",
+                    "TTS is disabled in configuration. Set enable_tts: true to enable.",
+                )
+
             # Validate input text
             if not text or not text.strip():
                 raise ValidationError("Text cannot be empty", "text")
@@ -262,6 +300,13 @@ class TTSService:
             List of (voice_name, gender) tuples
         """
         try:
+            # Early return if TTS is disabled
+            if not self._is_tts_enabled():
+                logger.debug(
+                    "TTS is disabled in configuration, returning empty voice list"
+                )
+                return []
+
             client = self._get_client()
             voices = client.list_voices(language_code=language_code)
 

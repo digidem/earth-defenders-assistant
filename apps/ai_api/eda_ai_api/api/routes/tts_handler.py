@@ -27,6 +27,7 @@ from eda_ai_api.utils.exceptions import (
     ValidationError,
     TTSGenerationError,
     FileProcessingError,
+    ServiceUnavailableError,
 )
 
 config = ConfigLoader.get_config()
@@ -102,6 +103,13 @@ async def generate_speech(
     except ValidationError as e:
         logger.warning(f"TTS validation failed: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
+    except ServiceUnavailableError as e:
+        logger.warning(f"TTS service unavailable: {str(e)}")
+        return TTSResponse(
+            success=False,
+            error=str(e),
+            message="TTS service is currently unavailable or disabled",
+        )
     except TTSGenerationError as e:
         logger.error(f"TTS generation failed: {str(e)}")
         return TTSResponse(
@@ -255,6 +263,12 @@ async def generate_and_download(
     except ValidationError as e:
         logger.warning(f"TTS validation failed: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
+    except ServiceUnavailableError as e:
+        logger.warning(f"TTS service unavailable: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"TTS service is currently unavailable or disabled: {str(e)}",
+        )
     except TTSGenerationError as e:
         logger.error(f"TTS generation failed: {str(e)}")
         raise HTTPException(
@@ -308,6 +322,13 @@ async def get_available_voices(
         )
 
         return VoicesResponse(success=True, voices=voices)
+    except ServiceUnavailableError as e:
+        logger.warning(f"TTS service unavailable when getting voices: {str(e)}")
+        return VoicesResponse(
+            success=False,
+            voices=[],
+            error="TTS service is currently unavailable or disabled",
+        )
     except Exception as e:
         logger.error(f"Error getting voices: {str(e)}", exc_info=True)
         return VoicesResponse(
