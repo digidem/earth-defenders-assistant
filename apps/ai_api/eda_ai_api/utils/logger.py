@@ -6,6 +6,9 @@ from loguru import logger
 # Remove default handler to avoid duplicate logs
 logger.remove()
 
+# Flag to track if logger has been configured
+_logger_configured = False
+
 # Define log format with structured data
 LOG_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
@@ -29,11 +32,19 @@ JSON_FORMAT = {
 def setup_logger(log_level: str = "INFO", log_file: str = "api.log") -> None:
     """
     Configure structured logging with proper levels and formatting.
+    Only configures once to prevent duplicate handlers.
 
     Args:
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         log_file: Path to log file
     """
+    global _logger_configured
+
+    # Prevent multiple configurations
+    if _logger_configured:
+        logger.debug("Logger already configured, skipping setup")
+        return
+
     # Create logs directory if it doesn't exist
     log_path = Path(log_file)
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -75,6 +86,6 @@ def setup_logger(log_level: str = "INFO", log_file: str = "api.log") -> None:
         diagnose=True,
     )
 
-
-# Initialize logger with default settings
-setup_logger()
+    # Mark logger as configured
+    _logger_configured = True
+    logger.info(f"Logger configured with level: {log_level}")

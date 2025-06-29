@@ -17,9 +17,14 @@ from eda_ai_api.utils.exceptions import AIAPIException
 
 config = ConfigLoader.get_config()
 
-# Setup logger with config-based level
+# Setup logger with config-based level - this will only configure once due to the flag
 log_level = "DEBUG" if config.services.ai_api.debug else "INFO"
 setup_logger(log_level=log_level)
+
+# Import logger after setup to ensure it's configured
+from loguru import logger
+
+logger.info(f"Starting {APP_NAME} v{APP_VERSION} with log level: {log_level}")
 
 
 def get_app() -> FastAPI:
@@ -110,8 +115,8 @@ def run_server() -> None:
         "host": host,
         "port": config.ports.ai_api,
         "reload": config.services.ai_api.debug,
-        "log_level": "debug" if config.services.ai_api.debug else "info",
-        "access_log": True,
+        "log_level": "warning",  # Set to warning to avoid conflicts with loguru
+        "access_log": False,  # Disable uvicorn access logs since we use loguru
         "workers": 1,  # Single worker for development, increase for production
     }
 
@@ -127,6 +132,7 @@ def run_server() -> None:
             }
         )
 
+    logger.info(f"Starting server on {host}:{config.ports.ai_api}")
     uvicorn.run(**uvicorn_config)
 
 
