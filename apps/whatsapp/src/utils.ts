@@ -198,14 +198,22 @@ export async function shouldIgnoreUnread(
         console.warn(
           `Too many unread messages (${unreadCount}) for group chat "${groupName}". Ignoring...`,
         );
-        warningMessage = `Too many unread messages (${unreadCount}) since I've last seen this chat. I'm ignoring them. If you need me to respond, please @mention me or quote my last completion in this chat.`;
+        warningMessage =
+          config.services.whatsapp.status_messages.TOO_MANY_UNREAD_GROUP.replace(
+            "{count}",
+            unreadCount.toString(),
+          );
       } else {
         console.warn(
           `Too many unread messages (${unreadCount}) for chat with user "${getPhoneNumber(
             message,
           )}". Ignoring...`,
         );
-        warningMessage = `Too many unread messages (${unreadCount}) since I've last seen this chat. I'm ignoring them. If you need me to respond, please message me again.`;
+        warningMessage =
+          config.services.whatsapp.status_messages.TOO_MANY_UNREAD_PRIVATE.replace(
+            "{count}",
+            unreadCount.toString(),
+          );
       }
 
       if (IGNORE_MESSAGES_WARNING) {

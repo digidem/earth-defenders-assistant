@@ -20,7 +20,7 @@ export async function generateTTSAudio(
   }
 
   try {
-    const ttsApiUrl = `http://localhost:${config.ports.ai_api}/api/tts/generate-and-download`;
+    const ttsApiUrl = `${config.services.whatsapp.ai_api_base_url}:${config.ports.ai_api}/api/tts/generate-and-download`;
 
     const requestBody = {
       text: options.text,
@@ -66,6 +66,9 @@ export async function generateTTSAudio(
 }
 
 export function shouldUseTTS(messageLength: number): boolean {
-  const result = ENABLE_TTS && messageLength >= 10 && messageLength <= 500;
+  const result =
+    ENABLE_TTS &&
+    messageLength >= config.services.whatsapp.min_tts_length &&
+    messageLength <= config.services.whatsapp.max_tts_length;
   return result;
 }

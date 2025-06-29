@@ -1,80 +1,114 @@
-# Service Ports (all port configurations in one place)
+# =============================================================================
+# EARTH DEFENDERS ASSISTANT - CONFIGURATION EXAMPLE
+# =============================================================================
+# Copy this file to config.yaml and update the values marked as REQUIRED
+# Optional values can be left as "xxx" if you don't need that service
+
+# =============================================================================
+# NETWORK & PORTS CONFIGURATION
+# =============================================================================
+# These ports are used by the application services. Change only if you have conflicts.
 ports:
-  messaging: 3001  # WhatsApp message handling service
-  ai_api: 8083    # FastAPI service for AI operations
-  langtrace: 3003 # LangTrace monitoring service
-  trigger: 3040   # Trigger.dev job processing
-  remix: 3030     # Trigger.dev remix app
-  whatsapp: 4000  # WhatsApp bot service
-  dashboard: 8080 # Admin dashboard
-  landingpage: 8081
-  docs: 8082
+  # Application Services
+  messaging: 3001      # WhatsApp message handling service
+  ai_api: 8083         # FastAPI service for AI operations
+  langtrace: 3003      # LangTrace monitoring service
+  trigger: 3040        # Trigger.dev job processing
+  remix: 3030          # Trigger.dev remix app
+  whatsapp: 4000       # WhatsApp bot service
+  dashboard: 8080      # Admin dashboard
+  landingpage: 8081    # Landing page
+  docs: 8082           # Documentation site
+  
+  # Database Services
   db:
-    postgres: 5439      
-    trigger_postgres: 5440  
-    langtrace_postgres: 5441 
-    redis: 6379
+    postgres: 5439           # Main PostgreSQL database
+    trigger_postgres: 5440   # Trigger.dev PostgreSQL
+    langtrace_postgres: 5441 # LangTrace PostgreSQL
+    redis: 6379              # Redis cache
     neo4j:
-      http: 7474  # Neo4j browser interface
-      bolt: 7687  # Neo4j database connection
-    clickhouse: 8123
+      http: 7474             # Neo4j browser interface
+      bolt: 7687             # Neo4j database connection
+    clickhouse: 8123         # ClickHouse analytics
 
-# API Keys (unified section for all API keys)
+# =============================================================================
+# API KEYS & EXTERNAL SERVICES
+# =============================================================================
+# REQUIRED: You need at least ONE AI/ML API key for the system to work
+# OPTIONAL: Other services can be configured as needed
 api_keys:
-  groq: "xxx"   # LLM API
-  huggingface: "xxx"  # Embeddings API
-  serper: "xxx"     # Search API
-  langtrace: "xxx"  # LLM monitoring
-  trigger: "xxx"  # Background jobs
-  resend: "xxx" # Email service
-  openai: "xxx"
-  openrouter: "xxx" # OpenRouter API key
-  deepseek: "xxx"  # DeepSeek LLM API
-  google_ai_studio: "xxx"  # Google AI Studio API key
-  supabase:
-    service_key: "xxx"
-    anon_key: "xxx"
-    api_key: "xxx"  # Supabase API key
-  openpanel:
-    client_id: "xxx"
-    secret: "xxx"
-  dub: "xxx"
+  # AI/ML Services (REQUIRED - Choose at least one)
+  groq: "xxx"              # REQUIRED: LLM API for text generation
+  openai: "xxx"            # OPTIONAL: Alternative to Groq
+  openrouter: "xxx"        # OPTIONAL: Alternative to Groq
+  deepseek: "xxx"          # OPTIONAL: Alternative to Groq
+  google_ai_studio: "xxx"  # OPTIONAL: For Google AI features
+  
+  # Data & Analytics (OPTIONAL)
+  huggingface: "xxx"       # OPTIONAL: For embeddings and models
+  serper: "xxx"            # OPTIONAL: For web search capabilities
+  
+  # Infrastructure & Monitoring (OPTIONAL)
+  langtrace: "xxx"         # OPTIONAL: For LLM monitoring
+  trigger: "xxx"           # OPTIONAL: For background jobs
   sentry:
-    auth_token: "xxx"
+    auth_token: "xxx"      # OPTIONAL: For error monitoring
+  
+  # Communication & Email (OPTIONAL)
+  resend: "xxx"            # OPTIONAL: For email notifications
+  dub: "xxx"               # OPTIONAL: For URL shortening
+  
+  # Third-party Integrations (OPTIONAL)
+  openpanel:
+    client_id: "xxx"       # OPTIONAL: For analytics
+    secret: "xxx"          # OPTIONAL: For analytics
+  
+  # Cloud Services (REQUIRED for TTS)
+  google_cloud:
+    service_account_path: "credentials/google/your-service-account.json"  # REQUIRED FULL PATH: For text-to-speech
 
-# Database Settings
+# =============================================================================
+# DATABASE CONFIGURATIONS
+# =============================================================================
+# REQUIRED: Configure at least one database for conversation storage
+# OPTIONAL: Other databases for specific features
 databases:
+  # Main Application Database (REQUIRED)
   pocketbase:
-    url: "http://localhost:8090"
+    url: "http://localhost:8090"  # REQUIRED: Main database URL
     admin:
-      email: "admin@example.com"
-      password: "your-secure-password"
-
+      email: "admin@example.com"  # REQUIRED: Admin email
+      password: "your-secure-password"  # REQUIRED: Admin password
+  
+  # LangTrace Analytics Stack (OPTIONAL - for monitoring)
   langtrace_postgres:
-    host: "langtrace-postgres"
+    host: "langtrace-postgres"  # OPTIONAL: For LLM monitoring
     port: 5435
     user: "ltuser"
     password: "ltpasswd"
     database: "langtrace"
-
+  
   langtrace_clickhouse:
-    host: "http://langtrace-clickhouse:8123"
+    host: "http://langtrace-clickhouse:8123"  # OPTIONAL: For analytics
     user: "lt_clickhouse_user"
     password: "clickhousepw"
     database: "langtrace_traces"
-
+  
+  # Trigger.dev Database (OPTIONAL - for background jobs)
   trigger_postgres:
-    host: "postgres"
+    host: "postgres"  # OPTIONAL: For background job processing
     user: "postgres"
     password: "postgres"
     database: "postgres"
-
+  
+  # Cache & Session Storage (OPTIONAL - improves performance)
   redis:
-    host: "redis"
+    host: "redis"  # OPTIONAL: For caching and sessions
     tls_disabled: true
-
+  
+  # Graph Database (OPTIONAL - for advanced features)
   neo4j:
-    host: "localhost"
+    host: "localhost"  # OPTIONAL: For graph-based features
     auth:
       user: "neo4j"
       password: "password"
@@ -84,59 +118,223 @@ databases:
       timeout: 5
       retries: 3
 
-# Service Configurations
+# =============================================================================
+# SERVICE CONFIGURATIONS
+# =============================================================================
 services:
+  # ========================================================================
+  # AI API SERVICE CONFIGURATION
+  # ========================================================================
   ai_api:
-    debug: true
-    conversation_history_limit: 5  # Number of previous exchanges to include in context
-    relevant_history_limit: 5      # Number of semantically relevant exchanges to retrieve
+    # Debug & Development
+    debug: true  # Set to false in production
+    allow_external: false  # Set to true to allow external connections
+    
+    # Conversation & Memory Management
+    conversation_history_limit: 5    # Number of recent exchanges to include
+    relevant_history_limit: 5        # Number of semantically relevant exchanges
+    
+    # File Processing Limits
+    max_file_size_mb: 50
+    max_filename_length: 255
+    temp_dir_prefix: "/tmp/"
+    
+    # Supported File Types
+    allowed_image_types: ["image/jpeg", "image/png", "image/webp"]
+    allowed_audio_types: ["audio/mpeg", "audio/mp4", "audio/mpga", "audio/wav", "audio/webm", "audio/ogg", "application/octet-stream"]
+    allowed_document_types: ["application/pdf", "text/csv", "application/csv"]
+    allowed_file_extensions: [".pdf", ".csv", ".txt", ".jpg", ".jpeg", ".png", ".webp"]
+    
+    # Audio Processing
+    audio_timeout_seconds: 300       # 5 minutes
+    transcription_timeout_seconds: 60
+    audio_chunk_size: 8192
+    
+    # Vector Database & Memory
+    default_ttl_days: 30
+    max_conversation_history: 50
+    max_relevant_history: 10
+    max_document_chunks: 1000
+    vector_similarity_threshold: 0.7
+    
+    # Agent Configuration
+    max_agent_steps: 10
+    agent_timeout_seconds: 600       # 10 minutes
+    max_retries: 3
+    retry_delay_seconds: 1
+    
+    # API Limits & Security
+    max_request_size: 104857600      # 100MB in bytes
+    rate_limit_requests: 100
+    rate_limit_window_seconds: 3600  # 1 hour
+    
+    # Platform Support
+    supported_platforms: ["whatsapp", "telegram", "website", "api"]
+    default_platform: "whatsapp"
+    
+    # Media Type Mappings
+    media_type_map:
+      ".wav": "audio/wav"
+      ".mp3": "audio/mpeg"
+      ".ogg": "audio/ogg"
+      ".pdf": "application/pdf"
+      ".csv": "text/csv"
+      ".jpg": "image/jpeg"
+      ".jpeg": "image/jpeg"
+      ".png": "image/png"
+      ".webp": "image/webp"
+    
+    # Error Messages
+    error_messages:
+      FILE_TOO_LARGE: "File size exceeds maximum allowed size of 50MB"
+      INVALID_FILE_TYPE: "File type not supported"
+      FILE_NOT_FOUND: "File not found"
+      PROCESSING_ERROR: "Error processing file"
+      AUTHENTICATION_FAILED: "Authentication failed"
+      INVALID_REQUEST: "Invalid request data"
+      SERVICE_UNAVAILABLE: "Service temporarily unavailable"
+      TIMEOUT_ERROR: "Request timed out"
+      RATE_LIMIT_EXCEEDED: "Rate limit exceeded"
+    
+    # Success Messages
+    success_messages:
+      FILE_UPLOADED: "File uploaded successfully"
+      AUDIO_GENERATED: "Audio generated successfully"
+      TRANSCRIPTION_COMPLETE: "Transcription completed successfully"
+      DOCUMENT_PROCESSED: "Document processed successfully"
+    
+    # Logging Configuration
+    log_levels:
+      DEBUG: "DEBUG"
+      INFO: "INFO"
+      WARNING: "WARNING"
+      ERROR: "ERROR"
+      CRITICAL: "CRITICAL"
 
+  # ========================================================================
+  # WHATSAPP SERVICE CONFIGURATION
+  # ========================================================================
   whatsapp:
-    bot_prefix: "*[BOT]:*"  # Message prefix for bot responses
-    cmd_prefix: "!"         # Command prefix for users
-    bot_name: "Sydney"
-    enable_reactions: true
-    enable_tts: true  # Add TTS enable flag
+    # Bot Identity & Behavior
+    bot_prefix: "*[BOT]:*"  # REQUIRED: Message prefix for bot responses
+    cmd_prefix: "!"         # REQUIRED: Command prefix for users
+    bot_name: "Sydney"      # REQUIRED: Bot name
+    enable_reactions: true  # OPTIONAL: Enable reaction emojis
+    enable_tts: true        # OPTIONAL: Enable text-to-speech
+    
+    # Reaction Emojis
     reactions:
       queued: "🔁"
       working: "⚙️" 
       done: "✅"
       error: "⚠️"
-    puppeteer_path: "/snap/bin/chromium"
+    
+    # System Configuration
+    puppeteer_path: "/snap/bin/chromium"  # REQUIRED: Path to Chromium
     ignore_messages_warning: false
-    mongodb_uri: "xxx"
+    mongodb_uri: "xxx"  # OPTIONAL: For MongoDB storage
+    
+    # API Integration
+    ai_api_base_url: "http://localhost"  # REQUIRED: AI API base URL
+    api_timeout_seconds: 600          # 10 minutes
+    reconnection_delay_seconds: 5
+    
+    # Language & Localization
+    default_language: "pt"            # REQUIRED: Default language
+    transcription_language: "pt"      # REQUIRED: Audio transcription language
+    
+    # Document Processing
+    private_document_ttl_days: 1      # How long to keep private documents
+    group_document_ttl_days: 7        # How long to keep group documents
+    
+    # Message Processing
+    max_message_length: 10000
+    min_tts_length: 10                # Minimum text length for TTS
+    max_tts_length: 500               # Maximum text length for TTS
+    
+    # File Processing
+    max_filename_length: 255
+    allowed_file_types: ["pdf", "csv"]
+    
+    # Audio Processing
+    audio_mime_type: "audio/ogg; codecs=opus"
+    audio_filename: "audio.ogg"
+    
+    # Error Messages (Portuguese)
+    error_messages:
+      NO_RESPONSE: "Desculpe, não consegui gerar uma resposta. Tente novamente."
+      HTTP_ERROR: "Ops, tive um problema técnico. Pode tentar novamente?"
+      TIMEOUT: "Desculpe, demorei muito para responder. Pode tentar novamente?"
+      UNKNOWN: "Ocorreu um erro inesperado. Pode tentar novamente?"
+      AUDIO_DOWNLOAD_FAILED: "Não consegui baixar o áudio."
+      AUDIO_TRANSCRIPTION_FAILED: "Erro ao transcrever o áudio."
+      DOCUMENT_DOWNLOAD_FAILED: "Não foi possível baixar o arquivo."
+      DOCUMENT_PROCESSING_FAILED: "Erro ao processar o arquivo. Por favor, tente novamente."
+    
+    # Success Messages (Portuguese)
+    success_messages:
+      DOCUMENT_PROCESSED: "✅ {file_type} processado com sucesso!\n\nAgora você pode fazer perguntas sobre o conteúdo deste arquivo diretamente por mensagem.\n\n⏰ O arquivo será mantido por {ttl_days} dia(s)."
+      AUDIO_TRANSCRIPTION_COMPLETE: "Áudio transcrito com sucesso"
+    
+    # Status Messages
+    status_messages:
+      WAITING: "Estou analisando sua mensagem... Como preciso pensar com cuidado, pode demorar alguns minutos."
+      TOO_MANY_UNREAD_GROUP: "Too many unread messages ({count}) since I've last seen this chat. I'm ignoring them. If you need me to respond, please @mention me or quote my last completion in this chat."
+      TOO_MANY_UNREAD_PRIVATE: "Too many unread messages ({count}) since I've last seen this chat. I'm ignoring them. If you need me to respond, please message me again."
 
+  # ========================================================================
+  # TEXT-TO-SPEECH CONFIGURATION (OPTIONAL)
+  # ========================================================================
+  tts:
+    provider: "google"                    # REQUIRED: TTS provider
+    language_code: "pt-BR"               # REQUIRED: Language code
+    voice_name: "pt-BR-Chirp3-HD-Achernar"  # REQUIRED: Voice name
+    audio_encoding: "LINEAR16"           # REQUIRED: Audio format
+    effects_profile_id: ["handset-class-device"]
+    pitch: 0
+    speaking_rate: 1
+    output_format: "wav"                 # For LINEAR16 encoding
+
+  # ========================================================================
+  # EMAIL SERVICE CONFIGURATION (OPTIONAL)
+  # ========================================================================
   resend:
-    from_email: "onboarding@resend.dev"
-    reply_to: "xxx@example.com"
+    from_email: "onboarding@resend.dev"  # REQUIRED: Sender email
+    reply_to: "xxx@example.com"          # OPTIONAL: Reply-to email
 
+  # ========================================================================
+  # LANGTRACE MONITORING CONFIGURATION (OPTIONAL)
+  # ========================================================================
   langtrace:
     api:
-      host: "http://localhost:3000/api/trace"
+      host: "http://localhost:3000/api/trace"  # OPTIONAL: Monitoring API
     admin:
-      email: "admin@langtrace.ai"
-      password: "xxx"
+      email: "admin@langtrace.ai"        # OPTIONAL: Admin email
+      password: "xxx"                    # OPTIONAL: Admin password
       enable_login: true
     telemetry:
       enabled: true
     posthog:
-      host: "https://us.i.posthog.com"
+      host: "https://us.i.posthog.com"   # OPTIONAL: Analytics
 
+  # ========================================================================
+  # TRIGGER.DEV BACKGROUND JOBS CONFIGURATION (OPTIONAL)
+  # ========================================================================
   trigger:
-    project_id: "your-project-id"
-    api_url: "http://localhost:3040"
-    environment: "production"
-    runtime: "docker-compose"
+    project_id: "your-project-id"        # REQUIRED: Trigger.dev project ID
+    api_url: "http://localhost:3040"     # REQUIRED: Trigger.dev API URL
+    environment: "production"            # REQUIRED: Environment
+    runtime: "docker-compose"            # REQUIRED: Runtime type
     v3_enabled: true
     concurrency:
       org_execution_limit: 300
       env_execution_limit: 100
     auth:
-      magic_link_secret: "your-magic-link-secret"
-      session_secret: "your-session-secret"
-      encryption_key: "your-encryption-key"
-      provider_secret: "your-provider-secret"
-      coordinator_secret: "your-coordinator-secret"
+      magic_link_secret: "your-magic-link-secret"      # REQUIRED: Auth secret
+      session_secret: "your-session-secret"            # REQUIRED: Session secret
+      encryption_key: "your-encryption-key"            # REQUIRED: Encryption key
+      provider_secret: "your-provider-secret"          # REQUIRED: Provider secret
+      coordinator_secret: "your-coordinator-secret"    # REQUIRED: Coordinator secret
     deployment:
       worker:
         http_port: 9020
@@ -145,55 +343,58 @@ services:
       docker:
         publish_ip: "127.0.0.1"
     sentry:
-      auth_token: "xxx"
-      dsn: "xxx"
-      org: "xxx"
-      project: "xxx"
+      auth_token: "xxx"                  # OPTIONAL: Error monitoring
+      dsn: "xxx"                         # OPTIONAL: Error monitoring
+      org: "xxx"                         # OPTIONAL: Error monitoring
+      project: "xxx"                     # OPTIONAL: Error monitoring
 
+  # ========================================================================
+  # DASHBOARD CONFIGURATION (OPTIONAL)
+  # ========================================================================
   dashboard:
     auth:
-      nextauth_secret: "your-nextauth-secret"
+      nextauth_secret: "your-nextauth-secret"  # REQUIRED: NextAuth secret
       azure:
-        client_id: "xxx"
-        client_secret: "xxx"
-        tenant_id: "xxx"
+        client_id: "xxx"                # OPTIONAL: Azure AD integration
+        client_secret: "xxx"            # OPTIONAL: Azure AD integration
+        tenant_id: "xxx"                # OPTIONAL: Azure AD integration
       google:
-        client_id: "xxx"
-        secret: "xxx"
+        client_id: "xxx"                # OPTIONAL: Google OAuth
+        secret: "xxx"                   # OPTIONAL: Google OAuth
 
+  # ========================================================================
+  # UPSTASH REDIS CONFIGURATION (OPTIONAL)
+  # ========================================================================
   upstash:
-    redis_url: "xxx"
-    redis_token: "xxx"
+    redis_url: "xxx"                    # OPTIONAL: Redis URL
+    redis_token: "xxx"                  # OPTIONAL: Redis token
 
-  tts:
-    provider: "google"
-    language_code: "pt-BR"
-    voice_name: "pt-BR-Chirp3-HD-Achernar"
-    audio_encoding: "LINEAR16"
-    effects_profile_id: ["handset-class-device"]
-    pitch: 0
-    speaking_rate: 1
-    output_format: "wav"  # For LINEAR16 encoding
-
-# AI Models Configuration
+# =============================================================================
+# AI MODELS CONFIGURATION
+# =============================================================================
+# REQUIRED: Configure at least one AI model for text generation
+# You can configure multiple models for different use cases
 ai_models:
   premium:
-    provider: "openrouter"
-    model: "deepseek/deepseek-chat:free"
-    temperature: 0.5
+    provider: "openrouter"              # REQUIRED: Model provider
+    model: "deepseek/deepseek-chat:free"  # REQUIRED: Model name
+    temperature: 0.5                    # OPTIONAL: Creativity level (0-1)
     description: "High-performance model for complex reasoning and generation"
   standard:
-    provider: "gemini"
+    provider: "gemini"                  # OPTIONAL: Alternative model
     model: "gemini-2.5-flash-preview-05-20"
     temperature: 0.7
     description: "Balanced model for general purpose tasks"
   basic:
-    provider: "groq"
+    provider: "groq"                    # OPTIONAL: Fast model
     model: "llama-2-7b-chat"
     temperature: 0.8
     description: "Fast model for simple tasks and quick responses"
 
-# Access Control
+# =============================================================================
+# ACCESS CONTROL CONFIGURATION
+# =============================================================================
+# OPTIONAL: Configure user access control
 access:
-  allowed_users: []  # List of allowed phone numbers
-  blocked_users: []  # List of blocked phone numbers
+  allowed_users: []  # OPTIONAL: List of allowed phone numbers (empty = allow all)
+  blocked_users: []  # OPTIONAL: List of blocked phone numbers

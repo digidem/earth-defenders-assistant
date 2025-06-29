@@ -18,8 +18,22 @@ config = ConfigLoader.get_config()
 class VectorMemory(PocketBaseMemory):
     """Enhanced memory manager for conversations and documents with TTL - user-specific collections"""
 
+    # Singleton instance
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        """Implement singleton pattern to prevent multiple expensive initializations"""
+        if cls._instance is None:
+            cls._instance = super(VectorMemory, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
-        """Initialize PocketBase and ChromaDB clients"""
+        """Initialize PocketBase and ChromaDB clients - only once due to singleton pattern"""
+        # Prevent multiple initializations
+        if self._initialized:
+            return
+
         super().__init__()
         try:
             # Initialize embeddings model
@@ -56,6 +70,9 @@ class VectorMemory(PocketBaseMemory):
             logger.info(
                 "VectorMemory initialized successfully with user-specific collection support and global knowledge base"
             )
+
+            # Mark as initialized to prevent re-initialization
+            self._initialized = True
 
         except Exception as e:
             logger.error(f"Failed to initialize VectorMemory: {str(e)}")

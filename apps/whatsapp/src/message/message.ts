@@ -10,15 +10,9 @@ import { handleDocumentMessage } from "../handlers/documentHandler";
 import { getPhoneNumber, react } from "../utils";
 import { generateTTSAudio, shouldUseTTS } from "../utils/tts";
 
-const WAITING_MSG =
-  "Estou analisando sua mensagem... Como preciso pensar com cuidado, pode demorar alguns minutos.";
+const WAITING_MSG = config.services.whatsapp.status_messages.WAITING;
 
-const ERROR_MESSAGES = {
-  NO_RESPONSE: "Desculpe, não consegui gerar uma resposta. Tente novamente.",
-  HTTP_ERROR: "Ops, tive um problema técnico. Pode tentar novamente?",
-  TIMEOUT: "Desculpe, demorei muito para responder. Pode tentar novamente?",
-  UNKNOWN: "Ocorreu um erro inesperado. Pode tentar novamente?",
-};
+const ERROR_MESSAGES = config.services.whatsapp.error_messages;
 
 export async function handleMessage(message: WAMessage) {
   await react(message, "working");
@@ -87,7 +81,7 @@ export async function handleMessage(message: WAMessage) {
     const platformUserId = `whatsapp_${phoneNumber}`;
 
     // Call message handler with FormData
-    const aiApiUrl = `http://localhost:${config.ports.ai_api}/api/message_handler/handle`;
+    const aiApiUrl = `${config.services.whatsapp.ai_api_base_url}:${config.ports.ai_api}/api/message_handler/handle`;
 
     // Create FormData payload
     const formData = new FormData();
@@ -108,7 +102,10 @@ export async function handleMessage(message: WAMessage) {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min timeout
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      config.services.whatsapp.api_timeout_seconds * 1000,
+    );
 
     logger.info(
       `Sending request to AI API: ${aiApiUrl}, user_platform_id: ${platformUserId}, message: "${messageContent.substring(
@@ -194,7 +191,7 @@ export async function handleMessage(message: WAMessage) {
           chatId,
           {
             audio: audioBuffer,
-            mimetype: "audio/ogg; codecs=opus", // Always OGG for WhatsApp
+            mimetype: config.services.whatsapp.audio_mime_type,
             ptt: true, // Send as voice note
           },
           { quoted: message },

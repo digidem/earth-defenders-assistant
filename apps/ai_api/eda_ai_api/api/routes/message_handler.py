@@ -14,7 +14,7 @@ from eda_ai_api.agents.manager import get_agent
 from eda_ai_api.agents.prompts.formatting import get_formatting_guidelines
 from eda_ai_api.models.message_handler import MessageHandlerResponse
 from eda_ai_api.utils.context_builder import build_enhanced_context
-from eda_ai_api.utils.vector_memory import VectorMemory
+from eda_ai_api.utils.memory_manager import get_vector_memory
 from eda_ai_api.utils.attachment_utils import process_attachment
 from smolagents.local_python_executor import BASE_BUILTIN_MODULES
 from eda_ai_api.agents.prompts.manager import MANAGER_SYSTEM_PROMPT
@@ -23,7 +23,7 @@ from smolagents.agents import populate_template
 config = ConfigLoader.get_config()
 
 router = APIRouter()
-memory = VectorMemory()
+memory = get_vector_memory()
 
 
 class MessageRequest(BaseModel):

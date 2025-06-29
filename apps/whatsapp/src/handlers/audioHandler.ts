@@ -25,7 +25,7 @@ export async function handleAudioMessage(
     if (!stream) {
       await sock.sendMessage(
         chatId,
-        { text: "Não consegui baixar o áudio." },
+        { text: config.services.whatsapp.error_messages.AUDIO_DOWNLOAD_FAILED },
         { quoted: message },
       );
       await react(message, "error");
@@ -33,12 +33,25 @@ export async function handleAudioMessage(
     }
 
     const formData = new FormData();
-    formData.append("file", new Blob([stream]), "audio.ogg");
-    formData.append("language", "pt");
 
-    logger.info(`Transcribing audio for user: ${platformUserId}`);
+    // WhatsApp audio is typically OGG Opus format, regardless of MIME type
+    // Use the configured audio filename and let the server detect the format
+    formData.append(
+      "file",
+      new Blob([stream], { type: "audio/ogg" }),
+      config.services.whatsapp.audio_filename,
+    );
+    formData.append(
+      "language",
+      config.services.whatsapp.transcription_language,
+    );
 
-    const transcriptionApiUrl = `http://localhost:${config.ports.ai_api}/api/transcription/transcribe`;
+    logger.info(`Transcribing audio for user: ${platformUserId}`, {
+      audioSize: stream.length,
+      audioType: audioMsg.mimetype || "unknown",
+    });
+
+    const transcriptionApiUrl = `${config.services.whatsapp.ai_api_base_url}:${config.ports.ai_api}/api/transcription/transcribe`;
 
     const transcriptionResponse = await fetch(transcriptionApiUrl, {
       method: "POST",
@@ -54,7 +67,10 @@ export async function handleAudioMessage(
       });
       await sock.sendMessage(
         chatId,
-        { text: "Erro ao transcrever o áudio." },
+        {
+          text: config.services.whatsapp.error_messages
+            .AUDIO_TRANSCRIPTION_FAILED,
+        },
         { quoted: message },
       );
       await react(message, "error");
@@ -99,7 +115,10 @@ export async function handleAudioMessage(
     });
     await sock.sendMessage(
       chatId,
-      { text: "Erro ao transcrever o áudio." },
+      {
+        text: config.services.whatsapp.error_messages
+          .AUDIO_TRANSCRIPTION_FAILED,
+      },
       { quoted: message },
     );
     await react(message, "error");

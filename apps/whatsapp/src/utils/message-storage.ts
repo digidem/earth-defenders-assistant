@@ -46,7 +46,7 @@ async function handleTextMessage(
   // Only store text messages that have content
   if (!messageText.trim()) return;
 
-  const aiApiUrl = `http://localhost:${config.ports.ai_api}/api/message_handler/store-group-message`;
+  const aiApiUrl = `${config.services.whatsapp.ai_api_base_url}:${config.ports.ai_api}/api/message_handler/store-group-message`;
 
   const requestBody = {
     user_platform_id: platformUserId,
@@ -123,13 +123,16 @@ async function handleDocumentMessage(
       documentMsg.fileName ||
         (mimeType.includes("csv") ? "document.csv" : "document.pdf"),
     );
-    formData.append("ttl_days", "7"); // Keep group documents longer
+    formData.append(
+      "ttl_days",
+      config.services.whatsapp.group_document_ttl_days.toString(),
+    );
     formData.append("user_platform_id", platformUserId);
     formData.append("platform", "whatsapp");
-    formData.append("group_id", groupId); // Add group context
-    formData.append("sender_name", senderName); // Add sender context
+    formData.append("group_id", groupId);
+    formData.append("sender_name", senderName);
 
-    const uploadApiUrl = `http://localhost:${config.ports.ai_api}/api/documents/upload`;
+    const uploadApiUrl = `${config.services.whatsapp.ai_api_base_url}:${config.ports.ai_api}/api/documents/upload`;
     const response = await fetch(uploadApiUrl, {
       method: "POST",
       body: formData,
@@ -180,10 +183,17 @@ async function handleAudioMessage(
     }
 
     const formData = new FormData();
-    formData.append("file", new Blob([audioBuffer]), "audio.ogg");
-    formData.append("language", "pt"); // Adjust language as needed
+    formData.append(
+      "file",
+      new Blob([audioBuffer]),
+      config.services.whatsapp.audio_filename,
+    );
+    formData.append(
+      "language",
+      config.services.whatsapp.transcription_language,
+    );
 
-    const transcriptionApiUrl = `http://localhost:${config.ports.ai_api}/api/transcription/transcribe`;
+    const transcriptionApiUrl = `${config.services.whatsapp.ai_api_base_url}:${config.ports.ai_api}/api/transcription/transcribe`;
 
     const transcriptionResponse = await fetch(transcriptionApiUrl, {
       method: "POST",

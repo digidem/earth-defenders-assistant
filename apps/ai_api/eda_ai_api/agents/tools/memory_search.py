@@ -1,6 +1,6 @@
 from typing import Dict
 from smolagents import Tool
-from eda_ai_api.utils.vector_memory import VectorMemory
+from eda_ai_api.utils.memory_manager import get_vector_memory
 import asyncio
 
 
@@ -25,7 +25,7 @@ class ConversationMemoryTool(Tool):
 
     def __init__(self, session_id: str, platform: str = "whatsapp"):
         super().__init__()
-        self.memory = VectorMemory()
+        self.memory = get_vector_memory()  # Use centralized memory manager
         self.session_id = session_id
         self.platform = platform
 

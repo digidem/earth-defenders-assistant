@@ -1,6 +1,6 @@
 from typing import Dict, Optional
 from smolagents import Tool
-from eda_ai_api.utils.vector_memory import VectorMemory
+from eda_ai_api.utils.memory_manager import get_vector_memory
 
 
 class GlobalKnowledgeSearchTool(Tool):
@@ -24,7 +24,7 @@ class GlobalKnowledgeSearchTool(Tool):
 
     def __init__(self):
         super().__init__()
-        self.memory = VectorMemory()
+        self.memory = get_vector_memory()  # Use centralized memory manager
 
     def forward(
         self,
